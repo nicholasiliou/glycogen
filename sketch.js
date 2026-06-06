@@ -13,14 +13,12 @@ let osc;
 let swapInterval = 1;
 let lastSwap = 0;
 
+let running = false;
+
 function makeRule() {
   const symbols = ["F", "+", "-", "^", "&"];
   let result = "";
-
-  for (let i = 0; i < 10; i++) {
-    result += random(symbols);
-  }
-
+  for (let i = 0; i < 10; i++) result += random(symbols);
   return result;
 }
 
@@ -31,7 +29,6 @@ function randomEGAColor() {
     color(54, 1, 251),
     color(255, 85, 0),
   ];
-
   return random(ega);
 }
 
@@ -48,6 +45,15 @@ function setup() {
   generateSystem();
 }
 
+function mousePressed() {
+  userStartAudio();
+  running = !running;
+
+  if (!running) {
+    osc.amp(0, 0.2);
+  }
+}
+
 function generateSystem() {
   sentence = axiom;
   len = baseLen;
@@ -56,11 +62,9 @@ function generateSystem() {
 
   for (let i = 0; i < 4; i++) {
     let next = "";
-
     for (let c of sentence) {
       next += rules[c] || c;
     }
-
     sentence = next;
     len *= 0.6;
   }
@@ -69,20 +73,19 @@ function generateSystem() {
 function draw() {
   background(0);
 
+  if (!running) return;
+
   if (frameCount - lastSwap > swapInterval) {
     generateSystem();
     lastSwap = frameCount;
 
-    strokeWeight(random(2,10));
+    strokeWeight(random(2, 10));
     osc.freq(0);
-    osc.setType(random(["triangle", "sawtooth", "square","sine"]));
+    osc.setType(random(["triangle", "sawtooth", "square", "sine"]));
     col = randomEGAColor();
-    swapInterval = random(10,6);
+    swapInterval = random(6, 10);
 
-    if (random() < 0.01) {
-      swapInterval = 100;
-    }
-
+    if (random() < 0.01) swapInterval = 100;
   }
 
   let complexity = sentence.length;
