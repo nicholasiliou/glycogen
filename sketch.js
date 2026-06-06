@@ -1,21 +1,20 @@
 let sentence;
 const axiom = "F";
 
-const rules = {};
+let rules = {};
 
-let baseLen = 160;
+let baseLen = 80;
 let len = baseLen;
 
+let col;
 let angle;
-let iterations = 0;
-
-let lastReset = 0;
-let resetInterval = 12;
-
 let osc;
 
+let swapInterval = 1;
+let lastSwap = 0;
+
 function makeRule() {
-  const symbols = ["F", "+", "-", "^", "&", "*"];
+  const symbols = ["F", "+", "-", "^", "&"];
   let result = "";
 
   for (let i = 0; i < 10; i++) {
@@ -25,96 +24,90 @@ function makeRule() {
   return result;
 }
 
-function regenerateSystem() {
-  rules.F = makeRule();
-  sentence = axiom;
+function randomEGAColor() {
+  const ega = [
+    color(192, 252, 4),
+    color(234, 2, 126),
+    color(54, 1, 251),
+    color(255, 85, 0),
+  ];
 
-  len = baseLen;
-  iterations = 0;
+  return random(ega);
 }
 
 function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
 
-  osc = new p5.Oscillator('sine');
+  osc = new p5.Oscillator("sawtooth");
   osc.start();
-  osc.amp(0.2);
+  osc.amp(0);
 
-  angle = radians(22.5);
+  angle = radians(35);
 
-  regenerateSystem();
+  col = randomEGAColor();
+  generateSystem();
+}
+
+function generateSystem() {
+  sentence = axiom;
+  len = baseLen;
+
+  rules.F = makeRule();
+
+  for (let i = 0; i < 4; i++) {
+    let next = "";
+
+    for (let c of sentence) {
+      next += rules[c] || c;
+    }
+
+    sentence = next;
+    len *= 0.6;
+  }
 }
 
 function draw() {
   background(0);
 
-  let radius = 600;
-  let speed = 0.01;
+  if (frameCount - lastSwap > swapInterval) {
+    generateSystem();
+    lastSwap = frameCount;
 
-  camera(
-    radius * cos(frameCount * speed),
-    0,
-    radius * sin(frameCount * speed),
-    0, 0, 0,
-    0, 1, 0
-  );
+    strokeWeight(random(2,10));
+    osc.freq(0);
+    osc.setType(random(["triangle", "sawtooth", "square","sine"]));
+    col = randomEGAColor();
+    swapInterval = random(10,6);
 
-  ambientLight(80);
+    if (random() < 0.01) {
+      swapInterval = 100;
+    }
 
-  if (frameCount - lastReset > resetInterval) {
-    regenerateSystem();
-    lastReset = frameCount;
   }
 
-  if (iterations < 5) {
-    generate();
-    iterations++;
-  }
+  let complexity = sentence.length;
 
-  push();
-  drawTurtle(sentence);
-  pop();
-
-  // AUDIO FROM PIXELS
-  loadPixels();
-
-  let total = 0;
-
-  for (let i = 0; i < pixels.length; i += 16) {
-    let r = pixels[i];
-    let g = pixels[i + 1];
-    let b = pixels[i + 2];
-
-    total += (r + g + b) / 3;
-  }
-
-  let avg = total / (pixels.length / 64);
-
-  let freq = map(avg, 0, 255, 100, 800);
-
+  let freq = map(complexity, 20, 2000, 120, 900, true);
   osc.freq(freq, 0.1);
-}
 
-function generate() {
-  let next = "";
+  let amp = map(complexity, 20, 2000, 0.05, 0.25, true);
+  osc.amp(amp, 0.1);
 
-  for (let c of sentence) {
-    next += rules[c] || c;
-  }
+  rotateX(-0.6);
+  rotateY(frameCount * 0.0012);
 
-  sentence = next;
-  len *= 0.5;
+  drawTurtle(sentence);
 }
 
 function drawTurtle(str) {
-  stroke(220);
-  noFill();
+  push();
 
   for (let i = 0; i < str.length; i++) {
-    let c = str[i];
+    const c = str[i];
 
     switch (c) {
       case "F":
+        stroke(col);
         line(0, 0, 0, 0, -len, 0);
         translate(0, -len, 0);
         break;
@@ -129,21 +122,17 @@ function drawTurtle(str) {
 
       case "&":
         rotateX(angle);
+        rotateZ(angle * 0.3);
         break;
 
       case "^":
         rotateX(-angle);
-        break;
-
-      case "[":
-        push();
-        break;
-
-      case "]":
-        pop();
+        rotateZ(-angle * 0.3);
         break;
     }
   }
+
+  pop();
 }
 
 function windowResized() {
