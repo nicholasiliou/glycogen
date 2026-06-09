@@ -135,7 +135,9 @@ That same call is all the built‑ins do — there is no privileged path.
 
 - Unified composition canvas; multiple compositions; user/preset/custom resolutions (1080p,
   1440p, 4K, square, portrait, social formats); FPS & duration; background; safe‑area guides.
-- Plugin registry; built‑in `plant` (seed‑driven), `harmonograph`, `solid`, `text`, `group/null` layer types.
+- Plugin registry; built‑in `plant` (seed‑driven), `harmonograph`, `boids`, `solid`, `text`, `group/null` layer types.
+- `boids` flocking simulation engineered for performance (spatial hash grid → O(n), typed‑array
+  state, single batched `fill()`); deterministic & seekable. ~4000 boids in ≈3.5 ms/frame.
 - Layer hierarchy & parenting, grouping, visibility/solo/lock, blend modes, in/out points.
 - Selection + direct viewport **move / scale / rotate** handles + drag‑reorder in the layers panel.
 - Inspector: per‑property controls (scrubby numbers, sliders, color, point, switch, select),
