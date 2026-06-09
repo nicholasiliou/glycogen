@@ -11,7 +11,9 @@ import { ScrollArea } from "@/ui/components/ui/scroll-area";
 import { NumberField } from "@/ui/components/controls/NumberField";
 import { ColorField } from "@/ui/components/controls/ColorField";
 import { PointField } from "@/ui/components/controls/PointField";
+import { Vec3Field } from "@/ui/components/controls/Vec3Field";
 import { LayerIcon } from "@/ui/components/LayerIcon";
+import { CUSTOM_INSPECTORS } from "@/ui/inspectors/registry";
 
 const BLEND_MODES: BlendMode[] = ["normal", "add", "multiply", "screen", "overlay", "lighten", "darken", "difference"];
 
@@ -41,6 +43,7 @@ export function Inspector() {
       <ScrollArea className="flex-1">
         <div className="p-2">
           <LayerHeader layer={layer} />
+          <CustomInspector layer={layer} />
           <LayerSection layer={layer} />
           {layer.groups().map((g) => (
             <PropertyGroup key={g.label} label={g.label}>
@@ -62,6 +65,11 @@ function PanelHeader({ title, subtitle }: { title: string; subtitle?: string }) 
       {subtitle && <span className="text-[10px] text-ink-dim">{subtitle}</span>}
     </div>
   );
+}
+
+function CustomInspector({ layer }: { layer: Layer }) {
+  const Comp = CUSTOM_INSPECTORS[layer.type];
+  return Comp ? <Comp layer={layer} /> : null;
 }
 
 function LayerHeader({ layer }: { layer: Layer }) {
@@ -253,6 +261,8 @@ function PropertyControl({
       return <ColorField value={value} onChange={onChange} />;
     case "point":
       return <PointField value={value} step={meta.step} onChange={onChange} />;
+    case "point3":
+      return <Vec3Field value={value} step={meta.step} onChange={onChange} />;
     case "string":
       return <Input value={String(value ?? "")} disabled={disabled} onChange={(e) => onChange(e.target.value)} />;
     case "select":

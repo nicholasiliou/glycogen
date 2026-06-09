@@ -27,6 +27,28 @@ export function LayersPanel() {
   useRevision();
   const selection = useSelection();
   const comp = engine.comp;
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+
+  const isContainer = (l: Layer) => {
+    const k = engine.registry.get(l.type)?.kind;
+    return k === "group" || k === "layout";
+  };
+  const hidden = (l: Layer) => {
+    const seen = new Set<string>([l.id]);
+    let p = l.parentId ? comp.find(l.parentId) : undefined;
+    while (p && !seen.has(p.id)) {
+      if (isContainer(p) && collapsed.has(p.id)) return true;
+      seen.add(p.id);
+      p = p.parentId ? comp.find(p.parentId) : undefined;
+    }
+    return false;
+  };
+  const toggle = (id: string) =>
+    setCollapsed((s) => {
+      const n = new Set(s);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
 
   return (
     <div className="flex h-full flex-col">
@@ -39,9 +61,19 @@ export function LayersPanel() {
           {comp.layers.length === 0 && (
             <div className="px-3 py-6 text-center text-[11px] text-ink-dim">No layers. Add one ↑</div>
           )}
-          {comp.layers.map((layer, i) => (
-            <LayerRow key={layer.id} layer={layer} index={i} selected={selection.includes(layer.id)} />
-          ))}
+          {comp.layers.map((layer, i) =>
+            hidden(layer) ? null : (
+              <LayerRow
+                key={layer.id}
+                layer={layer}
+                index={i}
+                selected={selection.includes(layer.id)}
+                container={isContainer(layer)}
+                collapsed={collapsed.has(layer.id)}
+                onToggleCollapse={() => toggle(layer.id)}
+              />
+            ),
+          )}
         </div>
       </ScrollArea>
     </div>
@@ -76,7 +108,21 @@ function AddLayerMenu() {
   );
 }
 
-function LayerRow({ layer, index, selected }: { layer: Layer; index: number; selected: boolean }) {
+function LayerRow({
+  layer,
+  index,
+  selected,
+  container,
+  collapsed,
+  onToggleCollapse,
+}: {
+  layer: Layer;
+  index: number;
+  selected: boolean;
+  container: boolean;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+}) {
   const engine = useEngine();
   const [renaming, setRenaming] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -137,6 +183,20 @@ function LayerRow({ layer, index, selected }: { layer: Layer; index: number; sel
           />
 
           <span style={{ width: depth * 12 }} className="shrink-0" />
+          {container ? (
+            <button
+              className="flex h-4 w-3 shrink-0 items-center justify-center text-ink-dim hover:text-ink"
+              title={collapsed ? "Expand" : "Collapse"}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleCollapse();
+              }}
+            >
+              <span className={cn("text-[8px] transition-transform", collapsed ? "" : "rotate-90")}>▶</span>
+            </button>
+          ) : (
+            <span className="w-3 shrink-0" />
+          )}
           <LayerIcon name={engine.registry.get(layer.type)?.icon} className="h-3.5 w-3.5 shrink-0 text-ink-dim" />
 
           {renaming ? (
@@ -164,6 +224,7 @@ function LayerRow({ layer, index, selected }: { layer: Layer; index: number; sel
       <ContextMenuContent>
         <ContextMenuItem onSelect={() => engine.duplicateLayers(pickSelection(engine, layer.id))}>Duplicate</ContextMenuItem>
         <ContextMenuItem onSelect={() => engine.groupLayers(pickSelection(engine, layer.id))}>Group selection</ContextMenuItem>
+        <ContextMenuItem onSelect={() => engine.layoutLayers(pickSelection(engine, layer.id))}>Auto-layout selection</ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem onSelect={() => engine.reorderLayer(layer.id, Math.max(0, index - 1))}>Bring forward</ContextMenuItem>
         <ContextMenuItem onSelect={() => engine.reorderLayer(layer.id, index + 1)}>Send backward</ContextMenuItem>

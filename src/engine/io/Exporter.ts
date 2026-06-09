@@ -61,9 +61,19 @@ export class Exporter {
     return blob;
   }
 
-  /** Frame-accurate PNG sequence — folder via the File System Access API, else downloads. */
+  /** The work-area frame range [start, end). */
+  private frameRange(): { start: number; end: number; fps: number } {
+    const c = this.engine.comp;
+    const fps = c.fps;
+    const start = Math.round(c.workArea.in * fps);
+    const end = Math.max(start + 1, Math.round(Math.min(c.workArea.out, c.duration) * fps));
+    return { start, end, fps };
+  }
+
+  /** Frame-accurate PNG sequence over the work area — folder via FS Access API, else downloads. */
   async pngSequence(opts?: { onProgress?: (p: ExportProgress) => void; maxFallbackFrames?: number }): Promise<void> {
-    const { fps, totalFrames } = this.engine.transport;
+    const { start, end, fps } = this.frameRange();
+    const totalFrames = end - start;
     const max = opts?.maxFallbackFrames ?? 300;
 
     let dir: FileSystemDirectoryHandle | null = null;
@@ -81,10 +91,10 @@ export class Exporter {
     }
 
     const base = this.baseName();
-    for (let f = 0; f < totalFrames; f++) {
-      const canvas = this.renderFrameAt(f / fps);
+    for (let i = 0; i < totalFrames; i++) {
+      const canvas = this.renderFrameAt((start + i) / fps);
       const blob = await canvasToBlob(canvas, "image/png");
-      const name = `${base}_${pad(f)}.png`;
+      const name = `${base}_${pad(i)}.png`;
       if (dir) {
         const handle = await dir.getFileHandle(name, { create: true });
         const w = await handle.createWritable();
@@ -93,7 +103,7 @@ export class Exporter {
       } else {
         triggerDownload(blob, name);
       }
-      opts?.onProgress?.({ frame: f + 1, totalFrames, fraction: (f + 1) / totalFrames });
+      opts?.onProgress?.({ frame: i + 1, totalFrames, fraction: (i + 1) / totalFrames });
       await raf();
     }
   }
@@ -126,7 +136,12 @@ export class Exporter {
    */
   private async recordRealtime(mime: string, onProgress?: (p: ExportProgress) => void): Promise<Blob> {
     const canvas = this.canvas;
-    const { fps, duration, rate } = this.engine.transport;
+    const c = this.engine.comp;
+    const fps = c.fps;
+    const inT = c.workArea.in;
+    const outT = Math.min(c.workArea.out, c.duration);
+    const span = Math.max(0.1, outT - inT);
+    const rate = this.engine.transport.rate;
     const stream = (canvas as any).captureStream(fps) as MediaStream;
     const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 12_000_000 });
     const chunks: BlobPart[] = [];
@@ -137,12 +152,12 @@ export class Exporter {
       recorder.onstop = () => resolve(new Blob(chunks, { type: mime }));
     });
 
-    this.engine.seek(0);
+    this.engine.seek(inT);
     this.engine.play();
     recorder.start(100);
 
-    const totalFrames = Math.round(duration * fps);
-    const ms = (duration / (Math.abs(rate) || 1)) * 1000;
+    const totalFrames = Math.round(span * fps);
+    const ms = (span / (Math.abs(rate) || 1)) * 1000;
     const startWall = performance.now();
     await new Promise<void>((resolve) => {
       const tick = () => {

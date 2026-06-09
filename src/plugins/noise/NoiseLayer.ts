@@ -56,6 +56,17 @@ function perlin3(p: Uint8Array, x: number, y: number, z: number): number {
   );
 }
 
+function fbm(perm: Uint8Array, x: number, y: number, z: number, oct: number, gain: number, lac: number): number {
+  let amp = 0.5, freq = 1, sum = 0, norm = 0;
+  for (let o = 0; o < oct; o++) {
+    sum += amp * perlin3(perm, x * freq, y * freq, z * freq);
+    norm += amp;
+    amp *= gain;
+    freq *= lac;
+  }
+  return sum / (norm || 1);
+}
+
 /**
  * Procedural fBm noise field. Heavy per-pixel work is kept cheap by rendering into a
  * downsampled buffer (the `detail` control) and letting the GPU upscale it — the usual
@@ -144,6 +155,23 @@ class NoiseRenderer implements LayerRenderer {
     this.ctx.imageSmoothingEnabled = pr.smooth !== false;
     this.ctx.drawImage(this.buf, 0, 0, rw, rh, 0, 0, w, h);
     return this.canvas;
+  }
+
+  /** Expose this noise as a field sampler so the layer above (Landscape, Glyph Scatter,
+   * …) can feed off it instead of duplicating noise config. (u, v) are 0..1-ish across
+   * the field; w is a depth/time the consumer supplies. Returns ~[-1, 1]. */
+  fieldSource(props: Record<string, unknown>): (u: number, v: number, w: number) => number {
+    const seed = Math.round(num(props.seed, 1));
+    const perm = seed === this.permSeed ? this.perm : buildPerm(seed);
+    const scale = num(props.scale, 3);
+    const oct = Math.max(1, Math.min(8, Math.round(num(props.octaves, 3))));
+    const gain = num(props.persistence, 0.5);
+    const lac = num(props.lacunarity, 2);
+    return (u, v, w) => fbm(perm, u * scale, v * scale, w, oct, gain, lac);
+  }
+
+  sourceKey(props: Record<string, unknown>): string {
+    return [props.seed, props.scale, props.octaves, props.persistence, props.lacunarity].join("|");
   }
 
   dispose(): void {

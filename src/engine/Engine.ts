@@ -102,8 +102,29 @@ export class Engine {
 
   private syncTransport(): void {
     const c = this.comp;
-    this.transport.configure({ duration: c.duration, fps: c.fps });
+    this.transport.configure({ duration: c.duration, fps: c.fps, workIn: c.workArea.in, workOut: c.workArea.out });
     this.input.setCompSize(c.width, c.height);
+  }
+
+  /** Set the work area (loop region + default export range), in seconds. */
+  setWorkArea(inT: number, outT: number): void {
+    const comp = this.comp;
+    const prev = { ...comp.workArea };
+    const din = Math.max(0, Math.min(inT, comp.duration - 1 / comp.fps));
+    const dout = Math.max(din + 1 / comp.fps, Math.min(outT, comp.duration));
+    this.history.execute({
+      label: "Work area",
+      coalesceKey: `workarea:${comp.id}`,
+      do: () => {
+        comp.workArea = { in: din, out: dout };
+        this.syncTransport();
+      },
+      undo: () => {
+        comp.workArea = { ...prev };
+        this.syncTransport();
+      },
+    });
+    this.bus.emit("composition:changed", { id: comp.id });
   }
 
   setActiveComposition(id: string): void {
@@ -294,27 +315,35 @@ export class Engine {
     });
   }
 
-  /** Wrap the selection in a new null/group layer (grouping). */
-  groupLayers(ids: string[]): Layer | null {
+  /** Wrap the selection in a new container (group or auto-layout). */
+  private wrapInContainer(ids: string[], type: string, label: string, name: string): Layer | null {
     const comp = this.comp;
-    if (!ids.length || !this.registry.has("group")) return null;
+    if (!ids.length || !this.registry.has(type)) return null;
     const topIndex = Math.min(...ids.map((id) => comp.indexOf(id)).filter((i) => i >= 0));
-    const group = this.buildLayer("group", { name: "Group" });
+    const container = this.buildLayer(type, { name });
     const targets = ids.map((id) => comp.find(id)).filter((l): l is Layer => !!l);
     const prevParents = targets.map((l) => l.parentId);
     this.history.execute({
-      label: "Group layers",
+      label,
       do: () => {
-        comp.addLayer(group, topIndex);
-        targets.forEach((l) => (l.parentId = group.id));
+        comp.addLayer(container, topIndex);
+        targets.forEach((l) => (l.parentId = container.id));
       },
       undo: () => {
         targets.forEach((l, i) => (l.parentId = prevParents[i]));
-        comp.removeLayer(group.id);
+        comp.removeLayer(container.id);
       },
     });
-    this.select([group.id]);
-    return group;
+    this.select([container.id]);
+    return container;
+  }
+
+  groupLayers(ids: string[]): Layer | null {
+    return this.wrapInContainer(ids, "group", "Group layers", "Group");
+  }
+
+  layoutLayers(ids: string[]): Layer | null {
+    return this.wrapInContainer(ids, "layout", "Auto-layout selection", "Auto-Layout");
   }
 
   setLayerField<K extends "name" | "enabled" | "locked" | "solo" | "blendMode" | "inPoint" | "outPoint">(
@@ -336,6 +365,20 @@ export class Engine {
 
   setBlendMode(id: string, mode: BlendMode): void {
     this.setLayerField(id, "blendMode", mode);
+  }
+
+  /** Replace a layer's non-animatable `data` blob (used by custom inspectors, e.g. the
+   * glyph painter). Undoable; coalesce a continuous gesture with `coalesceKey`. */
+  setLayerData(id: string, nextData: Record<string, unknown>, label = "Edit layer data", coalesceKey?: string): void {
+    const layer = this.comp.find(id);
+    if (!layer) return;
+    const prev = layer.data;
+    this.history.execute({
+      label,
+      coalesceKey,
+      do: () => (layer.data = nextData),
+      undo: () => (layer.data = prev),
+    });
   }
 
   // ───────────────────────── property mutations ─────────────────────────

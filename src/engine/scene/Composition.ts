@@ -46,6 +46,8 @@ export class Composition {
   background: RGBA | null;
   guides: GuideSettings;
   layers: Layer[] = [];
+  /** Work area (seconds): the loop region and the default export range. */
+  workArea: { in: number; out: number };
 
   constructor(init: CompositionInit) {
     this.id = init.id ?? uid("comp");
@@ -56,6 +58,7 @@ export class Composition {
     this.duration = init.duration ?? 10;
     this.background = init.background ?? [10, 10, 10, 255];
     this.guides = { ...DEFAULT_GUIDES, ...init.guides };
+    this.workArea = { in: 0, out: this.duration };
   }
 
   get center(): [number, number] {
@@ -129,6 +132,7 @@ export class Composition {
       duration: this.duration,
       background: this.background,
       guides: this.guides,
+      workArea: this.workArea,
       layers: this.layers.map((l) => l.toJSON()),
     };
   }
@@ -144,6 +148,7 @@ export class Composition {
       background: raw.background,
       guides: raw.guides,
     });
+    if (raw.workArea && typeof raw.workArea.in === "number") comp.workArea = { in: raw.workArea.in, out: raw.workArea.out };
     comp.layers = (raw.layers ?? []).map((l: any) => Layer.fromJSON(l));
     return comp;
   }

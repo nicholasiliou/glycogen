@@ -16,6 +16,10 @@ export class Transport {
   duration = 10;
   fps = 30;
 
+  /** Loop region (seconds). Looping wraps within [workIn, workOut]. */
+  workIn = 0;
+  workOut = 10;
+
   private lastWall: number | null = null;
   private lastTime = 0;
 
@@ -27,9 +31,11 @@ export class Transport {
     return Math.max(1, Math.round(this.duration * this.fps));
   }
 
-  configure(opts: { duration?: number; fps?: number }): void {
+  configure(opts: { duration?: number; fps?: number; workIn?: number; workOut?: number }): void {
     if (opts.duration !== undefined) this.duration = Math.max(0.1, opts.duration);
     if (opts.fps !== undefined) this.fps = Math.max(1, opts.fps);
+    if (opts.workIn !== undefined) this.workIn = clamp(opts.workIn, 0, this.duration);
+    if (opts.workOut !== undefined) this.workOut = clamp(opts.workOut, 0, this.duration);
     this.time = clamp(this.time, 0, this.duration);
   }
 
@@ -77,8 +83,11 @@ export class Transport {
     let next = this.time + dt;
 
     if (this.loop) {
-      const d = this.duration;
-      next = ((next % d) + d) % d; // wrap, handles reverse too
+      // Loop within the work area (falls back to full duration if degenerate).
+      const lo = this.workIn;
+      const hi = this.workOut > this.workIn + 1e-3 ? this.workOut : this.duration;
+      const span = hi - lo || this.duration;
+      next = lo + ((((next - lo) % span) + span) % span); // wrap, handles reverse too
     } else {
       if (next >= this.duration) {
         next = this.duration;

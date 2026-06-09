@@ -135,15 +135,38 @@ That same call is all the built‑ins do — there is no privileged path.
 
 - Unified composition canvas; multiple compositions; user/preset/custom resolutions (1080p,
   1440p, 4K, square, portrait, social formats); FPS & duration; background; safe‑area guides.
-- Plugin registry; built‑in `plant` (seed‑driven), `harmonograph`, `boids`, `noise`, `slicer`,
-  `solid`, `text`, `group/null` layer types.
-- `boids` flocking simulation engineered for performance (spatial hash grid → O(n), typed‑array
-  state, single batched `fill()`); deterministic & seekable. ~4000 boids in ≈3.5 ms/frame.
-- `noise` — animated fBm Perlin field (3D, so time = evolution), rendered into a downsampled
-  buffer for speed, gradient‑mapped with optional banding.
-- `slicer` — slices an implicit 3D object (sphere / torus / gyroid) into rotating **rings**
-  (marching‑squares contours) or **planes** (filled cross‑sections) via a per‑slice affine
-  projection. All generators are deterministic & seekable.
+- Plugin registry. 21 built‑ins across containers (`group`, `layout`, `null`), content
+  (`solid`, `text`, `glyph`), generators (`plant`, `harmonograph`, `noise`, `cloud`, `wire`,
+  `glyphScatter`), 3D (`shape`, `model`, `landscape`, `slicer`), simulation (`boids`, `life`),
+  and effects (`fx.fisheye`, `fx.ascii`, `fx.colorLookup`).
+- **Below‑source dataflow.** A layer can expose a `fieldSource` (noise) or `meshSource` (3D
+  geometry); the layer directly above receives it as `frame.below`. So `slicer` slices the
+  `shape`/`model`/`landscape` beneath it, and `landscape`/`glyphScatter` feed off the `noise`
+  beneath them — no duplicated config. A little node‑graph inside the layer stack.
+- **Effect layers** (`kind: "effect"`) post‑process the backdrop beneath them via a WebGL
+  fragment shader — `fx.fisheye` (lens distortion), `fx.ascii` (luminance→glyph), and
+  `fx.colorLookup` (snap every colour to the nearest of an EGA‑by‑default palette).
+- **Containers.** `group` isolates compositing (blend modes/effects scoped to its children).
+  `layout` (auto‑layout) ALSO arranges its children — grid / row / column / fibonacci /
+  sundial / spiral, all animatable. `null` is transform/control only. Multiple layers can be
+  wrapped into either; the Layers panel shows containers as collapsible sections.
+- **3D pipeline.** `shape` (sphere/torus/box/cylinder/cone/torus‑knot/supershape), `model`
+  (uploaded `.obj`/`.stl`) and `landscape` (noise heightfield) all render as wireframe/filled
+  3D and expose a mesh; `slicer` slices whichever sits directly below it into rings
+  (contour‑stitched) or planes, with X/Y/Z tilt + spin.
+- **Work area.** Draggable in/out handles on the timeline define the loop region and the
+  export range (PNG sequence / video render only the work area).
+- `boids` flocking — spatial hash grid → O(n), typed‑array state, single batched `fill()`;
+  ~4000 boids in ≈3.5 ms/frame.
+- `life` — Conway's Game of Life (typed‑array grid, one generation/frame × speed).
+- `noise` — animated 3D fBm Perlin (downsampled buffer), gradient‑mapped with optional banding.
+- `cloud` — stylised light‑marched volumetric clouds; `landscape` — procedural terrain from a
+  noise field (slice geometry cached so spinning only re‑projects).
+- `wire` — a 3D quadratic‑spline arrow (A → twist → B) with animatable completion + arrowhead.
+- `glyph` — paint pixel glyphs in the inspector; persistent preset library (localStorage); pick
+  any preset or random. `glyphScatter` places library glyphs on a grid driven by a noise field.
+- All generators/sims are deterministic & seekable. Layer types can ship a **custom inspector**
+  (the glyph painter and the slicer's model uploader use this UI extension point).
 - Layer hierarchy & parenting, grouping, visibility/solo/lock, blend modes, in/out points.
 - Selection + direct viewport **move / scale / rotate** handles + drag‑reorder in the layers panel.
 - Inspector: per‑property controls (scrubby numbers, sliders, color, point, switch, select),

@@ -1,5 +1,6 @@
 import type { LayerTypeDefinition } from "../../engine/plugins/Registry";
 import type { LayerRenderer, RenderFrame } from "../../engine/render/types";
+import { rotateVec } from "../_shared/mesh3d";
 
 function num(v: unknown, f: number): number {
   return typeof v === "number" ? v : f;
@@ -11,42 +12,93 @@ function lerpC(a: number[], b: number[], t: number, alphaMul = 1): string {
   const r = Math.round(a[0] + (b[0] - a[0]) * t);
   const g = Math.round(a[1] + (b[1] - a[1]) * t);
   const bl = Math.round(a[2] + (b[2] - a[2]) * t);
-  const al = (a[3] + (b[3] - a[3]) * t) / 255 * alphaMul;
+  const al = ((a[3] + (b[3] - a[3]) * t) / 255) * alphaMul;
   return `rgba(${r},${g},${bl},${al})`;
 }
 
-type Shape = "sphere" | "torus" | "gyroid";
+interface SliceGeom {
+  y: number;
+  loops: number[][]; // each loop: [x0,z0,x1,z1, ...] in object space (x=a, z=b)
+}
 
-/** Implicit field; inside is field < 0. Domain is the unit cube [-1,1]³. */
-function field(shape: Shape, x: number, y: number, z: number, freq: number): number {
-  if (shape === "sphere") return x * x + y * y + z * z - 0.81;
-  if (shape === "torus") {
-    const q = Math.sqrt(x * x + z * z) - 0.55;
-    return q * q + y * y - 0.0484; // tube radius 0.22
+/** Intersect every triangle with the plane y=yp; return contour segments in (x,z). */
+function sliceMesh(tris: number[], yp: number): number[] {
+  const segs: number[] = [];
+  for (let i = 0; i < tris.length; i += 9) {
+    const xs = [tris[i], tris[i + 3], tris[i + 6]];
+    const ys = [tris[i + 1], tris[i + 4], tris[i + 7]];
+    const zs = [tris[i + 2], tris[i + 5], tris[i + 8]];
+    const pts: number[] = [];
+    for (let e = 0; e < 3; e++) {
+      const a = e, b = (e + 1) % 3;
+      const ya = ys[a], yb = ys[b];
+      if ((ya <= yp && yb > yp) || (yb <= yp && ya > yp)) {
+        const tt = (yp - ya) / (yb - ya);
+        pts.push(xs[a] + (xs[b] - xs[a]) * tt, zs[a] + (zs[b] - zs[a]) * tt);
+      }
+    }
+    if (pts.length >= 4) segs.push(pts[0], pts[1], pts[2], pts[3]);
   }
-  // gyroid (a triply-periodic minimal surface) clipped to the unit ball
-  if (x * x + y * y + z * z > 0.9) return 1;
-  const k = Math.PI * freq;
-  return Math.sin(k * x) * Math.cos(k * y) + Math.sin(k * y) * Math.cos(k * z) + Math.sin(k * z) * Math.cos(k * x);
+  return segs;
+}
+
+/** Stitch unordered segments into polyline loops so rings are continuous and planes fillable. */
+function linkContours(segs: number[], eps = 2e-3): number[][] {
+  const n = segs.length / 4;
+  if (!n) return [];
+  const key = (x: number, y: number) => `${Math.round(x / eps)},${Math.round(y / eps)}`;
+  const edges: number[][] = [];
+  for (let i = 0; i < n; i++) edges.push([segs[i * 4], segs[i * 4 + 1], segs[i * 4 + 2], segs[i * 4 + 3]]);
+  const used = new Array(n).fill(false);
+  const pmap = new Map<string, number[]>();
+  const addP = (k: string, i: number) => {
+    let a = pmap.get(k);
+    if (!a) { a = []; pmap.set(k, a); }
+    a.push(i);
+  };
+  edges.forEach((e, i) => { addP(key(e[0], e[1]), i); addP(key(e[2], e[3]), i); });
+
+  const loops: number[][] = [];
+  for (let i = 0; i < n; i++) {
+    if (used[i]) continue;
+    used[i] = true;
+    const loop = [edges[i][0], edges[i][1], edges[i][2], edges[i][3]];
+    let cx = edges[i][2], cy = edges[i][3];
+    const startK = key(edges[i][0], edges[i][1]);
+    for (let guard = 0; guard < n; guard++) {
+      const cand = pmap.get(key(cx, cy));
+      if (!cand) break;
+      let next = -1, nx = 0, ny = 0;
+      for (const j of cand) {
+        if (used[j]) continue;
+        const e = edges[j];
+        if (key(e[0], e[1]) === key(cx, cy)) { next = j; nx = e[2]; ny = e[3]; break; }
+        if (key(e[2], e[3]) === key(cx, cy)) { next = j; nx = e[0]; ny = e[1]; break; }
+      }
+      if (next < 0) break;
+      used[next] = true;
+      loop.push(nx, ny);
+      cx = nx; cy = ny;
+      if (key(cx, cy) === startK) break;
+    }
+    loops.push(loop);
+  }
+  return loops;
 }
 
 /**
- * Slices an implicit 3D object into a stack of horizontal cross-sections and projects
- * each one with its own affine transform (a tilt + a time-driven spin), so it reads as
- * a rotating 3D form built from rings or planes.
- *   • rings  → marching-squares contour of each slice, stroked.
- *   • planes → filled cross-section (inside cells).
- * Each slice is drawn in its own local 2D space via ctx.setTransform, which is what
- * makes the 3D placement cheap (no matrix maths per point). Spin comes from the
- * composition clock, so it's deterministic and seekable.
+ * Slices the 3D object on the layer DIRECTLY BELOW it (a Shape, Model or Landscape — any
+ * `meshSource`) into a stack of cross-sections, drawn as rotating rings or filled planes.
+ * No shapes are built in here anymore — the slicer only slices whatever sits beneath it.
+ * Slice geometry is cached (keyed by the source) so spin only re-projects.
  */
 class SlicerRenderer implements LayerRenderer {
   private canvas = document.createElement("canvas");
   private ctx = this.canvas.getContext("2d")!;
-  private grid = new Float32Array(0);
-  private gridN = -1;
+  private geom: SliceGeom[] = [];
+  private geomKey = "";
+  private projKey = "";
   private lastFrame = -1;
-  private lastKey = "";
   private forceInitial = true;
 
   resize(w: number, h: number): void {
@@ -55,130 +107,88 @@ class SlicerRenderer implements LayerRenderer {
   }
 
   render(frame: RenderFrame): HTMLCanvasElement {
-    if (this.canvas.width !== frame.width || this.canvas.height !== frame.height) {
-      this.resize(frame.width, frame.height);
-    }
+    if (this.canvas.width !== frame.width || this.canvas.height !== frame.height) this.resize(frame.width, frame.height);
     const pr = frame.props;
-    const key = JSON.stringify([
-      pr.shape, pr.mode, pr.slices, pr.detail, pr.radius, pr.gyroidFreq,
-      pr.tilt, pr.color, pr.colorB, pr.lineWidth, pr.depthShade,
-    ]);
-    const drew = this.forceInitial || frame.frame !== this.lastFrame || key !== this.lastKey;
+    const slices = Math.max(2, Math.min(200, Math.round(num(pr.slices, 28))));
+    const below = frame.below;
+    const hasMesh = !!below?.mesh;
+    const geomKey = [hasMesh ? below!.key ?? "mesh" : "none", slices].join("|");
+    if (geomKey !== this.geomKey) {
+      const mesh = below?.mesh?.();
+      this.buildGeom(mesh?.tris, slices);
+      this.geomKey = geomKey;
+    }
+
+    const projKey = JSON.stringify([pr.mode, pr.radius, pr.tiltX, pr.tiltY, pr.tiltZ, pr.rotation, pr.color, pr.colorB, pr.lineWidth, pr.depthShade]);
+    const drew = this.forceInitial || frame.frame !== this.lastFrame || projKey !== this.projKey || geomKey !== this.geomKey;
+    this.projKey = projKey;
     this.lastFrame = frame.frame;
-    this.lastKey = key;
     this.forceInitial = false;
-    if (drew) this.draw(frame);
+    if (drew) this.draw(frame, slices, hasMesh);
     return this.canvas;
   }
 
-  private draw(frame: RenderFrame): void {
+  private buildGeom(tris: number[] | undefined, slices: number): void {
+    this.geom = [];
+    if (!tris || !tris.length) return;
+    for (let s = 0; s < slices; s++) {
+      const y = -1 + (2 * s) / (slices - 1);
+      this.geom.push({ y, loops: linkContours(sliceMesh(tris, y)) });
+    }
+  }
+
+  private draw(frame: RenderFrame, slices: number, hasMesh: boolean): void {
     const pr = frame.props;
-    const w = this.canvas.width;
-    const h = this.canvas.height;
     const ctx = this.ctx;
+    const w = this.canvas.width, h = this.canvas.height;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    const shape = (pr.shape === "torus" || pr.shape === "gyroid" ? pr.shape : "sphere") as Shape;
+    if (!hasMesh || !this.geom.length) {
+      ctx.fillStyle = "rgba(140,140,140,0.5)";
+      ctx.font = "500 24px ui-sans-serif, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("Place a 3D layer (Shape / Model / Landscape) directly below to slice it", w / 2, h / 2);
+      return;
+    }
+
     const mode = pr.mode === "planes" ? "planes" : "rings";
-    const slices = Math.max(2, Math.min(120, Math.round(num(pr.slices, 22))));
-    const n = Math.max(8, Math.min(96, Math.round(num(pr.detail, 36))));
-    const radius = num(pr.radius, 0.7);
-    const freq = num(pr.gyroidFreq, 2.5);
-    const tilt = (num(pr.tilt, 62) * Math.PI) / 180;
-    const spinDeg = frame.time * num(pr.spin, 30) + num(pr.rotation, 0);
-    const theta = (spinDeg * Math.PI) / 180;
+    const radius = num(pr.radius, 0.8);
+    const ax = (num(pr.tiltX, 62) * Math.PI) / 180;
+    const ay = ((num(pr.tiltY, 0) + num(pr.rotation, 0) + frame.time * num(pr.spin, 30)) * Math.PI) / 180;
+    const az = (num(pr.tiltZ, 0) * Math.PI) / 180;
     const lineW = num(pr.lineWidth, 1.5);
     const depthShade = pr.depthShade !== false;
-
     const colA = arr(pr.color, [192, 252, 4, 255]);
     const colB = arr(pr.colorB, [54, 1, 251, 255]);
 
+    const ex = rotateVec(1, 0, 0, ax, ay, az);
+    const ey = rotateVec(0, 1, 0, ax, ay, az);
+    const ez = rotateVec(0, 0, 1, ax, ay, az);
     const scale = radius * Math.min(w, h) * 0.5;
-    const cx = w / 2;
-    const cy = h / 2;
+    const cx = w / 2, cy = h / 2;
 
-    // Rotation basis images (R = rotX(tilt) * rotY(theta)); we only need .X/.Y/.Z parts.
-    const ct = Math.cos(theta), st = Math.sin(theta);
-    const cf = Math.cos(tilt), sf = Math.sin(tilt);
-    const exX = ct, exY = sf * st;
-    const ezX = st, ezY = -sf * ct;
-    const eyX = 0, eyY = cf, eyZ = sf;
+    const order = this.geom.map((_, i) => i).sort((a, b) => this.geom[a].y * ey[2] - this.geom[b].y * ey[2]);
 
-    if (this.grid.length < (n + 1) * (n + 1)) this.grid = new Float32Array((n + 1) * (n + 1));
-    const F = this.grid;
-
-    // Depth-sorted slice order (painter's algorithm).
-    const order: number[] = [];
-    for (let s = 0; s < slices; s++) order.push(s);
-    const ys = (s: number) => -1 + (2 * s) / (slices - 1);
-    order.sort((a, b) => ys(a) * eyZ - ys(b) * eyZ);
-
-    const step = 2 / n;
-
-    for (const s of order) {
-      const y = ys(s);
-      // sample the field grid for this slice
-      for (let j = 0; j <= n; j++) {
-        const b = -1 + j * step;
-        const rowOff = j * (n + 1);
-        for (let i = 0; i <= n; i++) {
-          const a = -1 + i * step;
-          F[rowOff + i] = field(shape, a, y, b, freq);
-        }
-      }
-
-      // affine: local (a,b) → screen
-      const m11 = exX * scale;
-      const m21 = exY * scale;
-      const m12 = ezX * scale;
-      const m22 = ezY * scale;
-      const dx = cx + y * eyX * scale;
-      const dy = cy + y * eyY * scale;
-      ctx.setTransform(m11, m21, m12, m22, dx, dy);
-
-      const t = s / (slices - 1);
-      const shade = depthShade ? 0.45 + 0.55 * (0.5 + 0.5 * (y * eyZ)) : 1;
+    for (const idx of order) {
+      const g = this.geom[idx];
+      ctx.setTransform(ex[0] * scale, ex[1] * scale, ez[0] * scale, ez[1] * scale, cx + ey[0] * g.y * scale, cy + ey[1] * g.y * scale);
+      const t = slices > 1 ? idx / (slices - 1) : 0;
+      const shade = depthShade ? 0.45 + 0.55 * (0.5 + 0.5 * g.y * ey[2]) : 1;
       const style = lerpC(colA, colB, t, Math.max(0, Math.min(1, shade)));
 
+      ctx.beginPath();
+      for (const loop of g.loops) {
+        ctx.moveTo(loop[0], loop[1]);
+        for (let k = 2; k < loop.length; k += 2) ctx.lineTo(loop[k], loop[k + 1]);
+      }
       if (mode === "planes") {
         ctx.fillStyle = style;
-        ctx.beginPath();
-        for (let j = 0; j < n; j++) {
-          const b = -1 + j * step;
-          for (let i = 0; i < n; i++) {
-            const a = -1 + i * step;
-            const o = j * (n + 1) + i;
-            const avg = (F[o] + F[o + 1] + F[o + n + 1] + F[o + n + 2]) * 0.25;
-            if (avg < 0) ctx.rect(a, b, step, step);
-          }
-        }
-        ctx.fill();
+        ctx.fill("evenodd");
       } else {
         ctx.strokeStyle = style;
         ctx.lineWidth = lineW / scale;
         ctx.lineJoin = "round";
-        ctx.beginPath();
-        for (let j = 0; j < n; j++) {
-          const b = -1 + j * step;
-          for (let i = 0; i < n; i++) {
-            const a = -1 + i * step;
-            const o = j * (n + 1) + i;
-            const tl = F[o], tr = F[o + 1], br = F[o + n + 2], bl = F[o + n + 1];
-            // crossing points on the 4 edges
-            const pts: number[] = [];
-            if (tl < 0 !== tr < 0) pts.push(a + step * (tl / (tl - tr)), b);
-            if (tr < 0 !== br < 0) pts.push(a + step, b + step * (tr / (tr - br)));
-            if (bl < 0 !== br < 0) pts.push(a + step * (bl / (bl - br)), b + step);
-            if (tl < 0 !== bl < 0) pts.push(a, b + step * (tl / (tl - bl)));
-            if (pts.length === 4) {
-              ctx.moveTo(pts[0], pts[1]); ctx.lineTo(pts[2], pts[3]);
-              ctx.moveTo(pts[4], pts[5]); ctx.lineTo(pts[6], pts[7]);
-            } else if (pts.length === 2) {
-              ctx.moveTo(pts[0], pts[1]); ctx.lineTo(pts[2], pts[3]);
-            }
-          }
-        }
         ctx.stroke();
       }
     }
@@ -187,27 +197,26 @@ class SlicerRenderer implements LayerRenderer {
 
   dispose(): void {
     this.canvas.width = this.canvas.height = 0;
-    this.grid = new Float32Array(0);
+    this.geom = [];
   }
 }
 
 export const slicerLayerType: LayerTypeDefinition = {
   type: "slicer",
   label: "3D Slicer",
-  category: "Generators",
+  category: "3D",
   icon: "Layers",
-  description: "Slices an implicit 3D object (sphere / torus / gyroid) into rotating rings or planes.",
+  description: "Slices the 3D object directly below it (Shape / Model / Landscape) into rings or planes.",
   defaultSize: (comp) => [comp.width, comp.height],
   schema: [
-    { key: "shape", name: "Object", type: "select", default: "torus", group: "Object", meta: { options: [ { label: "Sphere", value: "sphere" }, { label: "Torus", value: "torus" }, { label: "Gyroid", value: "gyroid" } ] } },
-    { key: "mode", name: "Mode", type: "select", default: "rings", group: "Object", meta: { options: [ { label: "Rings", value: "rings" }, { label: "Planes", value: "planes" } ] } },
-    { key: "slices", name: "Slices", type: "number", default: 22, group: "Object", meta: { min: 2, max: 120, step: 1 } },
-    { key: "detail", name: "Detail (perf)", type: "number", default: 36, group: "Object", meta: { min: 8, max: 96, step: 1 } },
-    { key: "radius", name: "Size", type: "number", default: 0.7, group: "Object", meta: { min: 0.1, max: 1.2, step: 0.01 } },
-    { key: "gyroidFreq", name: "Gyroid Freq", type: "number", default: 2.5, group: "Object", meta: { min: 0.5, max: 8, step: 0.1 } },
-    { key: "tilt", name: "Tilt X", type: "angle", default: 62, group: "View", meta: { min: 0, max: 90, step: 1, unit: "°" } },
+    { key: "mode", name: "Mode", type: "select", default: "rings", group: "Slice", meta: { options: [ { label: "Rings", value: "rings" }, { label: "Planes", value: "planes" } ] } },
+    { key: "slices", name: "Slices", type: "number", default: 28, group: "Slice", meta: { min: 2, max: 200, step: 1 } },
+    { key: "radius", name: "Size", type: "number", default: 0.8, group: "Slice", meta: { min: 0.1, max: 1.6, step: 0.01 } },
+    { key: "tiltX", name: "Tilt X", type: "angle", default: 62, group: "View", meta: { step: 1, unit: "°" } },
+    { key: "tiltY", name: "Tilt Y", type: "angle", default: 0, group: "View", meta: { step: 1, unit: "°" } },
+    { key: "tiltZ", name: "Tilt Z", type: "angle", default: 0, group: "View", meta: { step: 1, unit: "°" } },
     { key: "spin", name: "Spin Speed", type: "number", default: 30, group: "View", meta: { min: -360, max: 360, step: 1 } },
-    { key: "rotation", name: "Rotation Offset", type: "angle", default: 0, group: "View", meta: { step: 1, unit: "°" } },
+    { key: "rotation", name: "Y Offset", type: "angle", default: 0, group: "View", meta: { step: 1, unit: "°" } },
     { key: "color", name: "Color (top)", type: "color", default: [192, 252, 4, 255], group: "Look" },
     { key: "colorB", name: "Color (bottom)", type: "color", default: [54, 1, 251, 255], group: "Look" },
     { key: "lineWidth", name: "Line Width", type: "number", default: 1.5, group: "Look", meta: { min: 0.25, max: 12, step: 0.25 } },

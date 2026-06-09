@@ -12,6 +12,7 @@ export type PropType =
   | "angle" // degrees
   | "percent" // 0..100
   | "point" // [x, y]
+  | "point3" // [x, y, z]
   | "color" // [r, g, b, a]
   | "boolean"
   | "string"

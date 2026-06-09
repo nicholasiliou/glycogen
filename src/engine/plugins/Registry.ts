@@ -26,6 +26,26 @@ export interface LayerTypeDefinition {
   type: string;
   label: string;
   category?: string;
+  /**
+   * How the compositor treats this type:
+   *  - "content" (default): draws its own surface.
+   *  - "effect": post-processes the backdrop (everything composited below it within
+   *    its container). Its renderer receives `frame.backdrop` and returns a full-frame result.
+   *  - "group": a container; its child layers are composited into an isolated buffer
+   *    first, so blend modes/effects between children stay scoped to the group.
+   *  - "layout": a container that ALSO arranges its children's positions via `layout`.
+   */
+  kind?: "content" | "effect" | "group" | "layout";
+  /**
+   * For `kind: "layout"` types: given a child's index/count and the layout's evaluated
+   * props, return the child's slot (centre-relative px + optional rotation/scale). The
+   * compositor positions each child accordingly (ignoring the child's own position).
+   */
+  layout?: (
+    index: number,
+    count: number,
+    props: Record<string, PropertyValue>,
+  ) => { x: number; y: number; rotation?: number; scale?: number };
   /** lucide-react icon name. */
   icon?: string;
   description?: string;

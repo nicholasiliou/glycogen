@@ -86,7 +86,7 @@ function Ruler({
   timeToX,
   onScrub,
 }: {
-  comp: { duration: number; fps: number };
+  comp: { duration: number; fps: number; workArea: { in: number; out: number } };
   width: number;
   timeToX: (t: number) => number;
   onScrub: (clientX: number, rect: DOMRect) => void;
@@ -103,6 +103,7 @@ function Ruler({
 
   return (
     <div
+      data-ruler
       className="relative flex-1 cursor-ew-resize select-none"
       onPointerDown={handle}
       onPointerMove={(e) => {
@@ -114,8 +115,76 @@ function Ruler({
           <span className="ml-1 text-[9px] text-ink-dim">{t}s</span>
         </div>
       ))}
+      <WorkArea comp={comp} width={width} timeToX={timeToX} />
       <RulerHead timeToX={timeToX} />
     </div>
+  );
+}
+
+/** Draggable work-area in/out handles — define the loop region + export range. */
+function WorkArea({
+  comp,
+  width,
+  timeToX,
+}: {
+  comp: { duration: number; workArea: { in: number; out: number } };
+  width: number;
+  timeToX: (t: number) => number;
+}) {
+  const engine = useEngine();
+  const wa = comp.workArea;
+  const xToTime = (x: number) => Math.max(0, Math.min(comp.duration, (x / Math.max(1, width)) * comp.duration));
+  const inX = timeToX(Math.min(wa.in, comp.duration));
+  const outX = timeToX(Math.min(wa.out, comp.duration));
+
+  const startDrag = (mode: "in" | "out" | "move") => (e: React.PointerEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const ruler = (e.currentTarget as HTMLElement).closest("[data-ruler]") as HTMLElement;
+    const rect = ruler.getBoundingClientRect();
+    const start = { x: e.clientX, in: wa.in, out: wa.out };
+    const move = (ev: PointerEvent) => {
+      const t = xToTime(ev.clientX - rect.left);
+      const cur = engine.comp.workArea;
+      if (mode === "in") engine.setWorkArea(t, cur.out);
+      else if (mode === "out") engine.setWorkArea(cur.in, t);
+      else {
+        const dt = ((ev.clientX - start.x) / Math.max(1, width)) * comp.duration;
+        const span = start.out - start.in;
+        const ni = Math.max(0, Math.min(start.in + dt, comp.duration - span));
+        engine.setWorkArea(ni, ni + span);
+      }
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  return (
+    <>
+      <div className="pointer-events-none absolute top-0 bottom-0 bg-accent/10" style={{ left: inX, width: Math.max(0, outX - inX) }} />
+      <div
+        className="absolute top-0 h-2.5 cursor-grab bg-accent/30"
+        style={{ left: inX, width: Math.max(0, outX - inX) }}
+        onPointerDown={startDrag("move")}
+        title="Move work area"
+      />
+      <div
+        className="absolute top-0 bottom-0 w-1.5 cursor-ew-resize bg-accent/70"
+        style={{ left: inX - 1 }}
+        onPointerDown={startDrag("in")}
+        title="Work area in"
+      />
+      <div
+        className="absolute top-0 bottom-0 w-1.5 cursor-ew-resize bg-accent/70"
+        style={{ left: outX - 1 }}
+        onPointerDown={startDrag("out")}
+        title="Work area out"
+      />
+    </>
   );
 }
 
