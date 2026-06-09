@@ -2,3 +2,6 @@ node_modules
 dist
 .parcel-cache
 libraries
+
+# Generated runtime bundle for interactive-web export (run `npm run build:runtime`)
+public/marathon-runtime.js

@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+/*
+ * Marathon editor — intentionally minimal / "unstyled" theme.
+ * A small set of neutral CSS variables so Shadcn-style primitives have
+ * semantic tokens to hang off, without imposing a heavy design system.
+ */
+@theme {
+  --color-panel: #141414;
+  --color-panel-raised: #1c1c1c;
+  --color-edge: #2a2a2a;
+  --color-ink: #e6e6e6;
+  --color-ink-dim: #8a8a8a;
+  --color-accent: #c0fc04; /* echoes the sketch's EGA palette */
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #0a0a0a;
+  color: var(--color-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Thin, unobtrusive scrollbars befitting a dense editor UI. */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
+  background-clip: content-box;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
