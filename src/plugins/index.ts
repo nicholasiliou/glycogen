@@ -5,6 +5,8 @@ import { textLayerType } from "./text/TextLayer";
 import { plantLayerType } from "./plant/PlantLayer";
 import { harmonographLayerType } from "./harmonograph/HarmonographLayer";
 import { boidsLayerType } from "./boids/BoidsLayer";
+import { noiseLayerType } from "./noise/NoiseLayer";
+import { slicerLayerType } from "./slicer/SlicerLayer";
 
 /**
  * Registers the built-in layer types. Third-party modules do the exact same thing
@@ -18,6 +20,8 @@ export function registerBuiltins(registry: Registry): void {
   registry.register(plantLayerType);
   registry.register(harmonographLayerType);
   registry.register(boidsLayerType);
+  registry.register(noiseLayerType);
+  registry.register(slicerLayerType);
 }
 
 export {
@@ -27,4 +31,6 @@ export {
   plantLayerType,
   harmonographLayerType,
   boidsLayerType,
+  noiseLayerType,
+  slicerLayerType,
 };
