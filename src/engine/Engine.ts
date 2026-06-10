@@ -35,6 +35,8 @@ export interface AddLayerOptions {
   data?: Record<string, unknown>;
   transform?: LayerInit["transform"];
   select?: boolean;
+  /** Drop the new layer inside this container (group/auto-layout). */
+  parentId?: string | null;
 }
 
 /**
@@ -158,16 +160,27 @@ export class Engine {
     const comp = this.comp;
     const before = { name: comp.name, width: comp.width, height: comp.height, fps: comp.fps, duration: comp.duration, background: comp.background };
     const after = { ...before, ...patch };
+    if (patch.duration !== undefined) after.duration = Math.max(0.1, patch.duration);
+    const prevWorkArea = { ...comp.workArea };
+    // The work area is also the export range. When the out handle sits at the end of the
+    // timeline, let it follow the duration as it grows/shrinks (so a freshly-extended
+    // timeline is immediately usable & exportable); otherwise just keep it within bounds.
+    const pinnedToEnd = prevWorkArea.out >= before.duration - 1e-6;
     this.history.execute({
       label: "Composition settings",
       coalesceKey: `compsettings:${comp.id}`,
       do: () => {
         Object.assign(comp, after);
+        comp.workArea = {
+          in: Math.min(prevWorkArea.in, after.duration),
+          out: pinnedToEnd ? after.duration : Math.min(prevWorkArea.out, after.duration),
+        };
         this.syncTransport();
         this.compositor?.resize(comp.width, comp.height);
       },
       undo: () => {
         Object.assign(comp, before);
+        comp.workArea = { ...prevWorkArea };
         this.syncTransport();
         this.compositor?.resize(comp.width, comp.height);
       },
@@ -242,7 +255,11 @@ export class Engine {
     }
     const layer = this.buildLayer(type, opts);
     const comp = this.comp;
-    const index = opts?.index ?? 0;
+    // When dropping into a container, default to the slot just under it (= first child)
+    // so the new layer lands inside; otherwise default to the top of the stack.
+    const parent = opts?.parentId ? comp.find(opts.parentId) : undefined;
+    if (parent) layer.parentId = parent.id;
+    const index = opts?.index ?? (parent ? comp.indexOf(parent.id) + 1 : 0);
     this.history.execute({
       label: `Add ${layer.name}`,
       do: () => comp.addLayer(layer, index),
@@ -312,6 +329,35 @@ export class Engine {
       label: parentId ? "Parent layers" : "Unparent layers",
       do: () => changes.forEach(({ layer }) => (layer.parentId = parentId)),
       undo: () => changes.forEach(({ layer, prev }) => (layer.parentId = prev)),
+    });
+  }
+
+  /**
+   * Drag-drop move: place `dragId` under `parentId` (or top level when null) at flat
+   * stack `toIndex`, as a SINGLE undo step. This is what makes containers usable — a
+   * plain reorder never changes parentage, so a layer dropped on an auto-layout would
+   * never actually go inside it. Refuses cycles (parenting into self or a descendant).
+   */
+  moveLayerTo(dragId: string, parentId: string | null, toIndex: number): void {
+    const comp = this.comp;
+    const layer = comp.find(dragId);
+    if (!layer) return;
+    const parent = parentId ? comp.find(parentId) : null;
+    if (parentId && (!parent || parentId === dragId || comp.ancestry(parent).some((a) => a.id === dragId))) return;
+    const fromIndex = comp.indexOf(dragId);
+    const prevParent = layer.parentId;
+    const target = Math.max(0, Math.min(toIndex, comp.layers.length - 1));
+    if (fromIndex === target && (prevParent ?? null) === (parentId ?? null)) return;
+    this.history.execute({
+      label: parentId ? "Move layer into container" : "Move layer",
+      do: () => {
+        layer.parentId = parentId ?? null;
+        comp.moveLayer(dragId, target);
+      },
+      undo: () => {
+        layer.parentId = prevParent;
+        comp.moveLayer(dragId, fromIndex);
+      },
     });
   }
 

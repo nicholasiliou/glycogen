@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { Interpolation, Keyframe, Layer, Property } from "@/engine";
 import { useEngine, useRevision, useSelection, useTime } from "@/ui/engine/EngineProvider";
 import { cn } from "@/ui/lib/cn";
+import { NumberField } from "@/ui/components/controls/NumberField";
 import { ScrollArea } from "@/ui/components/ui/scroll-area";
 import {
   ContextMenu,
@@ -45,8 +46,18 @@ export function Timeline() {
     <div className="flex h-full flex-col bg-panel">
       {/* Ruler */}
       <div className="flex h-7 shrink-0 border-b border-edge">
-        <div className="flex w-[176px] shrink-0 items-center gap-2 border-r border-edge px-2 text-[11px] font-semibold uppercase tracking-wider text-ink-dim">
-          Timeline
+        <div className="flex w-[176px] shrink-0 items-center gap-1.5 border-r border-edge px-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-dim">Timeline</span>
+          <div className="ml-auto flex items-center gap-0.5" title="Timeline duration (seconds) — drag or type to extend">
+            <NumberField
+              value={comp.duration}
+              min={0.1}
+              step={0.5}
+              className="h-5 w-12"
+              onChange={(v) => engine.setCompositionSettings({ duration: v })}
+            />
+            <span className="text-[10px] text-ink-dim">s</span>
+          </div>
         </div>
         <Ruler comp={comp} width={width} timeToX={timeToX} onScrub={scrub} />
       </div>

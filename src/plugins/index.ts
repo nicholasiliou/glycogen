@@ -12,6 +12,8 @@ import { shapeLayerType } from "./shape/ShapeLayer";
 import { modelLayerType } from "./model/ModelLayer";
 import { landscapeLayerType } from "./landscape/LandscapeLayer";
 import { gameOfLifeLayerType } from "./life/GameOfLifeLayer";
+import { reactionDiffusionLayerType } from "./reactionDiffusion/ReactionDiffusionLayer";
+import { physarumLayerType } from "./physarum/PhysarumLayer";
 import { wireLayerType } from "./wire/WireLayer";
 import { glyphLayerType } from "./glyph/GlyphLayer";
 import { glyphScatterLayerType } from "./glyph/GlyphScatterLayer";
@@ -44,6 +46,8 @@ export function registerBuiltins(registry: Registry): void {
   // Simulation
   registry.register(boidsLayerType);
   registry.register(gameOfLifeLayerType);
+  registry.register(reactionDiffusionLayerType);
+  registry.register(physarumLayerType);
   // Effects (distort the layers below)
   registry.register(fisheyeLayerType);
   registry.register(asciiLayerType);
@@ -65,6 +69,8 @@ export {
   modelLayerType,
   landscapeLayerType,
   gameOfLifeLayerType,
+  reactionDiffusionLayerType,
+  physarumLayerType,
   wireLayerType,
   glyphLayerType,
   glyphScatterLayerType,
