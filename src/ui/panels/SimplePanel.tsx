@@ -19,7 +19,12 @@ export function SimplePanel() {
       const ok = window.confirm(
         "Diese Szene wurde im Pro Mode manuell bearbeitet. Beim Neugenerieren gehen diese Änderungen verloren. Fortfahren?",
       );
-      if (!ok) return;
+      if (!ok) {
+        // Snap local state back to the last actually-rendered recipe (undo the
+        // optimistic onValueChange update so the slider doesn't desync).
+        setRecipe(getRecipe(engine) ?? DEFAULT_RECIPE);
+        return;
+      }
     }
     setRecipe(next);
     regenerate(engine, next);
@@ -43,6 +48,8 @@ export function SimplePanel() {
             return (
               <button
                 key={el.type}
+                type="button"
+                aria-pressed={on}
                 onClick={() => toggleElement(el.type)}
                 className={cn(
                   "rounded-full border px-3 py-1 text-xs transition-colors",
