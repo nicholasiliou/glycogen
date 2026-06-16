@@ -4,6 +4,7 @@ import {
   ChevronLast,
   Download,
   FolderOpen,
+  LayoutGrid,
   Pause,
   Play,
   Redo2,
@@ -21,6 +22,7 @@ import {
   type ResolutionPreset,
 } from "@/engine";
 import { useEngine, useRevision, useTime } from "@/ui/engine/EngineProvider";
+import { useMode } from "@/ui/mode/ModeProvider";
 import { formatTimecode } from "@/ui/lib/format";
 import { Button } from "@/ui/components/ui/button";
 import { Separator } from "@/ui/components/ui/separator";
@@ -46,6 +48,7 @@ import {
 
 export function Toolbar() {
   const engine = useEngine();
+  const { setMode } = useMode();
   useRevision();
   const { time, playing } = useTime();
   const comp = engine.comp;
@@ -85,6 +88,10 @@ export function Toolbar() {
       />
 
       <Separator orientation="vertical" className="mx-1 h-5" />
+
+      <Button size="sm" variant="ghost" onClick={() => setMode("simple")} title="Zurück zum Simple Mode">
+        <LayoutGrid className="h-3.5 w-3.5" /> Simple
+      </Button>
 
       <Button size="sm" variant="ghost" onClick={() => fileRef.current?.click()} title="Open project">
         <FolderOpen className="h-3.5 w-3.5" /> Open
