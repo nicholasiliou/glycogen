@@ -1,5 +1,6 @@
 import type { LayerTypeDefinition } from "../../engine/plugins/Registry";
 import type { LayerRenderer, RenderFrame } from "../../engine/render/types";
+import { fieldToMask, rdSeedAlongMask, rdConfine, rdAttract, textModeOf, type TextMode } from "../_shared/textField";
 
 function num(v: unknown, f: number): number {
   return typeof v === "number" ? v : f;
@@ -60,6 +61,10 @@ class ReactionDiffusionRenderer implements LayerRenderer {
   private simStep = 0;
   private lastSeed = NaN;
   private forceInitial = true;
+  private mask = new Float32Array(0);
+  private maskKey = "";
+  private maskActive = false;
+  private textMode: TextMode = "off";
 
   resize(w: number, h: number): void {
     this.canvas.width = Math.max(1, Math.round(w));
@@ -88,22 +93,27 @@ class ReactionDiffusionRenderer implements LayerRenderer {
     }
     this.u.fill(1);
     this.v.fill(0);
-    // Stamp a handful of V-rich blobs; everything else grows out from these.
-    const rnd = mulberry32((seed | 0) * 9176 + 13);
-    const spots = Math.max(6, Math.round(n / 1600));
-    for (let s = 0; s < spots; s++) {
-      const cx = Math.floor(rnd() * this.cols);
-      const cy = Math.floor(rnd() * this.rows);
-      const r = 2 + Math.floor(rnd() * 3);
-      for (let dy = -r; dy <= r; dy++) {
-        const y = cy + dy;
-        if (y < 0 || y >= this.rows) continue;
-        for (let dx = -r; dx <= r; dx++) {
-          const x = cx + dx;
-          if (x < 0 || x >= this.cols) continue;
-          const i = y * this.cols + x;
-          this.u[i] = 0.5;
-          this.v[i] = 0.25;
+    if ((this.textMode === "grow" || this.textMode === "fill") && this.maskActive) {
+      // Pattern nucleates on the letters instead of random spots.
+      rdSeedAlongMask(this.u, this.v, this.mask, n);
+    } else {
+      // Stamp a handful of V-rich blobs; everything else grows out from these.
+      const rnd = mulberry32((seed | 0) * 9176 + 13);
+      const spots = Math.max(6, Math.round(n / 1600));
+      for (let s = 0; s < spots; s++) {
+        const cx = Math.floor(rnd() * this.cols);
+        const cy = Math.floor(rnd() * this.rows);
+        const r = 2 + Math.floor(rnd() * 3);
+        for (let dy = -r; dy <= r; dy++) {
+          const y = cy + dy;
+          if (y < 0 || y >= this.rows) continue;
+          for (let dx = -r; dx <= r; dx++) {
+            const x = cx + dx;
+            if (x < 0 || x >= this.cols) continue;
+            const i = y * this.cols + x;
+            this.u[i] = 0.5;
+            this.v[i] = 0.25;
+          }
         }
       }
     }
@@ -182,18 +192,36 @@ class ReactionDiffusionRenderer implements LayerRenderer {
     const [cols, rows] = this.gridSize(resolution);
     const seed = Math.round(num(pr.seed, 1));
 
-    if (cols !== this.cols || rows !== this.rows || seed !== this.lastSeed || this.forceInitial) {
-      this.cols = cols;
-      this.rows = rows;
-      this.lastSeed = seed;
-      this.reinit(seed);
+    // ── text-field influence (consumed from the layer directly below) ──
+    const mode = textModeOf(pr.textInfluence);
+    const strength = Math.max(0, Math.min(1, num(pr.textStrength, 0.8)));
+    const field = mode !== "off" ? frame.below?.field : undefined;
+    const needReinit = cols !== this.cols || rows !== this.rows || seed !== this.lastSeed || this.forceInitial;
+    this.cols = cols;
+    this.rows = rows;
+    this.lastSeed = seed;
+    this.textMode = mode;
+    if (field) {
+      const key = `${frame.below?.key ?? ""}|${cols}x${rows}`;
+      if (this.mask.length !== cols * rows) this.mask = new Float32Array(cols * rows);
+      if (key !== this.maskKey) {
+        fieldToMask(field, cols, rows, this.mask);
+        this.maskKey = key;
+      }
+      this.maskActive = true;
+    } else {
+      this.maskActive = false;
+      this.maskKey = "";
     }
+
+    if (needReinit) this.reinit(seed);
 
     const pattern = String(pr.pattern ?? "coral");
     const preset = PRESETS[pattern];
     const feed = preset ? preset[0] : num(pr.feed, 0.055);
     const kill = preset ? preset[1] : num(pr.kill, 0.062);
     const iters = Math.max(1, Math.round(num(pr.iterations, 10)));
+    const n = cols * rows;
 
     const target = frame.frame * iters;
     let steps = 0;
@@ -203,7 +231,13 @@ class ReactionDiffusionRenderer implements LayerRenderer {
     } else {
       steps = Math.min(target - this.simStep, MAX_CATCHUP);
     }
-    for (let s = 0; s < steps; s++) this.step(feed, kill);
+    for (let s = 0; s < steps; s++) {
+      this.step(feed, kill);
+      if (this.maskActive) {
+        if (mode === "fill") rdConfine(this.u, this.v, this.mask, n, strength);
+        else if (mode === "attract") rdAttract(this.v, this.mask, n, strength);
+      }
+    }
     this.simStep = target;
 
     this.forceInitial = false;
@@ -240,6 +274,9 @@ export const reactionDiffusionLayerType: LayerTypeDefinition = {
     { key: "colorHigh", name: "High Color", type: "color", default: [192, 252, 4, 255], group: "Look" },
     { key: "smooth", name: "Smooth Upscale", type: "boolean", default: true, group: "Look" },
     { key: "resolution", name: "Resolution (perf)", type: "percent", default: 0.26, group: "Look", animatable: false, meta: { min: 0.08, max: 0.6, step: 0.02 } },
+    { key: "textInfluence", name: "Text Influence", type: "select", default: "off", group: "Text", animatable: false, meta: { options: [
+      { label: "Off", value: "off" }, { label: "Fill text", value: "fill" }, { label: "Grow from text", value: "grow" }, { label: "Attract to text", value: "attract" } ] } },
+    { key: "textStrength", name: "Text Strength", type: "percent", default: 0.8, group: "Text", meta: { min: 0, max: 1, step: 0.01 } },
   ],
   createRenderer: () => new ReactionDiffusionRenderer(),
 };
