@@ -1,12 +1,42 @@
 import type { RGBA, ResolutionPreset } from "@/engine";
 
-/** Element-Typen, die der Simple Mode dieser Iteration anbietet. */
-export type ElementType = "noise" | "boids" | "text";
+/** Curated visual layer types selectable as Simple-Mode elements (containers, pure
+ *  effects and upload-only `model`/`slicer` are intentionally excluded). Each id is a
+ *  real registered layer `type`; see ELEMENT_TUNING in plan.ts for how each is driven. */
+export type ElementType =
+  | "solid"
+  | "text"
+  | "glyph"
+  | "noise"
+  | "cloud"
+  | "plant"
+  | "harmonograph"
+  | "wire"
+  | "glyphScatter"
+  | "shape"
+  | "landscape"
+  | "boids"
+  | "life"
+  | "reactionDiffusion"
+  | "physarum";
 
-export const SIMPLE_ELEMENTS: { type: ElementType; label: string; icon: string }[] = [
-  { type: "noise", label: "Noise", icon: "Cloudy" },
-  { type: "boids", label: "Boids", icon: "Bird" },
-  { type: "text", label: "Text", icon: "Type" },
+/** Selectable elements for the Simple-Mode chip picker, in display order. */
+export const SIMPLE_ELEMENTS: { type: ElementType; label: string }[] = [
+  { type: "solid", label: "Solid" },
+  { type: "text", label: "Text" },
+  { type: "glyph", label: "Glyph" },
+  { type: "noise", label: "Noise" },
+  { type: "cloud", label: "Cloud" },
+  { type: "plant", label: "Plant" },
+  { type: "harmonograph", label: "Harmonograph" },
+  { type: "wire", label: "Wire" },
+  { type: "glyphScatter", label: "Glyph Scatter" },
+  { type: "shape", label: "3D Shape" },
+  { type: "landscape", label: "Landscape" },
+  { type: "boids", label: "Boids" },
+  { type: "life", label: "Game of Life" },
+  { type: "reactionDiffusion", label: "Reaction–Diffusion" },
+  { type: "physarum", label: "Slime Mold" },
 ];
 
 export interface Recipe {

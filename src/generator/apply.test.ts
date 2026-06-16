@@ -3,7 +3,7 @@ import { Engine } from "@/engine";
 import { registerBuiltins } from "@/plugins";
 import { planScene } from "./plan";
 import { applyScene, buildLayerFromSpec, sceneHash } from "./apply";
-import { DEFAULT_RECIPE, type Recipe } from "./recipe";
+import { DEFAULT_RECIPE, SIMPLE_ELEMENTS, type Recipe } from "./recipe";
 
 function freshEngine(): Engine {
   const e = new Engine();
@@ -56,6 +56,16 @@ describe("applyScene", () => {
     applyScene(engine, planScene(recipe, engine.comp.width, engine.comp.height));
     engine.history.undo();
     expect(engine.comp.background).toEqual(prevBg);
+  });
+
+  it("builds a real registered layer for every selectable element type", () => {
+    for (const el of SIMPLE_ELEMENTS) {
+      const e = freshEngine();
+      const spec = planScene({ ...recipe, elements: [el.type] }, e.comp.width, e.comp.height);
+      // Throws via buildLayerFromSpec's registry guard if the type id isn't registered.
+      expect(() => applyScene(e, spec)).not.toThrow();
+      expect(e.comp.layers.some((l) => l.type === el.type)).toBe(true);
+    }
   });
 });
 

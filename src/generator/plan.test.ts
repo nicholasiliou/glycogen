@@ -1,10 +1,19 @@
 import { describe, it, expect } from "vitest";
 import { planScene } from "./plan";
-import { DEFAULT_RECIPE, MARATHON_BG, type Recipe } from "./recipe";
+import { DEFAULT_RECIPE, MARATHON_BG, SIMPLE_ELEMENTS, type Recipe } from "./recipe";
 
 const base: Recipe = { ...DEFAULT_RECIPE, elements: ["noise"], seed: 5 };
 
 describe("planScene", () => {
+  it("builds a layer for every selectable element type", () => {
+    for (const el of SIMPLE_ELEMENTS) {
+      const spec = planScene({ ...base, elements: [el.type] }, 1080, 1920);
+      expect(spec.layers).toHaveLength(2); // the element + the colorLookup house style
+      expect(spec.layers[0].type).toBe("fx.colorLookup");
+      expect(spec.layers.some((l) => l.type === el.type)).toBe(true);
+    }
+  });
+
   it("always appends the colorLookup house-style layer on top (index 0)", () => {
     const spec = planScene(base, 1080, 1920);
     expect(spec.layers[0].type).toBe("fx.colorLookup");
