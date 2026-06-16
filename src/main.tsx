@@ -4,20 +4,17 @@ import "./index.css";
 import { Engine, Exporter, serializeProject } from "@/engine";
 import { registerBuiltins } from "@/plugins";
 import { EngineProvider } from "@/ui/engine/EngineProvider";
+import { ModeProvider } from "@/ui/mode/ModeProvider";
+import { regenerate } from "@/generator/generate";
+import { DEFAULT_RECIPE } from "@/generator/recipe";
 import App from "@/ui/App";
 
 const engine = new Engine();
 registerBuiltins(engine.registry);
 
-// Default project: the original plant as a background layer + a title, so the editor
-// opens on something live and demonstrates that "plants are just one layer type".
-const plant = engine.addLayer("plant", { select: false });
-engine.addLayer("text", {
-  name: "Title",
-  select: false,
-  transform: { position: [engine.comp.width / 2, engine.comp.height * 0.16] },
-});
-if (plant) engine.select([plant.id]);
+// Open on a generated, on-brand scene so Simple Mode has something live from the start.
+engine.setCompositionSettings({ width: DEFAULT_RECIPE.format.width, height: DEFAULT_RECIPE.format.height });
+regenerate(engine, DEFAULT_RECIPE);
 engine.history.clear();
 
 engine.mount({
@@ -36,8 +33,10 @@ if (import.meta.env.DEV) {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <EngineProvider engine={engine}>
-      <App />
-    </EngineProvider>
+    <ModeProvider>
+      <EngineProvider engine={engine}>
+        <App />
+      </EngineProvider>
+    </ModeProvider>
   </StrictMode>,
 );
