@@ -58,4 +58,13 @@ describe("planScene", () => {
       amp(textStill.expressions!.rotation!),
     );
   });
+
+  it("clamps out-of-range dynamic and complexity", () => {
+    const clampedHigh = planScene({ ...base, dynamic: 5, complexity: 5 }, 1080, 1920);
+    const atMax = planScene({ ...base, dynamic: 1, complexity: 1 }, 1080, 1920);
+    expect(clampedHigh).toEqual(atMax);
+    const clampedLow = planScene({ ...base, dynamic: -3, complexity: -3 }, 1080, 1920);
+    const atMin = planScene({ ...base, dynamic: 0, complexity: 0 }, 1080, 1920);
+    expect(clampedLow).toEqual(atMin);
+  });
 });

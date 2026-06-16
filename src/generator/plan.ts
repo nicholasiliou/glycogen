@@ -91,6 +91,10 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+/** Canonical stack order (bottom → top, before the final reverse).
+ *  Update this when a new ElementType + builder is added. */
+const ALL_ELEMENTS: ElementType[] = ["noise", "boids", "text"];
+
 /**
  * Pure, deterministic: a recipe + canvas size → a full SceneSpec. No engine, no DOM.
  * Element content layers are stacked under a single colorLookup house-style layer.
@@ -104,9 +108,7 @@ export function planScene(recipe: Recipe, width: number, height: number): SceneS
     width,
     height,
   };
-  const chosen = (["noise", "boids", "text"] as ElementType[]).filter((t) =>
-    recipe.elements.includes(t),
-  );
+  const chosen = ALL_ELEMENTS.filter((t) => recipe.elements.includes(t));
   const content = chosen.map((t) => ELEMENT_BUILDERS[t](ctx));
   return { background: MARATHON_BG, layers: [houseStyleLayer(), ...content.reverse()] };
 }
