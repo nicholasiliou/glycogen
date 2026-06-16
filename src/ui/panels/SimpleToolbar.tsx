@@ -40,9 +40,12 @@ export function SimpleToolbar() {
   const exporter = useMemo(() => new Exporter(engine), [engine]);
 
   const current = `${engine.comp.width}x${engine.comp.height}`;
-  // Use label as Select value to avoid duplicate-value collisions
+  const storedLabel = getRecipe(engine)?.format.label;
+  // Prefer the stored recipe label to avoid duplicate-dimension collisions
   // (Instagram Story / Reel and TikTok both resolve to 1080x1920).
-  const matched = SIMPLE_FORMATS.find((p) => `${p.width}x${p.height}` === current);
+  const matched =
+    SIMPLE_FORMATS.find((p) => p.label === storedLabel) ??
+    SIMPLE_FORMATS.find((p) => `${p.width}x${p.height}` === current);
 
   const run = (fn: () => Promise<unknown>) => () =>
     fn().catch((err) => alert((err as Error).message));
