@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { Engine } from "@/engine";
 import { registerBuiltins } from "@/plugins";
 import { planScene } from "./plan";
-import { applyScene, sceneHash } from "./apply";
+import { applyScene, buildLayerFromSpec, sceneHash } from "./apply";
 import { DEFAULT_RECIPE, type Recipe } from "./recipe";
 
 function freshEngine(): Engine {
@@ -50,6 +50,13 @@ describe("applyScene", () => {
     engine.history.undo();
     expect(engine.comp.layers.length).toBe(before);
   });
+
+  it("restores the previous background on undo", () => {
+    const prevBg = engine.comp.background;
+    applyScene(engine, planScene(recipe, engine.comp.width, engine.comp.height));
+    engine.history.undo();
+    expect(engine.comp.background).toEqual(prevBg);
+  });
 });
 
 describe("sceneHash", () => {
@@ -60,5 +67,14 @@ describe("sceneHash", () => {
     expect(sceneHash(engine.comp)).toBe(h1);
     engine.comp.layers[0].name = "changed";
     expect(sceneHash(engine.comp)).not.toBe(h1);
+  });
+});
+
+describe("buildLayerFromSpec", () => {
+  it("throws on an unregistered layer type", () => {
+    const engine = freshEngine();
+    expect(() =>
+      buildLayerFromSpec(engine, engine.comp, { type: "does-not-exist", name: "X" }),
+    ).toThrow(/unknown layer type/);
   });
 });
