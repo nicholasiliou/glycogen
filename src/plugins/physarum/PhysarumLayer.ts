@@ -1,5 +1,6 @@
 import type { LayerTypeDefinition } from "../../engine/plugins/Registry";
 import type { LayerRenderer, RenderFrame } from "../../engine/render/types";
+import { fieldToMask, physarumConfineTrail, physarumAttract, physarumSeedAgentsOnMask, textModeOf, type TextMode } from "../_shared/textField";
 
 function num(v: unknown, f: number): number {
   return typeof v === "number" ? v : f;
@@ -67,6 +68,10 @@ class PhysarumRenderer implements LayerRenderer {
   private lastSeed = NaN;
   private lastCount = -1;
   private forceInitial = true;
+  private mask = new Float32Array(0);
+  private maskKey = "";
+  private maskActive = false;
+  private textMode: TextMode = "off";
 
   resize(w: number, h: number): void {
     this.canvas.width = Math.max(1, Math.round(w));
@@ -99,10 +104,14 @@ class PhysarumRenderer implements LayerRenderer {
       this.trail.fill(0);
     }
     const rnd = mulberry32((seed | 0) * 2654435761 + 31);
-    for (let i = 0; i < count; i++) {
-      this.ax[i] = rnd() * this.cols;
-      this.ay[i] = rnd() * this.rows;
-      this.ah[i] = rnd() * Math.PI * 2;
+    if ((this.textMode === "grow" || this.textMode === "fill") && this.maskActive) {
+      physarumSeedAgentsOnMask(this.ax, this.ay, this.ah, count, this.mask, this.cols, this.rows, rnd);
+    } else {
+      for (let i = 0; i < count; i++) {
+        this.ax[i] = rnd() * this.cols;
+        this.ay[i] = rnd() * this.rows;
+        this.ah[i] = rnd() * Math.PI * 2;
+      }
     }
     this.count = count;
     this.simStep = 0;
@@ -220,13 +229,31 @@ class PhysarumRenderer implements LayerRenderer {
     const count = Math.max(1, Math.min(HARD_MAX, Math.round(num(pr.count, 5000))));
     const seed = Math.round(num(pr.seed, 1));
 
-    if (cols !== this.cols || rows !== this.rows || count !== this.lastCount || seed !== this.lastSeed || this.forceInitial) {
-      this.cols = cols;
-      this.rows = rows;
-      this.lastCount = count;
-      this.lastSeed = seed;
-      this.reinit(count, seed);
+    // ── text-field influence (consumed from the layer directly below) ──
+    const mode = textModeOf(pr.textInfluence);
+    const strength = Math.max(0, Math.min(1, num(pr.textStrength, 0.8)));
+    const field = mode !== "off" ? frame.below?.field : undefined;
+    const needReinit =
+      cols !== this.cols || rows !== this.rows || count !== this.lastCount || seed !== this.lastSeed || this.forceInitial;
+    this.cols = cols;
+    this.rows = rows;
+    this.lastCount = count;
+    this.lastSeed = seed;
+    this.textMode = mode;
+    if (field) {
+      const key = `${frame.below?.key ?? ""}|${cols}x${rows}`;
+      if (this.mask.length !== cols * rows) this.mask = new Float32Array(cols * rows);
+      if (key !== this.maskKey) {
+        fieldToMask(field, cols, rows, this.mask);
+        this.maskKey = key;
+      }
+      this.maskActive = true;
+    } else {
+      this.maskActive = false;
+      this.maskKey = "";
     }
+
+    if (needReinit) this.reinit(count, seed);
 
     const p: AgentParams = {
       sensorDist: num(pr.sensorDist, 9),
@@ -237,6 +264,7 @@ class PhysarumRenderer implements LayerRenderer {
       decay: Math.max(0, Math.min(0.95, num(pr.decay, 0.1))),
     };
     const speed = Math.max(1, Math.round(num(pr.speed, 1)));
+    const n = cols * rows;
 
     const target = frame.frame * speed;
     let steps = 0;
@@ -246,7 +274,13 @@ class PhysarumRenderer implements LayerRenderer {
     } else {
       steps = Math.min(target - this.simStep, MAX_CATCHUP);
     }
-    for (let s = 0; s < steps; s++) this.step(p);
+    for (let s = 0; s < steps; s++) {
+      this.step(p);
+      if (this.maskActive) {
+        if (mode === "fill") physarumConfineTrail(this.trail, this.mask, n, strength);
+        else if (mode === "attract") physarumAttract(this.trail, this.mask, n, strength * 2);
+      }
+    }
     this.simStep = target;
 
     this.forceInitial = false;
@@ -285,6 +319,9 @@ export const physarumLayerType: LayerTypeDefinition = {
     { key: "colorHigh", name: "High Color", type: "color", default: [192, 252, 4, 255], group: "Look" },
     { key: "smooth", name: "Smooth Upscale", type: "boolean", default: true, group: "Look" },
     { key: "resolution", name: "Resolution (perf)", type: "percent", default: 0.4, group: "Look", animatable: false, meta: { min: 0.1, max: 0.6, step: 0.02 } },
+    { key: "textInfluence", name: "Text Influence", type: "select", default: "off", group: "Text", animatable: false, meta: { options: [
+      { label: "Off", value: "off" }, { label: "Fill text", value: "fill" }, { label: "Grow from text", value: "grow" }, { label: "Attract to text", value: "attract" } ] } },
+    { key: "textStrength", name: "Text Strength", type: "percent", default: 0.8, group: "Text", meta: { min: 0, max: 1, step: 0.01 } },
   ],
   createRenderer: () => new PhysarumRenderer(),
 };
