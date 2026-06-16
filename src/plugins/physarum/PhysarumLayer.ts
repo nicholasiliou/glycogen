@@ -234,7 +234,7 @@ class PhysarumRenderer implements LayerRenderer {
     const strength = Math.max(0, Math.min(1, num(pr.textStrength, 0.8)));
     const field = mode !== "off" ? frame.below?.field : undefined;
     const needReinit =
-      cols !== this.cols || rows !== this.rows || count !== this.lastCount || seed !== this.lastSeed || this.forceInitial;
+      cols !== this.cols || rows !== this.rows || count !== this.lastCount || seed !== this.lastSeed || this.forceInitial || mode !== this.textMode;
     this.cols = cols;
     this.rows = rows;
     this.lastCount = count;

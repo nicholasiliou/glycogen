@@ -196,7 +196,8 @@ class ReactionDiffusionRenderer implements LayerRenderer {
     const mode = textModeOf(pr.textInfluence);
     const strength = Math.max(0, Math.min(1, num(pr.textStrength, 0.8)));
     const field = mode !== "off" ? frame.below?.field : undefined;
-    const needReinit = cols !== this.cols || rows !== this.rows || seed !== this.lastSeed || this.forceInitial;
+    const needReinit =
+      cols !== this.cols || rows !== this.rows || seed !== this.lastSeed || this.forceInitial || mode !== this.textMode;
     this.cols = cols;
     this.rows = rows;
     this.lastSeed = seed;

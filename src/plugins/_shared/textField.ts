@@ -86,9 +86,13 @@ export function physarumConfineTrail(trail: Float32Array, mask: Float32Array, n:
   }
 }
 
-/** attract (per step): add static scent into the trail where the mask is set. */
+/** attract (per step): raise the trail to a scent FLOOR where the mask is set (bounded,
+ *  so it can't accumulate without limit across steps). */
 export function physarumAttract(trail: Float32Array, mask: Float32Array, n: number, amount: number): void {
-  for (let i = 0; i < n; i++) trail[i] += amount * mask[i];
+  for (let i = 0; i < n; i++) {
+    const floor = amount * mask[i];
+    if (trail[i] < floor) trail[i] = floor;
+  }
 }
 
 /** grow/fill init: place agents on masked cells using the given rng (uniform fallback

@@ -15,6 +15,7 @@ class TextRenderer implements LayerRenderer {
   private ctx = this.canvas.getContext("2d")!;
   private lastW = 1920;
   private lastH = 1080;
+  private gridCache: { key: string; data: Float32Array; gw: number; gh: number } | null = null;
 
   resize(w: number, h: number): void {
     this.canvas.width = Math.max(1, w);
@@ -22,7 +23,7 @@ class TextRenderer implements LayerRenderer {
   }
 
   render(frame: RenderFrame): HTMLCanvasElement {
-    if (this.canvas.width !== frame.width) this.resize(frame.width, frame.height);
+    if (this.canvas.width !== frame.width || this.canvas.height !== frame.height) this.resize(frame.width, frame.height);
     this.lastW = frame.width;
     this.lastH = frame.height;
     const ctx = this.ctx;
@@ -47,14 +48,19 @@ class TextRenderer implements LayerRenderer {
   }
 
   fieldSource(props: Record<string, PropertyValue>): (x: number, y: number, z: number) => number {
-    const grid = rasterTextGrid(props, this.lastW, this.lastH);
-    if (!grid) return () => 0;
-    const { data, gw, gh } = grid;
+    const key = this.sourceKey(props, 0);
+    if (!this.gridCache || this.gridCache.key !== key) {
+      const grid = rasterTextGrid(props, this.lastW, this.lastH);
+      this.gridCache = grid ? { key, ...grid } : null;
+    }
+    const cache = this.gridCache;
+    if (!cache) return () => 0;
+    const { data, gw, gh } = cache;
     return (x: number, y: number) => sampleGrid(data, gw, gh, x, y);
   }
 
   sourceKey(props: Record<string, PropertyValue>, _time: number): string {
-    return [props.text, props.fontSize, props.tracking, props.bold, this.lastW, this.lastH].join("|");
+    return [props.text, props.fontSize, props.tracking, props.bold, props.fontFamily, this.lastW, this.lastH].join("|");
   }
 
   dispose(): void {
