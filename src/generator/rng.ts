@@ -1,4 +1,9 @@
-/** Small fast deterministic PRNG (mulberry32) — same pattern the plugins use. */
+/**
+ * Deterministic mulberry32 PRNG. Seeds are pre-scrambled with the
+ * golden-ratio constant (`^ 0x9e3779b9`) so nearby seeds diverge quickly;
+ * note this yields a different sequence than the raw mulberry32 inlined in
+ * some plugins (e.g. BoidsLayer, NoiseLayer).
+ */
 export function makeRng(seed: number): () => number {
   let a = (seed | 0) ^ 0x9e3779b9;
   return () => {
@@ -14,7 +19,12 @@ export function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
 
-/** Deterministically pick one item using the given rng. */
+/**
+ * Deterministically pick one item using the given rng.
+ *
+ * @param items - Must be non-empty.
+ * @param rng   - A `[0,1)` random function, e.g. from `makeRng`.
+ */
 export function pick<T>(items: readonly T[], rng: () => number): T {
-  return items[Math.floor(rng() * items.length) % items.length];
+  return items[Math.floor(rng() * items.length)];
 }
