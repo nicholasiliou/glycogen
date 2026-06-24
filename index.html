@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='13' font-size='13'%3E%E2%97%87%3C/text%3E%3C/svg%3E" />
+    <title>Marathon — Composition Engine</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- Hidden host for offscreen renderers (p5 instances, shader buffers, etc.) -->
+    <div id="offscreen-host" aria-hidden="true" style="position: fixed; left: -99999px; top: 0; width: 0; height: 0; overflow: hidden;"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
