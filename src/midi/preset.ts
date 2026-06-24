@@ -10,20 +10,83 @@
  */
 import { KIND_BEHAVIOR, type ControlKind, type MidiControl } from "./types";
 
-/** Reserved global controls that drive the performance, not a single plugin param. */
-export type PerformanceRole = "wheel" | "add" | "remove";
+/**
+ * What a control *does*. Instead of a separate "roles" list, every control carries one
+ * assignment: a stage-global function, or a per-deck **semantic slot** that each plugin maps to
+ * its own parameters (so the same fader "grows" whatever plugin is loaded — the hand-crafted feel).
+ */
+export type Deck = "A" | "B";
+export type Slot = "amount" | "evolveX" | "evolveY" | "toneX" | "toneY" | "trigger" | "toggle";
+export type GlobalAssignment = "browse" | "loadA" | "loadB" | "crossfade";
+export type ControlAssignment = "none" | GlobalAssignment | `${Deck}:${Slot}`;
 
-export const PERFORMANCE_ROLES: { role: PerformanceRole; label: string; hint: string; continuous: boolean }[] = [
-  { role: "wheel", label: "Jog / Wheel", hint: "spin the sundial", continuous: true },
-  { role: "add", label: "Add to stage", hint: "drop the selected plugin", continuous: false },
-  { role: "remove", label: "Remove from stage", hint: "delete the active plugin", continuous: false },
+export const SLOTS: Slot[] = ["amount", "evolveX", "evolveY", "toneX", "toneY", "trigger", "toggle"];
+
+export interface SlotMeta {
+  label: string;
+  /** continuous slots want a knob/fader/encoder; momentary slots want a button. */
+  continuous: boolean;
+  /** prefers a relative control (encoder/jog). */
+  relative: boolean;
+}
+
+export const SLOT_META: Record<Slot, SlotMeta> = {
+  amount: { label: "Amount / Growth", continuous: true, relative: false },
+  evolveX: { label: "Evolve X", continuous: true, relative: true },
+  evolveY: { label: "Evolve Y", continuous: true, relative: true },
+  toneX: { label: "Tone X", continuous: true, relative: false },
+  toneY: { label: "Tone Y", continuous: true, relative: false },
+  trigger: { label: "Trigger", continuous: false, relative: false },
+  toggle: { label: "Toggle", continuous: false, relative: false },
+};
+
+export interface AssignmentOption {
+  value: ControlAssignment;
+  label: string;
+}
+export interface AssignmentGroup {
+  label: string;
+  options: AssignmentOption[];
+}
+
+/** Grouped options for the inline assignment picker in settings. */
+export const ASSIGNMENT_GROUPS: AssignmentGroup[] = [
+  { label: "—", options: [{ value: "none", label: "Unassigned" }] },
+  {
+    label: "Stage",
+    options: [
+      { value: "browse", label: "Browse" },
+      { value: "loadA", label: "Load → A" },
+      { value: "loadB", label: "Load → B" },
+      { value: "crossfade", label: "Crossfade A/B" },
+    ],
+  },
+  { label: "Deck A", options: SLOTS.map((s) => ({ value: `A:${s}` as ControlAssignment, label: SLOT_META[s].label })) },
+  { label: "Deck B", options: SLOTS.map((s) => ({ value: `B:${s}` as ControlAssignment, label: SLOT_META[s].label })) },
 ];
 
-/** One physical control's user-authored identity. */
+const ASSIGN_LABEL = new Map(ASSIGNMENT_GROUPS.flatMap((g) => g.options.map((o) => [o.value, o.label] as const)));
+/** Short human label for an assignment (e.g. "A · Amount / Growth"). */
+export function assignmentLabel(a: ControlAssignment): string {
+  const deck = assignmentDeck(a);
+  if (deck) return `${deck} · ${SLOT_META[assignmentSlot(a)!].label}`;
+  return ASSIGN_LABEL.get(a) ?? "Unassigned";
+}
+export function assignmentDeck(a: ControlAssignment): Deck | null {
+  return a[1] === ":" ? (a[0] as Deck) : null;
+}
+export function assignmentSlot(a: ControlAssignment): Slot | null {
+  return a[1] === ":" ? (a.slice(2) as Slot) : null;
+}
+
+/** One physical control's user-authored identity + function. */
 export interface ControlMapping {
   controlId: string;
   name: string;
   kind: ControlKind;
+  assignment: ControlAssignment;
+  /** Ignore this control entirely (e.g. a faulty / noisy one). */
+  disabled?: boolean;
 }
 
 /** A named, savable keymap for a controller. */
@@ -33,7 +96,6 @@ export interface MidiPreset {
   /** Device this was captured on (a hint shown in the UI; not a hard match). */
   deviceName?: string;
   controls: Record<string, ControlMapping>;
-  roles: Partial<Record<PerformanceRole, string>>;
   createdAt: number;
   updatedAt: number;
 }
@@ -80,6 +142,8 @@ export interface EffectiveControl {
   kind: ControlKind;
   continuous: boolean;
   relative: boolean;
+  assignment: ControlAssignment;
+  disabled: boolean;
   /** Present in the active preset (so it shows even before it's touched this session). */
   known: boolean;
   /** Live snapshot if the control has been seen this session. */
@@ -112,6 +176,8 @@ export function effectiveControls(live: MidiControl[], preset: MidiPreset | null
       kind,
       continuous: kindIsContinuous(kind),
       relative: kindIsRelative(kind),
+      assignment: m?.assignment ?? "none",
+      disabled: m?.disabled ?? false,
       known: !!m,
       live: l,
     });
@@ -137,7 +203,7 @@ function uid(): string {
 
 export function createPreset(name = "New preset", deviceName?: string): MidiPreset {
   const now = Date.now();
-  return { id: uid(), name, deviceName, controls: {}, roles: {}, createdAt: now, updatedAt: now };
+  return { id: uid(), name, deviceName, controls: {}, createdAt: now, updatedAt: now };
 }
 
 export function duplicatePreset(src: MidiPreset, name = `${src.name} copy`): MidiPreset {
@@ -147,7 +213,6 @@ export function duplicatePreset(src: MidiPreset, name = `${src.name} copy`): Mid
     id: uid(),
     name,
     controls: { ...src.controls },
-    roles: { ...src.roles },
     createdAt: now,
     updatedAt: now,
   };
@@ -183,13 +248,29 @@ export function sanitizePreset(raw: unknown): MidiPreset | null {
     if (!v || typeof v !== "object") continue;
     const c = v as Record<string, unknown>;
     const kind = CONTROL_KINDS.includes(c.kind as ControlKind) ? (c.kind as ControlKind) : "knob";
-    controls[id] = { controlId: id, name: typeof c.name === "string" ? c.name : id, kind };
+    controls[id] = {
+      controlId: id,
+      name: typeof c.name === "string" ? c.name : id,
+      kind,
+      assignment: isAssignment(c.assignment) ? c.assignment : "none",
+      ...(c.disabled === true ? { disabled: true } : {}),
+    };
   }
 
-  const roles: Partial<Record<PerformanceRole, string>> = {};
+  // Migrate the old `roles` map (wheel/add/remove) onto control assignments.
   const rawRoles = (o.roles && typeof o.roles === "object" ? o.roles : {}) as Record<string, unknown>;
-  for (const role of ["wheel", "add", "remove"] as PerformanceRole[]) {
-    if (typeof rawRoles[role] === "string") roles[role] = rawRoles[role] as string;
+  const ROLE_TO_ASSIGN: Record<string, { assignment: ControlAssignment; kind: ControlKind }> = {
+    wheel: { assignment: "browse", kind: "encoder" },
+    add: { assignment: "loadA", kind: "button" },
+    remove: { assignment: "loadB", kind: "button" },
+  };
+  for (const [role, spec] of Object.entries(ROLE_TO_ASSIGN)) {
+    const id = rawRoles[role];
+    if (typeof id !== "string") continue;
+    const existing = controls[id];
+    controls[id] = existing
+      ? { ...existing, assignment: existing.assignment === "none" ? spec.assignment : existing.assignment }
+      : { controlId: id, name: id, kind: spec.kind, assignment: spec.assignment };
   }
 
   const now = Date.now();
@@ -198,10 +279,41 @@ export function sanitizePreset(raw: unknown): MidiPreset | null {
     name: typeof o.name === "string" && o.name.trim() ? o.name : "Imported preset",
     deviceName: typeof o.deviceName === "string" ? o.deviceName : undefined,
     controls,
-    roles,
     createdAt: typeof o.createdAt === "number" ? o.createdAt : now,
     updatedAt: now,
   };
+}
+
+const ALL_ASSIGNMENTS = new Set<string>(ASSIGNMENT_GROUPS.flatMap((g) => g.options.map((o) => o.value)));
+function isAssignment(v: unknown): v is ControlAssignment {
+  return typeof v === "string" && ALL_ASSIGNMENTS.has(v);
+}
+
+// ── auto-assign: a sensible starting layout from the detected control kinds ──────────────────
+
+/**
+ * Best-effort default layout so a freshly captured controller does something musical without
+ * hand-wiring: faders → amount (A, B) then crossfade; encoders/jogs → browse then evolve;
+ * knobs → tone; buttons → load then trigger/toggle. Stable order; the user edits inline after.
+ */
+export function autoAssign(controls: EffectiveControl[]): Record<string, ControlAssignment> {
+  const enabled = controls.filter((c) => !c.disabled);
+  const take = (pred: (c: EffectiveControl) => boolean) => enabled.filter(pred);
+  const faders = take((c) => c.kind === "fader");
+  const rotaries = take((c) => c.kind === "encoder" || c.kind === "jog");
+  const knobs = take((c) => c.kind === "knob");
+  const buttons = take((c) => c.kind === "button");
+
+  const out: Record<string, ControlAssignment> = {};
+  const assign = (list: EffectiveControl[], plan: ControlAssignment[]) =>
+    list.forEach((c, i) => plan[i] && (out[c.id] = plan[i]));
+
+  // faders: two amounts then a crossfade (a MixTrack has 2 channel faders + 1 crossfader)
+  assign(faders, faders.length >= 3 ? ["A:amount", "B:amount", "crossfade"] : ["A:amount", "B:amount"]);
+  assign(rotaries, ["browse", "A:evolveX", "A:evolveY", "B:evolveX", "B:evolveY"]);
+  assign(knobs, ["A:toneX", "A:toneY", "B:toneX", "B:toneY"]);
+  assign(buttons, ["loadA", "loadB", "A:trigger", "A:toggle", "B:trigger", "B:toggle"]);
+  return out;
 }
 
 // ── localStorage persistence (mirrors modeStorage's defensive try/catch style) ──────────────

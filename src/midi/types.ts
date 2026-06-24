@@ -48,6 +48,8 @@ export const KIND_BEHAVIOR: Record<ControlKind, { continuous: boolean; relative:
 export interface ControlOverride {
   name?: string;
   kind?: ControlKind;
+  /** Ignore this control entirely (faulty / noisy) — the manager drops its messages. */
+  disabled?: boolean;
 }
 
 /** A single physical control on a connected device, learned by listening. */

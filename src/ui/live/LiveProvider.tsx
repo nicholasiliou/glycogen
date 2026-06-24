@@ -5,6 +5,9 @@ import type { Registry } from "@/engine";
 import { MidiManager } from "@/midi/MidiManager";
 import type { ControlKind, ControlOverride } from "@/midi/types";
 import {
+  assignmentDeck,
+  assignmentSlot,
+  autoAssign,
   createPreset,
   defaultKindFor,
   duplicatePreset,
@@ -15,14 +18,17 @@ import {
   parsePreset,
   saveActiveId,
   savePresets,
+  SLOT_META,
+  type ControlAssignment,
+  type ControlMapping,
+  type Deck,
   type EffectiveControl,
   type MidiPreset,
-  type PerformanceRole,
 } from "@/midi/preset";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { LivePerformer } from "@/audio/LivePerformer";
 import type { ScaleName } from "@/audio/scale";
-import { applyRange, applyToggle, autoMapLayer, type ParamBinding } from "./autoMap";
+import { clamp, clamp01, driveContinuousSlot, fireMomentarySlot, macroMapFor } from "./macros";
 
 interface LiveContextValue {
   midi: MidiManager;
@@ -33,21 +39,20 @@ interface LiveContextValue {
   /** Bumps whenever a MIDI device/control is (re)discovered. */
   midiRev: number;
 
-  // ── stage / sundial ──
-  /** Every selectable layer type, in a stable order shared with the sundial + jog wheel. */
+  // ── browse + decks ──
   types: string[];
   selectedType: string;
   setSelectedType: (t: string) => void;
-  addToStage: (type: string) => void;
-  removeActive: () => void;
-  activeLayerId: string | null;
-  setActiveLayer: (id: string) => void;
-  bindings: ParamBinding[];
+  deckA: string | null;
+  deckB: string | null;
+  loadDeck: (deck: Deck) => void;
+  clearDeck: (deck: Deck) => void;
+  crossfade: number;
+  setCrossfade: (x: number) => void;
 
   // ── MIDI keymap (the persistent preset) ──
   presets: MidiPreset[];
   activePreset: MidiPreset | null;
-  /** Live stream ∪ active preset, ready to render in the settings table. */
   controls: EffectiveControl[];
   selectPreset: (id: string) => void;
   createNewPreset: (name?: string) => void;
@@ -58,12 +63,11 @@ interface LiveContextValue {
   exportActive: () => string;
   renameControl: (id: string, name: string) => void;
   setControlKind: (id: string, kind: ControlKind) => void;
+  setControlAssignment: (id: string, assignment: ControlAssignment) => void;
+  setControlDisabled: (id: string, disabled: boolean) => void;
   resetControl: (id: string) => void;
+  applyAutoAssign: () => void;
   forgetDevice: () => void;
-  setRole: (role: PerformanceRole, controlId: string | null) => void;
-  /** Which performance role (if any) is currently waiting for a control to be touched. */
-  learning: PerformanceRole | null;
-  setLearning: (r: PerformanceRole | null) => void;
 
   // ── transport / audio ──
   master: number;
@@ -87,7 +91,8 @@ function selectableTypes(registry: Registry): string[] {
 
 function presetToOverrides(preset: MidiPreset | null): Record<string, ControlOverride> {
   const map: Record<string, ControlOverride> = {};
-  if (preset) for (const m of Object.values(preset.controls)) map[m.controlId] = { name: m.name, kind: m.kind };
+  if (preset)
+    for (const m of Object.values(preset.controls)) map[m.controlId] = { name: m.name, kind: m.kind, disabled: m.disabled };
   return map;
 }
 
@@ -98,7 +103,6 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const performer = useMemo(() => new LivePerformer(engine, audio), [engine, audio]);
   const types = useMemo(() => selectableTypes(engine.registry), [engine]);
 
-  // Bootstrap the keymap: stored presets (or a fresh default), and a valid active selection.
   const boot = useMemo(() => {
     let ps = loadPresets();
     if (!ps.length) ps = [createPreset("Default")];
@@ -110,11 +114,11 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const [started, setStarted] = useState(false);
   const [midiRev, setMidiRev] = useState(0);
   const [selectedType, setSelectedType] = useState("");
-  const [activeLayerId, setActiveLayerId] = useState<string | null>(null);
-  const [bindings, setBindings] = useState<ParamBinding[]>([]);
+  const [deckA, setDeckA] = useState<string | null>(null);
+  const [deckB, setDeckB] = useState<string | null>(null);
+  const [crossfade, setCrossfadeState] = useState(0.5);
   const [presets, setPresets] = useState<MidiPreset[]>(boot.ps);
   const [activeId, setActiveId] = useState<string>(boot.id);
-  const [learning, setLearning] = useState<PerformanceRole | null>(null);
   const [master, setMasterState] = useState(0.9);
   const [bpm, setBpmState] = useState(110);
   const [root, setRoot] = useState(48);
@@ -125,30 +129,30 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const controls = useMemo(() => effectiveControls(midi.list(), activePreset), [midi, midiRev, activePreset]);
 
-  // Refs so the once-bound MIDI handlers always read current values.
-  const bindingsRef = useRef<ParamBinding[]>([]);
-  const rolesRef = useRef<MidiPreset["roles"]>({});
-  const learningRef = useRef<PerformanceRole | null>(null);
+  // Refs so the once-bound MIDI handlers + stable callbacks always read current values.
+  const activePresetRef = useRef<MidiPreset | null>(activePreset);
+  const controlsRef = useRef<EffectiveControl[]>(controls);
   const activeIdRef = useRef(activeId);
   const selectedTypeRef = useRef("");
-  const activeLayerIdRef = useRef<string | null>(null);
   const typesRef = useRef<string[]>(types);
-  const wheelAccumRef = useRef(0);
-  bindingsRef.current = bindings;
-  rolesRef.current = activePreset?.roles ?? {};
-  learningRef.current = learning;
+  const deckARef = useRef<string | null>(null);
+  const deckBRef = useRef<string | null>(null);
+  const crossfadeRef = useRef(0);
+  const browseAccumRef = useRef(0);
+  activePresetRef.current = activePreset;
+  controlsRef.current = controls;
   activeIdRef.current = activeId;
   selectedTypeRef.current = selectedType;
-  activeLayerIdRef.current = activeLayerId;
   typesRef.current = types;
+  deckARef.current = deckA;
+  deckBRef.current = deckB;
+  crossfadeRef.current = crossfade;
 
-  // Persist the bootstrap (writes the freshly-created default the first time).
   useEffect(() => {
     savePresets(boot.ps);
     saveActiveId(boot.id);
   }, [boot]);
 
-  // Pick an initial selection once the type list is known.
   useEffect(() => {
     if (!selectedType && types.length) setSelectedType(types.includes("physarum") ? "physarum" : types[0]);
   }, [types, selectedType]);
@@ -160,12 +164,76 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     engine.play();
   }, [engine]);
 
-  // ── push the active preset down so retypes/renames change interpretation live ──
+  // ── push the active preset down so retypes/renames/disables take effect live ──
   useEffect(() => {
     midi.applyOverrides(presetToOverrides(activePreset));
   }, [midi, activePreset]);
 
-  // ── keymap mutation helpers (all auto-save) ──
+  // ── deck opacity crossfade (equal-power); audio is left untouched (stays derived) ──
+  const setOpacity = useCallback(
+    (layerId: string | null, gain: number) => {
+      if (!layerId) return;
+      const layer = engine.getLayer(layerId);
+      if (!layer) return;
+      const op = layer.transform("opacity");
+      engine.setPropertyValue(layerId, op.id, clamp(gain, 0, 1) * 100, true);
+    },
+    [engine],
+  );
+  const applyCrossfade = useCallback(
+    (x: number, aId: string | null, bId: string | null) => {
+      const t = clamp01(x);
+      const both = !!aId && !!bId;
+      if (aId) setOpacity(aId, both ? Math.cos((t * Math.PI) / 2) : 1);
+      if (bId) setOpacity(bId, both ? Math.sin((t * Math.PI) / 2) : 1);
+    },
+    [setOpacity],
+  );
+  const setCrossfade = useCallback(
+    (x: number) => {
+      const v = clamp01(x);
+      setCrossfadeState(v);
+      applyCrossfade(v, deckARef.current, deckBRef.current);
+    },
+    [applyCrossfade],
+  );
+
+  const loadDeck = useCallback(
+    (deck: Deck) => {
+      const type = selectedTypeRef.current;
+      if (!type) return;
+      const prev = deck === "A" ? deckARef.current : deckBRef.current;
+      if (prev) engine.removeLayers([prev]);
+      const layer = engine.addLayer(type);
+      if (!layer) return;
+      if (deck === "A") {
+        deckARef.current = layer.id;
+        setDeckA(layer.id);
+      } else {
+        deckBRef.current = layer.id;
+        setDeckB(layer.id);
+      }
+      applyCrossfade(crossfadeRef.current, deckARef.current, deckBRef.current);
+    },
+    [engine, applyCrossfade],
+  );
+
+  const clearDeck = useCallback(
+    (deck: Deck) => {
+      const id = deck === "A" ? deckARef.current : deckBRef.current;
+      if (id) engine.removeLayers([id]);
+      if (deck === "A") {
+        deckARef.current = null;
+        setDeckA(null);
+      } else {
+        deckBRef.current = null;
+        setDeckB(null);
+      }
+    },
+    [engine],
+  );
+
+  // ── keymap mutation helpers (auto-save) ──
   const updateActive = useCallback((mut: (p: MidiPreset) => MidiPreset) => {
     setPresets((prev) => {
       const next = prev.map((p) => (p.id === activeIdRef.current ? { ...mut(p), updatedAt: Date.now() } : p));
@@ -174,38 +242,39 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const setRole = useCallback(
-    (role: PerformanceRole, controlId: string | null) => {
-      updateActive((p) => {
-        const roles = { ...p.roles };
-        if (controlId) roles[role] = controlId;
-        else delete roles[role];
-        return { ...p, roles };
-      });
-    },
-    [updateActive],
+  const ensureMapping = useCallback(
+    (p: MidiPreset, id: string): ControlMapping =>
+      p.controls[id] ?? {
+        controlId: id,
+        name: midi.get(id)?.label ?? id,
+        kind: defaultKindFor(midi.get(id) ?? { continuous: true, relative: false, subtype: "knob" }),
+        assignment: "none",
+      },
+    [midi],
   );
 
   const renameControl = useCallback(
-    (id: string, name: string) => {
-      updateActive((p) => {
-        const kind = p.controls[id]?.kind ?? defaultKindFor(midi.get(id) ?? { continuous: true, relative: false, subtype: "knob" });
-        return { ...p, controls: { ...p.controls, [id]: { controlId: id, name, kind } } };
-      });
-    },
-    [updateActive, midi],
+    (id: string, name: string) =>
+      updateActive((p) => ({ ...p, controls: { ...p.controls, [id]: { ...ensureMapping(p, id), name } } })),
+    [updateActive, ensureMapping],
   );
-
   const setControlKind = useCallback(
-    (id: string, kind: ControlKind) => {
-      updateActive((p) => {
-        const name = p.controls[id]?.name ?? midi.get(id)?.label ?? id;
-        return { ...p, controls: { ...p.controls, [id]: { controlId: id, name, kind } } };
-      });
-    },
-    [updateActive, midi],
+    (id: string, kind: ControlKind) =>
+      updateActive((p) => ({ ...p, controls: { ...p.controls, [id]: { ...ensureMapping(p, id), kind } } })),
+    [updateActive, ensureMapping],
   );
-
+  const setControlAssignment = useCallback(
+    (id: string, assignment: ControlAssignment) =>
+      updateActive((p) => ({ ...p, controls: { ...p.controls, [id]: { ...ensureMapping(p, id), assignment } } })),
+    [updateActive, ensureMapping],
+  );
+  const setControlDisabled = useCallback(
+    (id: string, disabled: boolean) => {
+      midi.setOverride(id, { disabled });
+      updateActive((p) => ({ ...p, controls: { ...p.controls, [id]: { ...ensureMapping(p, id), disabled } } }));
+    },
+    [updateActive, ensureMapping, midi],
+  );
   const resetControl = useCallback(
     (id: string) => {
       midi.setOverride(id, null);
@@ -217,12 +286,21 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     },
     [updateActive, midi],
   );
+  const applyAutoAssign = useCallback(() => {
+    const map = autoAssign(controlsRef.current);
+    updateActive((p) => {
+      const next = { ...p.controls };
+      for (const [id, assignment] of Object.entries(map)) {
+        next[id] = { ...ensureMapping(p, id), assignment };
+      }
+      return { ...p, controls: next };
+    });
+  }, [updateActive, ensureMapping]);
 
   const selectPreset = useCallback((id: string) => {
     setActiveId(id);
     saveActiveId(id);
   }, []);
-
   const createNewPreset = useCallback(
     (name?: string) => {
       const device = midi.devices()[0]?.name;
@@ -236,7 +314,6 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     },
     [midi, selectPreset],
   );
-
   const renamePreset = useCallback((id: string, name: string) => {
     setPresets((prev) => {
       const next = prev.map((p) => (p.id === id ? { ...p, name: name.trim() || p.name, updatedAt: Date.now() } : p));
@@ -244,7 +321,6 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       return next;
     });
   }, []);
-
   const duplicateActive = useCallback(() => {
     setPresets((prev) => {
       const src = prev.find((p) => p.id === activeIdRef.current);
@@ -257,7 +333,6 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       return next;
     });
   }, []);
-
   const deletePreset = useCallback((id: string) => {
     setPresets((prev) => {
       let next = prev.filter((p) => p.id !== id);
@@ -270,7 +345,6 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       return next;
     });
   }, []);
-
   const importPresetJson = useCallback(
     (json: string) => {
       const p = parsePreset(json);
@@ -285,9 +359,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     },
     [selectPreset],
   );
-
   const exportActive = useCallback(() => (activePreset ? exportPreset(activePreset) : ""), [activePreset]);
-
   const forgetDevice = useCallback(() => {
     midi.forget();
     setMidiRev((r) => r + 1);
@@ -298,21 +370,20 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     performer.start();
     midi.enable();
 
-    const stepSel = (dir: number) => {
+    const browseStep = (dir: number) => {
       const list = typesRef.current;
       if (!list.length) return;
       const i = Math.max(0, list.indexOf(selectedTypeRef.current));
       setSelectedType(list[(i + dir + list.length) % list.length]);
     };
-    const selByUnit = (u: number) => {
+    const browseTo = (u: number) => {
       const list = typesRef.current;
       if (!list.length) return;
-      const c = u < 0 ? 0 : u > 1 ? 1 : u;
-      setSelectedType(list[Math.round(c * (list.length - 1))]);
+      setSelectedType(list[Math.round(clamp01(u) * (list.length - 1))]);
     };
-    const assignRole = (role: PerformanceRole, id: string) => {
-      setRole(role, id);
-      setLearning(null);
+    const deckLayer = (deck: Deck) => {
+      const id = deck === "A" ? deckARef.current : deckBRef.current;
+      return id ? engine.getLayer(id) : null;
     };
 
     const offs = [
@@ -321,56 +392,53 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       midi.on("status", () => setMidiRev((r) => r + 1)),
       midi.on("control", (e) => {
         const ctl = e.control;
-        // Learning a continuous role (the wheel): grab the first continuous move.
-        if (learningRef.current) {
-          if (learningRef.current === "wheel" && ctl.continuous) assignRole("wheel", ctl.id);
-          return; // momentary roles are learned on trigger
-        }
-        const roles = rolesRef.current;
-        // Reserved jog/wheel → spin the sundial.
-        if (roles.wheel === ctl.id) {
+        const m = activePresetRef.current?.controls[ctl.id];
+        if (!m || m.disabled) return;
+        if (m.assignment === "browse") {
           if (ctl.relative) {
-            wheelAccumRef.current += ctl.delta;
+            browseAccumRef.current += ctl.delta;
             const STEP = 3;
-            while (wheelAccumRef.current >= STEP) {
-              stepSel(1);
-              wheelAccumRef.current -= STEP;
+            while (browseAccumRef.current >= STEP) {
+              browseStep(1);
+              browseAccumRef.current -= STEP;
             }
-            while (wheelAccumRef.current <= -STEP) {
-              stepSel(-1);
-              wheelAccumRef.current += STEP;
+            while (browseAccumRef.current <= -STEP) {
+              browseStep(-1);
+              browseAccumRef.current += STEP;
             }
           } else {
-            selByUnit(ctl.value);
+            browseTo(ctl.value);
           }
           return;
         }
-        if (!ctl.continuous) return; // momentary handled on trigger
-        const b = bindingsRef.current.find((x) => x.controlId === ctl.id && (x.kind === "range" || x.kind === "select"));
-        if (b) applyRange(engine, b, ctl.value);
+        if (m.assignment === "crossfade") {
+          setCrossfade(ctl.value);
+          return;
+        }
+        const deck = assignmentDeck(m.assignment);
+        const slot = assignmentSlot(m.assignment);
+        if (!deck || !slot || !SLOT_META[slot].continuous) return;
+        const layer = deckLayer(deck);
+        if (!layer) return;
+        const schema = engine.registry.get(layer.type)?.schema ?? [];
+        const macro = macroMapFor(layer.type, schema);
+        const spec = macro[slot as "amount" | "evolveX" | "evolveY" | "toneX" | "toneY"];
+        if (spec) driveContinuousSlot(engine, layer, schema, spec, ctl);
       }),
       midi.on("trigger", (c) => {
-        // Learning a momentary role (add / remove): grab the first press.
-        if (learningRef.current) {
-          if (learningRef.current !== "wheel") assignRole(learningRef.current, c.id);
-          return;
-        }
-        const roles = rolesRef.current;
-        if (roles.add === c.id) {
-          const l = engine.addLayer(selectedTypeRef.current);
-          if (l) setActiveLayerId(l.id);
-          return;
-        }
-        if (roles.remove === c.id) {
-          const id = activeLayerIdRef.current;
-          if (id) {
-            engine.removeLayers([id]);
-            setActiveLayerId(null);
-          }
-          return;
-        }
-        const b = bindingsRef.current.find((x) => x.controlId === c.id && (x.kind === "toggle" || x.kind === "trigger"));
-        if (b) applyToggle(engine, b);
+        const m = activePresetRef.current?.controls[c.id];
+        if (!m || m.disabled) return;
+        if (m.assignment === "loadA") return loadDeck("A");
+        if (m.assignment === "loadB") return loadDeck("B");
+        const deck = assignmentDeck(m.assignment);
+        const slot = assignmentSlot(m.assignment);
+        if (!deck || !slot || SLOT_META[slot].continuous) return;
+        const layer = deckLayer(deck);
+        if (!layer) return;
+        const schema = engine.registry.get(layer.type)?.schema ?? [];
+        const macro = macroMapFor(layer.type, schema);
+        const spec = macro[slot as "trigger" | "toggle"];
+        if (spec) fireMomentarySlot(engine, layer, schema, slot as "trigger" | "toggle", spec);
       }),
     ];
     return () => {
@@ -379,20 +447,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       midi.dispose();
       audio.dispose();
     };
-  }, [engine, midi, audio, performer, setRole]);
-
-  // ── (re)build the binding table; exclude reserved performance controls ──
-  useEffect(() => {
-    const layer = activeLayerId ? engine.getLayer(activeLayerId) : undefined;
-    const def = layer ? engine.registry.get(layer.type) : undefined;
-    if (!layer || !def?.schema) {
-      setBindings([]);
-      return;
-    }
-    const roles = activePreset?.roles ?? {};
-    const reserved = new Set([roles.wheel, roles.add, roles.remove].filter(Boolean) as string[]);
-    setBindings(autoMapLayer(layer, def.schema, midi.list(), reserved));
-  }, [engine, midi, activeLayerId, midiRev, activePreset]);
+  }, [engine, midi, audio, performer, loadDeck, setCrossfade]);
 
   const startAudio = useCallback(async () => {
     await audio.start();
@@ -402,37 +457,16 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     setStarted(true);
   }, [audio, bpm, root, scale, master]);
 
-  const addToStage = useCallback(
-    (type: string) => {
-      const layer = engine.addLayer(type);
-      if (layer) setActiveLayerId(layer.id);
-    },
-    [engine],
-  );
-  const removeActive = useCallback(() => {
-    const id = activeLayerIdRef.current;
-    if (id) {
-      engine.removeLayers([id]);
-      setActiveLayerId(null);
-    }
-  }, [engine]);
-  const setActiveLayer = useCallback(
-    (id: string) => {
-      setActiveLayerId(id);
-      engine.select([id]);
-    },
-    [engine],
-  );
   const setMaster = useCallback((v: number) => { setMasterState(v); audio.setMasterLevel(v); }, [audio]);
   const setBpm = useCallback((v: number) => { setBpmState(v); audio.setBpm(v); }, [audio]);
   const setKey = useCallback((r: number, s: ScaleName) => { setRoot(r); setScale(s); audio.setKey(r, s); }, [audio]);
 
   const value: LiveContextValue = {
     midi, audio, performer, started, startAudio, midiRev,
-    types, selectedType, setSelectedType, addToStage, removeActive, activeLayerId, setActiveLayer, bindings,
+    types, selectedType, setSelectedType, deckA, deckB, loadDeck, clearDeck, crossfade, setCrossfade,
     presets, activePreset, controls,
     selectPreset, createNewPreset, renamePreset, duplicateActive, deletePreset, importPresetJson, exportActive,
-    renameControl, setControlKind, resetControl, forgetDevice, setRole, learning, setLearning,
+    renameControl, setControlKind, setControlAssignment, setControlDisabled, resetControl, applyAutoAssign, forgetDevice,
     master, setMaster, bpm, setBpm, root, scale, setKey,
   };
 

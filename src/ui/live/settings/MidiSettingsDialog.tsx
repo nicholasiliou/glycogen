@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Circle,
-  Crosshair,
   Disc3,
   Download,
   Plus,
@@ -11,6 +10,7 @@ import {
   SlidersVertical,
   Trash2,
   Upload,
+  Wand2,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -22,16 +22,26 @@ import {
 } from "@/ui/components/ui/dialog";
 import { Button } from "@/ui/components/ui/button";
 import { Input } from "@/ui/components/ui/input";
+import { Switch } from "@/ui/components/ui/switch";
 import { Separator } from "@/ui/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/ui/components/ui/select";
 import { cn } from "@/ui/lib/cn";
 import type { ControlKind } from "@/midi/types";
 import {
+  ASSIGNMENT_GROUPS,
+  assignmentLabel,
   CONTROL_KINDS,
   KIND_META,
-  PERFORMANCE_ROLES,
+  type ControlAssignment,
   type EffectiveControl,
-  type PerformanceRole,
 } from "@/midi/preset";
 import { useLive } from "../LiveProvider";
 
@@ -69,16 +79,6 @@ export function MidiSettingsDialog({ open, onOpenChange }: { open: boolean; onOp
 
   const status = midi.status;
   const devices = midi.devices();
-
-  // controlId -> performance role, for the badge on each row.
-  const roleByControl = new Map<string, PerformanceRole>();
-  if (activePreset) {
-    for (const { role } of PERFORMANCE_ROLES) {
-      const id = activePreset.roles[role];
-      if (id) roleByControl.set(id, role);
-    }
-  }
-
   const fileRef = useRef<HTMLInputElement>(null);
 
   const doExport = () => {
@@ -105,8 +105,9 @@ export function MidiSettingsDialog({ open, onOpenChange }: { open: boolean; onOp
         <DialogHeader>
           <DialogTitle>MIDI Settings</DialogTitle>
           <DialogDescription>
-            Name each control and correct its input type, then save it as a reusable preset. Retyping a
-            control changes how it's read (e.g. encoder vs. potentiometer), not just its label.
+            Name each control, correct its input type, and assign what it does. Retyping changes how a
+            control is read (encoder vs. potentiometer); the assignment maps it to a deck macro that each
+            plugin interprets in its own way.
           </DialogDescription>
         </DialogHeader>
 
@@ -115,7 +116,7 @@ export function MidiSettingsDialog({ open, onOpenChange }: { open: boolean; onOp
           <section className="flex flex-wrap items-center gap-2">
             <span className="text-[10px] uppercase tracking-wide text-ink-dim">Preset</span>
             <Select value={activePreset?.id ?? ""} onValueChange={(id) => live.selectPreset(id)}>
-              <SelectTrigger className="h-7 w-52">
+              <SelectTrigger className="h-7 w-48">
                 <SelectValue placeholder="No preset" />
               </SelectTrigger>
               <SelectContent>
@@ -128,7 +129,7 @@ export function MidiSettingsDialog({ open, onOpenChange }: { open: boolean; onOp
             </Select>
             <Input
               key={activePreset?.id}
-              className="h-7 w-44"
+              className="h-7 w-40"
               defaultValue={activePreset?.name ?? ""}
               placeholder="Preset name"
               onBlur={(e) => activePreset && live.renamePreset(activePreset.id, e.target.value)}
@@ -191,23 +192,22 @@ export function MidiSettingsDialog({ open, onOpenChange }: { open: boolean; onOp
 
           <Separator />
 
-          {/* performance roles */}
-          <RolesSection />
-
-          <Separator />
-
           {/* controls table */}
           <section>
-            <div className="mb-2 flex items-baseline justify-between">
-              <h3 className="text-[10px] uppercase tracking-wide text-ink-dim">Controls</h3>
-              <span className="text-[10px] text-ink-dim">{controls.length} learned · move one to identify it</span>
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-[10px] uppercase tracking-wide text-ink-dim">
+                Controls · {controls.length} learned · move one to identify it
+              </h3>
+              <Button size="sm" variant="outline" onClick={() => live.applyAutoAssign()} title="Guess a layout from the detected kinds">
+                <Wand2 className="h-3.5 w-3.5" /> Auto-assign
+              </Button>
             </div>
             {controls.length === 0 ? (
               <p className="py-6 text-center text-ink-dim">Twist a knob or press a pad on your controller…</p>
             ) : (
               <div className="space-y-1">
                 {controls.map((c) => (
-                  <ControlRow key={c.id} ctl={c} role={roleByControl.get(c.id)} />
+                  <ControlRow key={c.id} ctl={c} />
                 ))}
               </div>
             )}
@@ -218,9 +218,9 @@ export function MidiSettingsDialog({ open, onOpenChange }: { open: boolean; onOp
   );
 }
 
-function ControlRow({ ctl, role }: { ctl: EffectiveControl; role?: PerformanceRole }) {
-  const { renameControl, setControlKind, resetControl } = useLive();
-  const active = !!ctl.live && performance.now() - ctl.live.lastSeen < 450;
+function ControlRow({ ctl }: { ctl: EffectiveControl }) {
+  const { renameControl, setControlKind, setControlAssignment, setControlDisabled, resetControl } = useLive();
+  const active = !ctl.disabled && !!ctl.live && performance.now() - ctl.live.lastSeen < 450;
   const fill = ctl.live ? (ctl.live.pressed ? 1 : ctl.live.value) : 0;
 
   return (
@@ -228,18 +228,27 @@ function ControlRow({ ctl, role }: { ctl: EffectiveControl; role?: PerformanceRo
       className={cn(
         "flex items-center gap-2 rounded border px-2 py-1 transition-colors",
         active ? "border-accent/60 bg-accent/5" : "border-transparent",
-        !ctl.live && "opacity-60",
+        (ctl.disabled || !ctl.live) && "opacity-50",
       )}
     >
-      {/* activity meter */}
-      <div className="relative h-1.5 w-12 shrink-0 overflow-hidden rounded-full bg-edge" title={ctl.continuous ? "value" : "pressed"}>
-        <div className="absolute inset-y-0 left-0 bg-accent/70" style={{ width: `${fill * 100}%` }} />
+      {/* activity meter — value bar for absolute, a pulse for relative encoders */}
+      <div className="relative h-1.5 w-10 shrink-0 overflow-hidden rounded-full bg-edge">
+        {ctl.relative ? (
+          <div
+            className={cn(
+              "absolute inset-y-0 left-1/2 w-1.5 -translate-x-1/2 rounded bg-accent transition-opacity",
+              active ? "opacity-90" : "opacity-20",
+            )}
+          />
+        ) : (
+          <div className="absolute inset-y-0 left-0 bg-accent/70" style={{ width: `${fill * 100}%` }} />
+        )}
       </div>
 
       {/* name */}
       <Input
         key={ctl.id}
-        className="h-6 flex-1"
+        className="h-6 w-28 shrink-0"
         defaultValue={ctl.name}
         onBlur={(e) => renameControl(ctl.id, e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
@@ -247,7 +256,7 @@ function ControlRow({ ctl, role }: { ctl: EffectiveControl; role?: PerformanceRo
 
       {/* kind */}
       <Select value={ctl.kind} onValueChange={(k) => setControlKind(ctl.id, k as ControlKind)}>
-        <SelectTrigger className="h-6 w-40">
+        <SelectTrigger className="h-6 w-36 shrink-0">
           <KindLabel kind={ctl.kind} />
         </SelectTrigger>
         <SelectContent>
@@ -259,18 +268,42 @@ function ControlRow({ ctl, role }: { ctl: EffectiveControl; role?: PerformanceRo
         </SelectContent>
       </Select>
 
-      {role && (
-        <span className="shrink-0 rounded bg-accent/20 px-1 text-[9px] uppercase text-accent">{role}</span>
-      )}
-      <span className="w-16 shrink-0 truncate text-right font-mono text-[10px] text-ink-dim" title={ctl.id}>
+      {/* assignment */}
+      <Select value={ctl.assignment} onValueChange={(a) => setControlAssignment(ctl.id, a as ControlAssignment)}>
+        <SelectTrigger className="h-6 flex-1">
+          <span className="truncate">{assignmentLabel(ctl.assignment)}</span>
+        </SelectTrigger>
+        <SelectContent>
+          {ASSIGNMENT_GROUPS.map((grp) => (
+            <SelectGroup key={grp.label}>
+              <SelectLabel className="px-2 py-1 text-[9px] uppercase tracking-wide text-ink-dim">{grp.label}</SelectLabel>
+              {grp.options.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <span className="w-14 shrink-0 truncate text-right font-mono text-[10px] text-ink-dim" title={ctl.id}>
         {ctl.id}
       </span>
+
+      {/* enable / disable a faulty control */}
+      <Switch
+        checked={!ctl.disabled}
+        onCheckedChange={(on) => setControlDisabled(ctl.id, !on)}
+        title={ctl.disabled ? "Disabled — click to enable" : "Enabled — click to disable a faulty control"}
+      />
+
       <Button
         size="icon-sm"
         variant="ghost"
         disabled={!ctl.known}
         onClick={() => resetControl(ctl.id)}
-        title="Reset name + type to auto-detected"
+        title="Reset this control to auto-detected"
       >
         <RotateCcw className="h-3 w-3" />
       </Button>
@@ -284,54 +317,8 @@ function KindLabel({ kind, withHint }: { kind: ControlKind; withHint?: boolean }
   return (
     <span className="flex items-center gap-1.5">
       <Icon className="h-3.5 w-3.5 text-ink-dim" />
-      <span>{meta.label}</span>
+      <span className="truncate">{meta.label}</span>
       {withHint && <span className="text-[10px] text-ink-dim">· {meta.hint}</span>}
     </span>
-  );
-}
-
-/** Assign the reserved performance controls (jog → sundial, add / remove). Stored in the preset. */
-function RolesSection() {
-  const { activePreset, learning, setLearning, setRole, controls } = useLive();
-  const nameOf = new Map(controls.map((c) => [c.id, c.name] as const));
-
-  return (
-    <section>
-      <h3 className="mb-2 text-[10px] uppercase tracking-wide text-ink-dim">Performance controls</h3>
-      <div className="grid gap-2 sm:grid-cols-3">
-        {PERFORMANCE_ROLES.map(({ role, label, hint, continuous }) => {
-          const id = activePreset?.roles[role];
-          const assigned = id ? nameOf.get(id) ?? id : null;
-          const isLearning = learning === role;
-          return (
-            <div key={role} className="rounded border border-edge bg-panel-raised p-2">
-              <div className="flex items-center justify-between gap-1">
-                <span className="truncate text-ink">{label}</span>
-                {assigned && (
-                  <button
-                    type="button"
-                    className="text-ink-dim hover:text-red-400"
-                    title="Clear"
-                    onClick={() => setRole(role, null)}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-              <div className="mb-1.5 truncate text-[10px] text-ink-dim">{assigned ?? hint}</div>
-              <Button
-                size="sm"
-                variant={isLearning ? "accent" : "outline"}
-                className="w-full"
-                onClick={() => setLearning(isLearning ? null : role)}
-              >
-                <Crosshair className="h-3.5 w-3.5" />
-                {isLearning ? (continuous ? "move a control…" : "press a control…") : "Learn"}
-              </Button>
-            </div>
-          );
-        })}
-      </div>
-    </section>
   );
 }

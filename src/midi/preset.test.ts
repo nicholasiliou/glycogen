@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { MidiControl } from "./types";
 import {
+  autoAssign,
   createPreset,
   defaultKindFor,
   duplicatePreset,
@@ -60,16 +61,17 @@ describe("kind behaviour", () => {
 describe("effectiveControls", () => {
   it("merges live controls with the preset, letting the preset win", () => {
     const preset = createPreset("p");
-    preset.controls["cc:0:7"] = { controlId: "cc:0:7", name: "Volume", kind: "fader" };
-    preset.controls["cc:0:9"] = { controlId: "cc:0:9", name: "Phantom", kind: "encoder" };
+    preset.controls["cc:0:7"] = { controlId: "cc:0:7", name: "Volume", kind: "fader", assignment: "A:amount" };
+    preset.controls["cc:0:9"] = { controlId: "cc:0:9", name: "Phantom", kind: "encoder", assignment: "none" };
 
     const live = [control("cc:0:7", { subtype: "knob" }), control("note:0:36", { continuous: false, subtype: "pad" })];
     const eff = effectiveControls(live, preset);
     const byId = Object.fromEntries(eff.map((e) => [e.id, e]));
 
-    // preset name/kind override the live detection
+    // preset name/kind/assignment override the live detection
     expect(byId["cc:0:7"].name).toBe("Volume");
     expect(byId["cc:0:7"].kind).toBe("fader");
+    expect(byId["cc:0:7"].assignment).toBe("A:amount");
     expect(byId["cc:0:7"].live).toBeDefined();
 
     // live-only control falls back to detected default
@@ -89,26 +91,61 @@ describe("effectiveControls", () => {
 });
 
 describe("export / import", () => {
-  it("round-trips controls and roles with a fresh id", () => {
+  it("round-trips controls (name/kind/assignment/disabled) with a fresh id", () => {
     const preset = createPreset("MixTrack");
-    preset.controls["cc:0:7"] = { controlId: "cc:0:7", name: "Vol", kind: "fader" };
-    preset.roles.wheel = "cc:0:20";
+    preset.controls["cc:0:7"] = { controlId: "cc:0:7", name: "Vol", kind: "fader", assignment: "A:amount" };
+    preset.controls["cc:0:8"] = { controlId: "cc:0:8", name: "Bad", kind: "knob", assignment: "none", disabled: true };
 
     const parsed = parsePreset(exportPreset(preset));
     expect(parsed).not.toBeNull();
     expect(parsed!.name).toBe("MixTrack");
-    expect(parsed!.controls["cc:0:7"]).toEqual({ controlId: "cc:0:7", name: "Vol", kind: "fader" });
-    expect(parsed!.roles.wheel).toBe("cc:0:20");
+    expect(parsed!.controls["cc:0:7"]).toEqual({ controlId: "cc:0:7", name: "Vol", kind: "fader", assignment: "A:amount" });
+    expect(parsed!.controls["cc:0:8"].disabled).toBe(true);
     expect(parsed!.id).not.toBe(preset.id); // never clobbers the source
+  });
+
+  it("migrates a legacy roles map onto control assignments", () => {
+    const legacy = { name: "Old", controls: {}, roles: { wheel: "cc:0:20", add: "note:0:1", remove: "note:0:2" } };
+    const p = sanitizePreset(legacy);
+    expect(p!.controls["cc:0:20"].assignment).toBe("browse");
+    expect(p!.controls["note:0:1"].assignment).toBe("loadA");
+    expect(p!.controls["note:0:2"].assignment).toBe("loadB");
+    expect("roles" in p!).toBe(false);
   });
 
   it("rejects malformed json and coerces bad fields", () => {
     expect(parsePreset("not json")).toBeNull();
     expect(sanitizePreset(42)).toBeNull();
-    const p = sanitizePreset({ controls: { "cc:0:1": { kind: "bogus" } } });
+    const p = sanitizePreset({ controls: { "cc:0:1": { kind: "bogus", assignment: "garbage" } } });
     expect(p).not.toBeNull();
     expect(p!.controls["cc:0:1"].kind).toBe("knob"); // bad kind -> default
+    expect(p!.controls["cc:0:1"].assignment).toBe("none"); // bad assignment -> default
     expect(p!.name).toBe("Imported preset"); // missing name -> default
+  });
+});
+
+describe("autoAssign", () => {
+  it("lays out faders/encoders/knobs/buttons onto sensible defaults", () => {
+    const eff = effectiveControls(
+      [
+        control("cc:0:1", { subtype: "fader" }),
+        control("cc:0:2", { subtype: "fader" }),
+        control("cc:0:3", { subtype: "fader" }),
+        control("cc:0:10", { relative: true, subtype: "jog" }),
+        control("cc:0:11", { relative: true, subtype: "jog" }),
+        control("note:0:1", { continuous: false }),
+        control("note:0:2", { continuous: false }),
+      ],
+      null,
+    );
+    const map = autoAssign(eff);
+    expect(map["cc:0:1"]).toBe("A:amount");
+    expect(map["cc:0:2"]).toBe("B:amount");
+    expect(map["cc:0:3"]).toBe("crossfade");
+    expect(map["cc:0:10"]).toBe("browse");
+    expect(map["cc:0:11"]).toBe("A:evolveX");
+    expect(map["note:0:1"]).toBe("loadA");
+    expect(map["note:0:2"]).toBe("loadB");
   });
 });
 

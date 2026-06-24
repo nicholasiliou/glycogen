@@ -3,15 +3,14 @@ import { Volume2, VolumeX } from "lucide-react";
 import { useEngine, useRevision } from "@/ui/engine/EngineProvider";
 import { Button } from "@/ui/components/ui/button";
 import { Slider } from "@/ui/components/ui/slider";
-import { cn } from "@/ui/lib/cn";
 import { FAMILY_META, instrumentSpec } from "@/audio/instruments/registry";
 import { useLive } from "./LiveProvider";
 
-/** Per-voice level + mute for everything currently on the stage. */
+/** Per-voice level + mute for the instruments currently on the stage. Audio stays understated. */
 export function Mixer() {
   const engine = useEngine();
   useRevision();
-  const { performer, setActiveLayer, activeLayerId } = useLive();
+  const { performer } = useLive();
   const [mix, setMix] = useState<Record<string, { level: number; muted: boolean }>>({});
 
   const voices = engine.comp.layers.filter((l) => instrumentSpec(l.type)?.create);
@@ -27,7 +26,7 @@ export function Mixer() {
   };
 
   if (voices.length === 0) {
-    return <p className="text-[11px] text-ink-dim">Add a plugin from the sundial to start a voice.</p>;
+    return <p className="text-[11px] text-ink-dim">Load a plugin to start a voice.</p>;
   }
 
   return (
@@ -38,17 +37,7 @@ export function Mixer() {
         return (
           <div key={l.id} className="space-y-1">
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setActiveLayer(l.id)}
-                className={cn("min-w-0 flex-1 truncate text-left", activeLayerId === l.id ? "text-accent" : "text-ink")}
-              >
-                <span
-                  className="mr-1.5 inline-block h-2 w-2 rounded-full align-middle"
-                  style={{ background: FAMILY_META[spec.family].color }}
-                />
-                {l.name}
-              </button>
+              <span className="min-w-0 flex-1 truncate text-ink">{l.name}</span>
               <span className="text-[9px] uppercase text-ink-dim">{FAMILY_META[spec.family].label}</span>
               <Button size="icon-sm" variant="ghost" onClick={() => toggleMute(l.id)}>
                 {v.muted ? <VolumeX className="h-3.5 w-3.5 text-ink-dim" /> : <Volume2 className="h-3.5 w-3.5" />}

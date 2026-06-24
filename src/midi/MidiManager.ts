@@ -226,6 +226,7 @@ export class MidiManager {
     msgKind: "cc" | "pitchbend",
     rawMax = 127,
   ): void {
+    if (this.overrides.get(id)?.disabled) return; // faulty control — drop its messages
     const { ctl, isNew } = this.ensure(id, () => ({
       id,
       label: number === undefined ? `Pitch ch${channel + 1}` : `CC ${number}`,
@@ -301,6 +302,7 @@ export class MidiManager {
     on: boolean,
   ): void {
     const id = `note:${channel}:${note}`;
+    if (this.overrides.get(id)?.disabled) return; // faulty control — drop its messages
     const { ctl, isNew } = this.ensure(id, () => ({
       id,
       label: `Note ${note}`,
