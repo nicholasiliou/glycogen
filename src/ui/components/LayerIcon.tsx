@@ -34,5 +34,5 @@ const MAP: Record<string, React.ComponentType<LucideProps>> = {
 
 export function LayerIcon({ name, className }: { name?: string; className?: string }) {
   const Icon = (name && MAP[name]) || Box;
-  return <Icon className={className} />;
+  return <Icon className={className} strokeWidth={1} />;
 }

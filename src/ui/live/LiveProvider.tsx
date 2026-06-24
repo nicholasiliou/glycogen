@@ -69,6 +69,17 @@ interface LiveContextValue {
   applyAutoAssign: () => void;
   forgetDevice: () => void;
 
+  // ── live driving + on-screen ("digital controller") mapping ──
+  /** Apply a continuous assignment as if a control moved — drives the same paths as MIDI. */
+  driveAssignment: (a: ControlAssignment, input: { value: number; delta?: number; relative?: boolean }) => void;
+  /** Fire a momentary assignment (load / trigger / toggle). */
+  fireAssignment: (a: ControlAssignment) => void;
+  /** The assignment currently armed to learn the next moved control (or null). */
+  learn: ControlAssignment | null;
+  setLearn: (a: ControlAssignment | null) => void;
+  /** Bind a physical control to an assignment, clearing any other control that held it. */
+  bindAssignment: (controlId: string, a: ControlAssignment) => void;
+
   // ── transport / audio ──
   master: number;
   setMaster: (v: number) => void;
@@ -123,6 +134,12 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const [bpm, setBpmState] = useState(110);
   const [root, setRoot] = useState(48);
   const [scale, setScale] = useState<ScaleName>("minorPentatonic");
+  const [learn, setLearnState] = useState<ControlAssignment | null>(null);
+  const learnRef = useRef<ControlAssignment | null>(null);
+  const setLearn = useCallback((a: ControlAssignment | null) => {
+    learnRef.current = a;
+    setLearnState(a);
+  }, []);
 
   const activePreset = useMemo(() => presets.find((p) => p.id === activeId) ?? null, [presets, activeId]);
   // `midi.list()` isn't reactive; midiRev is the intentional signal that a control was (re)learned.
@@ -233,6 +250,84 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     [engine],
   );
 
+  // ── shared driving core: one routing used by both real MIDI and the on-screen controller ──
+  const deckLayer = useCallback(
+    (deck: Deck) => {
+      const id = deck === "A" ? deckARef.current : deckBRef.current;
+      return id ? engine.getLayer(id) : null;
+    },
+    [engine],
+  );
+  const browseStep = useCallback((dir: number) => {
+    const list = typesRef.current;
+    if (!list.length) return;
+    const i = Math.max(0, list.indexOf(selectedTypeRef.current));
+    setSelectedType(list[(i + dir + list.length) % list.length]);
+  }, []);
+  const browseTo = useCallback((u: number) => {
+    const list = typesRef.current;
+    if (!list.length) return;
+    setSelectedType(list[Math.round(clamp01(u) * (list.length - 1))]);
+  }, []);
+
+  const driveAssignment = useCallback(
+    (a: ControlAssignment, input: { value: number; delta?: number; relative?: boolean }) => {
+      if (a === "browse") {
+        if (input.relative) {
+          browseAccumRef.current += input.delta ?? 0;
+          const STEP = 3;
+          while (browseAccumRef.current >= STEP) {
+            browseStep(1);
+            browseAccumRef.current -= STEP;
+          }
+          while (browseAccumRef.current <= -STEP) {
+            browseStep(-1);
+            browseAccumRef.current += STEP;
+          }
+        } else {
+          browseTo(input.value);
+        }
+        return;
+      }
+      if (a === "crossfade") {
+        setCrossfade(input.value);
+        return;
+      }
+      const deck = assignmentDeck(a);
+      const slot = assignmentSlot(a);
+      if (!deck || !slot || !SLOT_META[slot].continuous) return;
+      const layer = deckLayer(deck);
+      if (!layer) return;
+      const schema = engine.registry.get(layer.type)?.schema ?? [];
+      const macro = macroMapFor(layer.type, schema);
+      const spec = macro[slot as "amount" | "evolveX" | "evolveY" | "toneX" | "toneY"];
+      if (spec)
+        driveContinuousSlot(engine, layer, schema, spec, {
+          value: input.value,
+          delta: input.delta ?? 0,
+          relative: !!input.relative,
+        });
+    },
+    [engine, setCrossfade, browseStep, browseTo, deckLayer],
+  );
+
+  const fireAssignment = useCallback(
+    (a: ControlAssignment) => {
+      if (a === "loadA") return loadDeck("A");
+      if (a === "loadB") return loadDeck("B");
+      const deck = assignmentDeck(a);
+      const slot = assignmentSlot(a);
+      if (!deck || !slot || SLOT_META[slot].continuous) return;
+      const layer = deckLayer(deck);
+      if (!layer) return;
+      const schema = engine.registry.get(layer.type)?.schema ?? [];
+      const macro = macroMapFor(layer.type, schema);
+      const spec = macro[slot as "trigger" | "toggle"];
+      if (spec) fireMomentarySlot(engine, layer, schema, slot as "trigger" | "toggle", spec);
+    },
+    [engine, loadDeck, deckLayer],
+  );
+
   // ── keymap mutation helpers (auto-save) ──
   const updateActive = useCallback((mut: (p: MidiPreset) => MidiPreset) => {
     setPresets((prev) => {
@@ -251,6 +346,21 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         assignment: "none",
       },
     [midi],
+  );
+
+  const bindAssignment = useCallback(
+    (controlId: string, a: ControlAssignment) => {
+      updateActive((p) => {
+        const next: Record<string, ControlMapping> = { ...p.controls };
+        // a control's role is exclusive: clear whoever else held this assignment.
+        for (const [id, m] of Object.entries(next)) {
+          if (id !== controlId && m.assignment === a) next[id] = { ...m, assignment: "none" };
+        }
+        next[controlId] = { ...ensureMapping(p, controlId), assignment: a };
+        return { ...p, controls: next };
+      });
+    },
+    [updateActive, ensureMapping],
   );
 
   const renameControl = useCallback(
@@ -370,75 +480,31 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     performer.start();
     midi.enable();
 
-    const browseStep = (dir: number) => {
-      const list = typesRef.current;
-      if (!list.length) return;
-      const i = Math.max(0, list.indexOf(selectedTypeRef.current));
-      setSelectedType(list[(i + dir + list.length) % list.length]);
-    };
-    const browseTo = (u: number) => {
-      const list = typesRef.current;
-      if (!list.length) return;
-      setSelectedType(list[Math.round(clamp01(u) * (list.length - 1))]);
-    };
-    const deckLayer = (deck: Deck) => {
-      const id = deck === "A" ? deckARef.current : deckBRef.current;
-      return id ? engine.getLayer(id) : null;
-    };
-
     const offs = [
       midi.on("discover", () => setMidiRev((r) => r + 1)),
       midi.on("devices", () => setMidiRev((r) => r + 1)),
       midi.on("status", () => setMidiRev((r) => r + 1)),
       midi.on("control", (e) => {
         const ctl = e.control;
+        // learn mode: the next moved control binds to the armed assignment.
+        if (learnRef.current && learnRef.current !== "none") {
+          bindAssignment(ctl.id, learnRef.current);
+          setLearn(null);
+          return;
+        }
         const m = activePresetRef.current?.controls[ctl.id];
         if (!m || m.disabled) return;
-        if (m.assignment === "browse") {
-          if (ctl.relative) {
-            browseAccumRef.current += ctl.delta;
-            const STEP = 3;
-            while (browseAccumRef.current >= STEP) {
-              browseStep(1);
-              browseAccumRef.current -= STEP;
-            }
-            while (browseAccumRef.current <= -STEP) {
-              browseStep(-1);
-              browseAccumRef.current += STEP;
-            }
-          } else {
-            browseTo(ctl.value);
-          }
-          return;
-        }
-        if (m.assignment === "crossfade") {
-          setCrossfade(ctl.value);
-          return;
-        }
-        const deck = assignmentDeck(m.assignment);
-        const slot = assignmentSlot(m.assignment);
-        if (!deck || !slot || !SLOT_META[slot].continuous) return;
-        const layer = deckLayer(deck);
-        if (!layer) return;
-        const schema = engine.registry.get(layer.type)?.schema ?? [];
-        const macro = macroMapFor(layer.type, schema);
-        const spec = macro[slot as "amount" | "evolveX" | "evolveY" | "toneX" | "toneY"];
-        if (spec) driveContinuousSlot(engine, layer, schema, spec, ctl);
+        driveAssignment(m.assignment, { value: ctl.value, delta: ctl.delta, relative: ctl.relative });
       }),
       midi.on("trigger", (c) => {
+        if (learnRef.current && learnRef.current !== "none") {
+          bindAssignment(c.id, learnRef.current);
+          setLearn(null);
+          return;
+        }
         const m = activePresetRef.current?.controls[c.id];
         if (!m || m.disabled) return;
-        if (m.assignment === "loadA") return loadDeck("A");
-        if (m.assignment === "loadB") return loadDeck("B");
-        const deck = assignmentDeck(m.assignment);
-        const slot = assignmentSlot(m.assignment);
-        if (!deck || !slot || SLOT_META[slot].continuous) return;
-        const layer = deckLayer(deck);
-        if (!layer) return;
-        const schema = engine.registry.get(layer.type)?.schema ?? [];
-        const macro = macroMapFor(layer.type, schema);
-        const spec = macro[slot as "trigger" | "toggle"];
-        if (spec) fireMomentarySlot(engine, layer, schema, slot as "trigger" | "toggle", spec);
+        fireAssignment(m.assignment);
       }),
     ];
     return () => {
@@ -447,7 +513,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       midi.dispose();
       audio.dispose();
     };
-  }, [engine, midi, audio, performer, loadDeck, setCrossfade]);
+  }, [midi, audio, performer, driveAssignment, fireAssignment, bindAssignment, setLearn]);
 
   const startAudio = useCallback(async () => {
     await audio.start();
@@ -467,6 +533,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     presets, activePreset, controls,
     selectPreset, createNewPreset, renamePreset, duplicateActive, deletePreset, importPresetJson, exportActive,
     renameControl, setControlKind, setControlAssignment, setControlDisabled, resetControl, applyAutoAssign, forgetDevice,
+    driveAssignment, fireAssignment, learn, setLearn, bindAssignment,
     master, setMaster, bpm, setBpm, root, scale, setKey,
   };
 

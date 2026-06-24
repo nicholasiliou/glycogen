@@ -241,8 +241,8 @@ export class Engine {
       props,
       data: { ...(def?.defaultData?.() ?? {}), ...(opts?.data ?? {}) },
       transform: {
-        anchor: [size[0] / 2, size[1] / 2],
-        position: [comp.width / 2, comp.height / 2],
+        anchor: [0, 0],
+        position: [0, 0],
         ...opts?.transform,
       },
     });

@@ -15,13 +15,10 @@ export function PluginPreview({ type, className }: { type: string; className?: s
   if (!def) return null;
 
   return (
-    <div className={cn("flex items-center gap-2 rounded border border-edge bg-panel-raised px-2 py-1", className)}>
-      <LayerIcon name={def.icon} className="h-5 w-5 shrink-0 text-ink-dim" />
+    <div className={cn("flex items-center gap-2 px-2 py-1", className)}>
+      <LayerIcon name={def.icon} className="h-5 w-5 shrink-0" />
       <div className="min-w-0">
         <div className="truncate text-xs leading-tight text-ink">{def.label ?? type}</div>
-        <div className="truncate text-[10px] leading-tight text-ink-dim">
-          {spec ? `${FAMILY_META[spec.family].label} · ${spec.blurb ?? ""}` : "visual · silent"}
-        </div>
       </div>
     </div>
   );

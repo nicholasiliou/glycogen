@@ -9,10 +9,6 @@ import { LiveApp } from "@/ui/live/LiveApp";
 const engine = new Engine();
 registerBuiltins(engine.registry);
 
-// The live instrument opens on an empty stage — you add plugins from the sundial.
-// (A modest 720p canvas keeps the live render light.)
-engine.setCompositionSettings({ width: 1280, height: 720 });
-
 engine.mount({
   offscreenContainer: document.getElementById("offscreen-host")!,
   pixelRatio: window.devicePixelRatio || 1,

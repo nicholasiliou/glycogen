@@ -37,8 +37,8 @@ export function Stage() {
     };
   }, [engine]);
 
-  const margin = 24;
-  const z = Math.max(0.02, Math.min((size.w - margin) / comp.width, (size.h - margin) / comp.height));
+  const margin = 0;
+  const z = Math.max(0.02, Math.max((size.w - margin) / comp.width, (size.h - margin) / comp.height));
   const dispW = comp.width * z;
   const dispH = comp.height * z;
   const ox = (size.w - dispW) / 2;
