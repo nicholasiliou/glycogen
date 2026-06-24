@@ -4,19 +4,16 @@
  * play the visuals, or switch the surface to map mode to bind hardware controls to it.
  */
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
 import { useEngine } from "@/ui/engine/EngineProvider";
 import { cn } from "@/ui/lib/cn";
 import type { Deck } from "@/midi/preset";
 import { useLive } from "../LiveProvider";
 import {
   BrowsePanel,
-  ControllerMode,
   Crossfader,
   Fader,
   JogWheel,
   Knob,
-  ModeProvider,
   Pad,
 } from "./widgets";
 
@@ -43,9 +40,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 function DeckPanel({ deck }: { deck: Deck }) {
-  const engine = useEngine();
   const live = useLive();
-  const layerId = deck === "A" ? live.deckA : live.deckB;
   const A = deck === "A";
 
   const amount = <Fader assignment={`${deck}:amount`} label="Amount" />;
@@ -61,7 +56,7 @@ function DeckPanel({ deck }: { deck: Deck }) {
         <Knob assignment={`${deck}:toneX`} label="Tone X" />
         <Knob assignment={`${deck}:toneY`} label="Tone Y" />
       </div>
-      <Pad assignment={A ? "loadA" : "loadB"} label={`Load → ${deck}`} className="w-24" />
+      <Pad assignment={A ? "loadA" : "loadB"} label={`Load ${deck}`} className="w-24" />
     </div>
   );
 
@@ -96,20 +91,15 @@ function MixerPanel() {
   );
 }
 
-/** The bare surface. `mode` decides whether interaction plays the visuals or binds controls. */
-export function Controller({ mode }: { mode: ControllerMode }) {
+export function Controller() {
   useRaf();
   return (
-    <ModeProvider value={mode}>
-      <div
-        className="flex h-full w-full items-center justify-center overflow-auto from-ink to-ink-dim/95"
-      >
-        <div className="flex items-stretch gap-4 p-4">
-          <DeckPanel deck="A" />
-          <MixerPanel />
-          <DeckPanel deck="B" />
-        </div>
+    <div className="flex h-full w-full items-center justify-center overflow-auto from-ink to-ink-dim/95">
+      <div className="flex items-stretch gap-4 p-4">
+        <DeckPanel deck="A" />
+        <MixerPanel />
+        <DeckPanel deck="B" />
       </div>
-    </ModeProvider>
+    </div>
   );
 }

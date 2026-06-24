@@ -68,9 +68,7 @@ function AudioGate() {
 
 function LiveShell() {
   const engine = useEngine();
-  const [activeTab, setActiveTab] = useState<"stage" | "settings">("stage");
   const [controllerOpen, setControllerOpen] = useState(false);
-  const [controllerMode, setControllerMode] = useState<"map" | "play">("map");
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -87,19 +85,17 @@ function LiveShell() {
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-black text-ink">
       <HeaderBar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        controllerMode={controllerMode}
-        onControllerModeChange={setControllerMode}
+        controllerOpen={controllerOpen}
+        onControllerToggle={() => setControllerOpen((o) => !o)}
       />
       <div className="relative min-h-0 flex-1">
-        {activeTab === "stage" ? (
+        {controllerOpen ? (
+          <MidiSettingsDialog onClose={() => setControllerOpen(false)} />
+        ) : (
           <>
             <Stage />
             <AudioGate />
           </>
-        ) : (
-          <MidiSettingsDialog mode={controllerMode} />
         )}
       </div>
     </div>

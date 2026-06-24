@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Download, Plus, Trash2, Upload } from "lucide-react";
+import { Download, Plus, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { Input } from "@/ui/components/ui/input";
 import {
@@ -10,14 +10,9 @@ import {
   SelectValue,
 } from "@/ui/components/ui/select";
 import { Controller } from "../controller/Controller";
-import type { ControllerMode } from "../controller/widgets";
 import { useLive } from "../LiveProvider";
 
-export function MidiSettingsDialog({
-  mode,
-}: {
-  mode: ControllerMode;
-}) {
+export function MidiSettingsDialog({ onClose }: { onClose: () => void }) {
   const live = useLive();
   const { midi, presets, activePreset, controls } = live;
 
@@ -46,9 +41,87 @@ export function MidiSettingsDialog({
 
   return (
     <div className="flex h-full flex-col bg-black">
-      {/* controller area */}
+      {/* toolbar */}
+      <div className="flex h-10 shrink-0 items-center gap-2 px-3 text-xs">
+        <span className="text-[10px] uppercase tracking-wide text-ink-dim">Preset</span>
+        <Select value={activePreset?.id ?? ""} onValueChange={(id) => live.selectPreset(id)}>
+          <SelectTrigger className="h-7 w-44">
+            <SelectValue placeholder="No preset" />
+          </SelectTrigger>
+          <SelectContent>
+            {presets.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          key={activePreset?.id}
+          className="h-7 w-36"
+          defaultValue={activePreset?.name ?? ""}
+          placeholder="Preset name"
+          onBlur={(e) => activePreset && live.renamePreset(activePreset.id, e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+        />
+        <Button size="sm" variant="ghost" onClick={() => live.createNewPreset()} title="New preset">
+          <Plus className="h-3.5 w-3.5" /> New
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => live.duplicateActive()} title="Duplicate preset">
+          Duplicate
+        </Button>
+        <Button size="sm" variant="ghost" onClick={doExport} title="Export preset as JSON">
+          <Download className="h-3.5 w-3.5" />
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => fileRef.current?.click()} title="Import preset JSON">
+          <Upload className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          size="sm"
+          variant="danger"
+          onClick={() => activePreset && live.deletePreset(activePreset.id)}
+          title="Delete preset"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          onChange={(e) => e.target.files?.[0] && void doImport(e.target.files[0])}
+        />
+
+        <div className="flex-1" />
+
+        {/* device info */}
+        <span className="text-[10px] uppercase tracking-wide text-ink-dim">Device</span>
+        {status === "unsupported" ? (
+          <span className="text-amber-400">Web MIDI unavailable</span>
+        ) : status === "denied" ? (
+          <Button size="sm" variant="ghost" onClick={() => midi.enable()}>
+            Access denied — retry
+          </Button>
+        ) : devices.length === 0 ? (
+          <span className="text-ink-dim">No device connected</span>
+        ) : (
+          devices.map((d) => (
+            <span key={d.id} className="flex items-center gap-1.5 text-ink">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+              {d.name}
+            </span>
+          ))
+        )}
+        <span className="text-ink-dim">· {bound} bound</span>
+
+        <Button size="icon-sm" variant="ghost" onClick={onClose} title="Close controller">
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* controller surface */}
       <div className="flex min-h-0 flex-1 items-center justify-center p-8">
-          <Controller mode={mode} />
+        <Controller />
       </div>
     </div>
   );

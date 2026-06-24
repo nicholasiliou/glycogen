@@ -3,24 +3,17 @@
  * with pure CSS (gradients + inset shadows, no bitmaps) so the live editor's MIDI keymap can be
  * *seen* and *played* as a physical-looking DJ surface.
  *
- * Each widget binds to a single {@link ControlAssignment}. In **play** mode dragging/clicking it
- * drives the visuals through the same engine paths a real control would (`driveAssignment` /
- * `fireAssignment`); when the assigned hardware control moves it lights up and mirrors its value.
- * In **map** mode the widget instead arms that assignment to learn the next moved control — so
- * mapping is "click the thing on screen, then wiggle the thing on the box".
+ * Hover any widget to reveal its MIDI binding overlay — click to arm learning, right-click to clear.
+ * The overlay stays visible while learning is active so you can wiggle the hardware control.
  */
 import * as React from "react";
-import { createContext, useContext, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/ui/lib/cn";
 import type { ControlAssignment } from "@/midi/preset";
 import { clamp01 } from "../macros";
 import { useLive } from "../LiveProvider";
 
-// ── mode (play vs. map) shared down the surface ──────────────────────────────────────────────
-export type ControllerMode = "play" | "map";
-const ModeCtx = createContext<ControllerMode>("play");
-export const ModeProvider = ModeCtx.Provider;
-export const useMode = (): ControllerMode => useContext(ModeCtx);
+export type ControllerMode = "play" | "map"; // kept for external compat
 
 /** Window-level pointer drag: calls `onMove` until pointer-up, then `onEnd`. */
 function dragWith(onMove: (e: PointerEvent) => void, onEnd?: () => void): void {
@@ -82,17 +75,21 @@ function Label({ children, lit }: { children: React.ReactNode; lit?: boolean }) 
 }
 
 /**
- * Wraps a widget with its label and, in map mode, an overlay button that arms learning and shows
- * the bound control's name (right-click to clear). The overlay swallows pointer events so the
- * underlying knob/fader doesn't also drag while mapping.
+ * Wraps a widget with its label. Hover to reveal the MIDI binding overlay — click to arm
+ * learning, right-click to clear. Overlay stays visible while a learn is in progress.
  */
 function SlotFrame({ slot, label, children }: { slot: SlotState; label: string; children: React.ReactNode }) {
-  const mode = useMode();
+  const [hovered, setHovered] = useState(false);
+  const showOverlay = hovered || slot.learning;
   return (
-    <div className="relative flex flex-col items-center gap-1">
+    <div
+      className="relative flex flex-col items-center gap-1"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       {children}
       <Label lit={slot.active}>{label}</Label>
-      {mode === "map" && (
+      {showOverlay && (
         <button
           type="button"
           onClick={slot.arm}
@@ -130,7 +127,11 @@ const activeRing = (active: boolean) =>
 export function Knob({ assignment, label, size = 64 }: { assignment: ControlAssignment; label: string; size?: number }) {
   const slot = useSlot(assignment);
   const [local, setLocal] = useState(0.5);
-  const v = slot.active && slot.liveValue !== undefined ? slot.liveValue : local;
+  // Keep local in sync with incoming MIDI value so position persists when hardware goes quiet
+  useEffect(() => {
+    if (slot.liveValue !== undefined) setLocal(slot.liveValue);
+  }, [slot.liveValue]);
+  const v = local;
   const angle = -135 + v * 270;
 
   const onDown = (e: React.PointerEvent) => {
@@ -180,7 +181,10 @@ export function Fader({
 }) {
   const slot = useSlot(assignment);
   const [local, setLocal] = useState(0);
-  const v = slot.active && slot.liveValue !== undefined ? slot.liveValue : local;
+  useEffect(() => {
+    if (slot.liveValue !== undefined) setLocal(slot.liveValue);
+  }, [slot.liveValue]);
+  const v = local;
   const trackRef = useRef<HTMLDivElement>(null);
   const CAP = 16;
   const travel = height - 8 - CAP;

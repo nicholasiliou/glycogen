@@ -29,6 +29,10 @@ export function Stage() {
     canvas.style.position = "absolute";
     canvas.style.pointerEvents = "none";
     canvas.style.boxShadow = "0 0 80px rgba(0,0,0,0.6)";
+    host.style.maskImage = "url(/mask.svg)";
+    host.style.maskSize = "100% 100%";
+    host.style.maskPosition = "0 0";
+    host.style.maskRepeat = "no-repeat";
     host.appendChild(canvas);
     engine.input.attach(host);
     return () => {
@@ -53,5 +57,5 @@ export function Stage() {
     canvas.style.height = `${dispH}px`;
   }, [engine, ox, oy, dispW, dispH]);
 
-  return <div ref={hostRef} className="relative h-full w-full touch-none overflow-hidden bg-black" />;
+  return <div ref={hostRef} className="relative h-full w-full touch-none overflow-visible bg-black" />;
 }
