@@ -51,8 +51,8 @@ export interface ContinuousSlot {
 }
 export interface TriggerSlot {
   key: string;
-  /** "reseed" → a new random seed; "bump" → +1. */
-  action: "reseed" | "bump";
+  /** "reseed" → a new random seed; "bump" → +1; "cycle" → next option of a select param. */
+  action: "reseed" | "bump" | "cycle";
 }
 export interface ToggleSlot {
   key: string;
@@ -116,10 +116,10 @@ export const MACRO_MAPS: Record<string, MacroMap> = {
     toggle: { key: "smooth" },
   },
   plant: {
+    // NB: `cameraScale` is deliberately NOT mapped — the plant stays scaled to fit the canvas.
     amount: g("iterations", "linear"),
     evolveX: { key: "spinSpeed", curve: "linear" },
     evolveY: { key: "evolutionSpeed", curve: "linear" },
-    toneX: { key: "cameraScale", curve: "centered" },
     trigger: { key: "seed", action: "reseed" },
     toggle: { key: "autoEvolve" },
   },
@@ -130,18 +130,55 @@ export const MACRO_MAPS: Record<string, MacroMap> = {
     toneX: { key: "lineWidth", curve: "centered" },
     toggle: { key: "glow" },
   },
+  // 3D shape: the shape itself is playable — sweep it on a knob (toneY) or step it on a button
+  // (trigger). `radius` (Size) is left out so the shape stays scaled to the canvas.
+  shape: {
+    amount: g("resolution", "growth"),
+    evolveX: { key: "tiltY", curve: "linear" },
+    evolveY: { key: "spin", curve: "linear" },
+    toneX: { key: "lineWidth", curve: "centered" },
+    toneY: { key: "shape", curve: "linear" },
+    trigger: { key: "shape", action: "cycle" },
+    toggle: { key: "style" },
+  },
+  // Landscape: `radius` (Size) omitted so the terrain fills the canvas; `scale` here is the
+  // terrain's noise feature size, not the layer's scale.
+  landscape: {
+    amount: g("amplitude", "linear"),
+    evolveX: { key: "scale", curve: "linear" },
+    evolveY: { key: "terrace", curve: "linear" },
+    toneX: { key: "spin", curve: "centered" },
+    toneY: { key: "speed", curve: "centered" },
+    toggle: { key: "depthShade" },
+  },
+  glyphScatter: {
+    // `scale` (glyph scale) omitted so the field fills the canvas regardless of MIDI.
+    amount: { key: "threshold", curve: "linear" },
+    evolveX: { key: "noiseScale", curve: "linear" },
+    evolveY: { key: "speed", curve: "linear" },
+    toneX: { key: "cell", curve: "centered" },
+    toneY: { key: "jitter", curve: "linear" },
+    trigger: { key: "seed", action: "reseed" },
+  },
 };
 
 const QUANTITY_KEYS = ["count", "density", "iterations", "octaves", "cycles", "points", "cells"];
 const TONE_KEYS = ["gain", "contrast", "decay", "trail", "maxSpeed", "lineWidth", "damping"];
 const CONTINUOUS_TYPES = new Set(["number", "angle", "percent"]);
+/**
+ * Object-scale / zoom params are never auto-mapped: every layer is meant to stay scaled to fit
+ * the canvas, so its overall size must not be reachable from a MIDI control.
+ */
+const SCALE_KEYS = new Set(["radius", "cameraScale", "zoom", "scale"]);
 
 /**
  * Generic fallback for plugins with no curated map: pick a quantity-ish number for Amount, the
  * next continuous ranges for Evolve/Tone, `seed` for Trigger, and the first boolean for Toggle.
  */
 export function genericMacroMap(schema: PropertySchema[]): MacroMap {
-  const ranges = schema.filter((s) => CONTINUOUS_TYPES.has(s.type) && s.animatable !== false);
+  const ranges = schema.filter(
+    (s) => CONTINUOUS_TYPES.has(s.type) && s.animatable !== false && !SCALE_KEYS.has(s.key),
+  );
   const used = new Set<string>();
   const next = (prefer: string[] = []): string | undefined => {
     const pick =
@@ -198,6 +235,21 @@ export function driveContinuousSlot(
   const ps = schema.find((s) => s.key === spec.key);
   const prop = layer.property(spec.key);
   if (!ps || !prop) return;
+
+  // Select params (e.g. the 3D shape) are chosen by index: an absolute control picks across the
+  // whole range, a relative one steps a single option per detent.
+  if (ps.type === "select") {
+    const opts = ps.meta?.options ?? [];
+    if (!opts.length) return;
+    const cur = prop.valueAt(engine.transport.time);
+    const curIdx = Math.max(0, opts.findIndex((o) => o.value === cur));
+    const idx = ctl.relative
+      ? clamp(curIdx + Math.sign(ctl.delta), 0, opts.length - 1)
+      : Math.round(clamp01(ctl.value) * (opts.length - 1));
+    if (idx !== curIdx) engine.setPropertyValue(layer.id, prop.id, opts[idx].value);
+    return;
+  }
+
   const { min, max, def } = bounds(ps);
 
   let value: number;
@@ -215,6 +267,9 @@ export function driveContinuousSlot(
   }
   const step = ps.meta?.step;
   if (step && step >= 1) value = Math.round(value / step) * step;
+  // Skip redundant churn: a fader sweep emits far more values than a param has steps, and
+  // re-setting an unchanged value still forces an engine recompute (the source of the lag).
+  if (Number(prop.valueAt(engine.transport.time)) === value) return;
   engine.setPropertyValue(layer.id, prop.id, value, true);
 }
 
@@ -229,6 +284,16 @@ export function fireMomentarySlot(
   const prop = layer.property(spec.key);
   const ps = schema.find((s) => s.key === spec.key);
   if (!prop || !ps) return;
+  // A select param (the 3D shape, or a wire/filled style) advances to its next option on press —
+  // this is how the shape itself is changed from a button.
+  if (ps.type === "select") {
+    const opts = ps.meta?.options ?? [];
+    if (!opts.length) return;
+    const cur = prop.valueAt(engine.transport.time);
+    const i = Math.max(0, opts.findIndex((o) => o.value === cur));
+    engine.setPropertyValue(layer.id, prop.id, opts[(i + 1) % opts.length].value);
+    return;
+  }
   if (slot === "toggle") {
     const cur = prop.valueAt(engine.transport.time);
     engine.setPropertyValue(layer.id, prop.id, typeof cur === "boolean" ? !cur : true);

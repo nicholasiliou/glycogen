@@ -126,6 +126,14 @@ function computeEnergy(type: string, props: Record<string, PropertyValue>): numb
       return clamp01(0.5 * norm(Math.abs(n("speed", 0.3)), 0, 4) + 0.5 * norm(n("contrast", 1), 0.1, 6));
     case "harmonograph":
       return clamp01(norm(n("cycles", 12), 1, 60));
+    case "plant":
+      return clamp01(0.6 * norm(n("iterations", 4), 1, 6) + 0.4 * norm(Math.abs(n("spinSpeed", 0.06)), 0, 0.5));
+    case "glyphScatter":
+      return clamp01(0.6 * (1 - n("threshold", 0.5)) + 0.4 * norm(Math.abs(n("speed", 0.2)), 0, 3));
+    case "shape":
+      return clamp01(0.5 * norm(Math.abs(n("spin", 24)), 0, 360) + 0.5 * norm(n("resolution", 28), 8, 80));
+    case "landscape":
+      return clamp01(0.6 * norm(n("amplitude", 0.55), 0, 1.2) + 0.4 * norm(Math.abs(n("speed", 0.15)), 0, 3));
     default:
       return 0.4;
   }

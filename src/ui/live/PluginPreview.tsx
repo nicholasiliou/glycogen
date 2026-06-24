@@ -1,6 +1,6 @@
 import { useEngine } from "@/ui/engine/EngineProvider";
 import { LayerIcon } from "@/ui/components/LayerIcon";
-import { instrumentSpec, FAMILY_META } from "@/audio/instruments/registry";
+import { instrumentSpec } from "@/audio/instruments/registry";
 import { cn } from "@/ui/lib/cn";
 
 /**

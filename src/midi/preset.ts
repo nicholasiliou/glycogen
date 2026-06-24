@@ -17,7 +17,14 @@ import { KIND_BEHAVIOR, type ControlKind, type MidiControl } from "./types";
  */
 export type Deck = "A" | "B";
 export type Slot = "amount" | "evolveX" | "evolveY" | "toneX" | "toneY" | "trigger" | "toggle";
-export type GlobalAssignment = "browse" | "loadA" | "loadB" | "crossfade";
+export type GlobalAssignment =
+  | "browse"
+  | "loadA"
+  | "loadB"
+  | "crossfade"
+  | "swapA"
+  | "swapB"
+  | "browseMode";
 export type ControlAssignment = "none" | GlobalAssignment | `${Deck}:${Slot}`;
 
 export const SLOTS: Slot[] = ["amount", "evolveX", "evolveY", "toneX", "toneY", "trigger", "toggle"];
@@ -59,6 +66,9 @@ export const ASSIGNMENT_GROUPS: AssignmentGroup[] = [
       { value: "loadA", label: "Load → A" },
       { value: "loadB", label: "Load → B" },
       { value: "crossfade", label: "Crossfade A/B" },
+      { value: "swapA", label: "Swap A (stash/active)" },
+      { value: "swapB", label: "Swap B (stash/active)" },
+      { value: "browseMode", label: "Browse: plugin ⇄ shader" },
     ],
   },
   { label: "Deck A", options: SLOTS.map((s) => ({ value: `A:${s}` as ControlAssignment, label: SLOT_META[s].label })) },
@@ -77,6 +87,18 @@ export function assignmentDeck(a: ControlAssignment): Deck | null {
 }
 export function assignmentSlot(a: ControlAssignment): Slot | null {
   return a[1] === ":" ? (a.slice(2) as Slot) : null;
+}
+
+/** Global assignments that fire once on press rather than sweeping a value. */
+const MOMENTARY_GLOBALS = new Set<ControlAssignment>(["loadA", "loadB", "swapA", "swapB", "browseMode"]);
+/**
+ * Whether an assignment is momentary (fired on press: load/swap/browse-mode + per-deck
+ * trigger/toggle) as opposed to continuous (browse/crossfade + amount/evolve/tone, which sweep).
+ */
+export function isMomentaryAssignment(a: ControlAssignment): boolean {
+  const slot = assignmentSlot(a);
+  if (slot) return !SLOT_META[slot].continuous;
+  return MOMENTARY_GLOBALS.has(a);
 }
 
 /** One physical control's user-authored identity + function. */
@@ -312,7 +334,12 @@ export function autoAssign(controls: EffectiveControl[]): Record<string, Control
   assign(faders, faders.length >= 3 ? ["A:amount", "B:amount", "crossfade"] : ["A:amount", "B:amount"]);
   assign(rotaries, ["browse", "A:evolveX", "A:evolveY", "B:evolveX", "B:evolveY"]);
   assign(knobs, ["A:toneX", "A:toneY", "B:toneX", "B:toneY"]);
-  assign(buttons, ["loadA", "loadB", "A:trigger", "A:toggle", "B:trigger", "B:toggle"]);
+  // Buttons also cover the stage actions the on-screen surface exposes (stash/swap each side +
+  // browse-mode), so a captured controller can drive them too — same assignments, one keymap.
+  assign(buttons, [
+    "loadA", "loadB", "swapA", "swapB", "browseMode",
+    "A:trigger", "A:toggle", "B:trigger", "B:toggle",
+  ]);
   return out;
 }
 

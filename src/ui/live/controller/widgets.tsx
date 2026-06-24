@@ -7,13 +7,19 @@
  * The overlay stays visible while learning is active so you can wiggle the hardware control.
  */
 import * as React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { cn } from "@/ui/lib/cn";
 import type { ControlAssignment } from "@/midi/preset";
 import { clamp01 } from "../macros";
 import { useLive } from "../LiveProvider";
 
-export type ControllerMode = "play" | "map"; // kept for external compat
+export type ControllerMode = "play" | "map";
+/**
+ * Whether the surface is being *played* or *mapped*. In "play" the controls are directly
+ * interactive (no binding overlay covering them); in "map" the hover overlay returns so a
+ * physical control can be learned onto a widget. Defaults to play so the surface is usable.
+ */
+export const ControllerModeContext = React.createContext<ControllerMode>("play");
 
 /** Window-level pointer drag: calls `onMove` until pointer-up, then `onEnd`. */
 function dragWith(onMove: (e: PointerEvent) => void, onEnd?: () => void): void {
@@ -80,7 +86,9 @@ function Label({ children, lit }: { children: React.ReactNode; lit?: boolean }) 
  */
 function SlotFrame({ slot, label, children }: { slot: SlotState; label: string; children: React.ReactNode }) {
   const [hovered, setHovered] = useState(false);
-  const showOverlay = hovered || slot.learning;
+  const mode = useContext(ControllerModeContext);
+  // Only cover the control with the bind overlay while mapping — in play mode it stays interactive.
+  const showOverlay = mode === "map" && (hovered || slot.learning);
   return (
     <div
       className="relative flex flex-col items-center gap-1"
@@ -214,7 +222,7 @@ export function Fader({
         {/* recessed slot */}
         <div
           className="absolute bottom-1 left-1/2 top-1 w-[5px] -translate-x-1/2 rounded-full"
-          style={{ background: "#08080a", boxShadow: "inset 0 0 4px rgba(0,0,0,.9)" }}
+          style={{ background: "#18181c", boxShadow: "inset 0 0 4px rgba(0,0,0,.9)" }}
         />
         {/* cap */}
         <div
@@ -263,7 +271,7 @@ export function Crossfader({ width = 240 }: { width?: number }) {
       <div ref={trackRef} onPointerDown={onDown} className="relative h-7 touch-none cursor-ew-resize" style={{ width }}>
         <div
           className="absolute left-1 right-1 top-1/2 h-[5px] -translate-y-1/2 rounded-full"
-          style={{ background: "#08080a", boxShadow: "inset 0 0 4px rgba(0,0,0,.9)" }}
+          style={{ background: "#18181c", boxShadow: "inset 0 0 4px rgba(0,0,0,.9)" }}
         />
         <div
           className="absolute top-1/2 -translate-y-1/2 rounded-sm"
@@ -286,11 +294,17 @@ export function Crossfader({ width = 240 }: { width?: number }) {
 
 // ── jog wheel (angular drag → relative delta for an Evolve slot) ──────────────────────────────
 
-export function JogWheel({ assignment, label, size = 180 }: { assignment: ControlAssignment; label: string; size?: number }) {
+export function JogWheel({ assignment, label, size = 360 }: { assignment: ControlAssignment; label: string; size?: number }) {
   const slot = useSlot(assignment);
   const ref = useRef<HTMLDivElement>(null);
   const last = useRef(0);
   const [spin, setSpin] = useState(0);
+
+  useEffect(() => {
+    if (slot.liveValue !== undefined) {
+      setSpin((s) => s + slot.liveValue * 360);
+    }
+  }, [slot.liveValue]);
 
   const onDown = (e: React.PointerEvent) => {
     e.preventDefault();
@@ -318,31 +332,21 @@ export function JogWheel({ assignment, label, size = 180 }: { assignment: Contro
         className="relative touch-none cursor-grab active:cursor-grabbing rounded-full"
         style={{ width: size, height: size, ...activeRing(slot.active) }}
       >
-        {/* outer rubber rim */}
-        <div
+        {/* outer rim with textured SVG */}
+        <img
+          src="/Rim.svg"
+          alt="rim"
           className="absolute inset-0 rounded-full"
-          style={{
-            background: "radial-gradient(circle at 50% 35%, #2a2c2f, #0c0d0e 78%)",
-            border: "1px solid #050505",
-            boxShadow: "inset 0 2px 3px rgba(255,255,255,.08), 0 2px 5px rgba(0,0,0,.6)",
-          }}
+          style={{ width: size, height: size, transform: `rotate(${spin}deg)` }}
+          draggable={false}
         />
-        {/* brushed-metal platter */}
-        <div
-          className="absolute rounded-full"
-          style={{
-            inset: size * 0.12,
-            background: "radial-gradient(circle at 50% 38%, #d6d6d8 0%, #9a9a9d 32%, #5c5c5f 60%, #2c2c2e 82%, #141416 100%)",
-            boxShadow: "inset 0 2px 4px rgba(255,255,255,.35), inset 0 -4px 8px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.6)",
-            transform: `rotate(${spin}deg)`,
-          }}
-        >
-          <div className="absolute left-1/2 top-[8%] h-[20%] w-[3px] -translate-x-1/2 rounded-full bg-black/60" />
-        </div>
         {/* spindle */}
-        <div
-          className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full"
-          style={{ background: "radial-gradient(circle at 40% 35%, #6a6a6d, #161618)" }}
+        <img
+          src="/Spindle.svg"
+          alt="spindle"
+          className="absolute left-1/2 top-1/2 h-30 w-30 -translate-x-1/2 -translate-y-1/2"
+          style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.6))" }}
+          draggable={false}
         />
       </div>
     </SlotFrame>
@@ -392,47 +396,91 @@ export function Pad({
   );
 }
 
-// ── browse selector ──────────────────────────────────────────────────────────────────────────
+// ── browse selector (rotary encoder with detents) ────────────────────────────────────────────
 
 export function BrowsePanel() {
   const live = useLive();
   const slot = useSlot("browse");
-  const { types, selectedType, setSelectedType } = live;
-  const idx = Math.max(0, types.indexOf(selectedType));
-  const step = (d: number) => types.length && setSelectedType(types[(idx + d + types.length) % types.length]);
+  const shaderMode = live.browseMode === "shader";
+  const label = shaderMode ? live.shaderType : live.selectedType;
+  const list = shaderMode ? live.shaders : live.types;
+  const currentIndex = list.indexOf(label);
+
+  // Normalized rotation: each detent is ~26.67 degrees (360 / 13.5 avg slots)
+  // Map selection index to continuous rotation for smooth visual feedback
+  const rotationAngle = (currentIndex / Math.max(1, list.length - 1)) * 360;
+
+  const ref = useRef<HTMLDivElement>(null);
+  const [spin, setSpin] = useState(rotationAngle);
+  const lastAngle = useRef(0);
+
+  const step = (d: number) => {
+    live.driveAssignment("browse", { value: 0, relative: true, delta: d });
+  };
+
+  const onDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const r = ref.current?.getBoundingClientRect();
+    if (!r) return;
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    lastAngle.current = Math.atan2(e.clientY - cy, e.clientX - cx);
+    let accumulated = 0;
+
+    dragWith((ev) => {
+      const ang = Math.atan2(ev.clientY - cy, ev.clientX - cx);
+      let d = ang - lastAngle.current;
+      if (d > Math.PI) d -= 2 * Math.PI;
+      if (d < -Math.PI) d += 2 * Math.PI;
+      lastAngle.current = ang;
+
+      const degrees = (d * 180) / Math.PI;
+      setSpin((s) => s + degrees);
+      accumulated += degrees;
+
+      // Detent every ~30 degrees (12 positions)
+      const detent = Math.round(accumulated / 30);
+      if (detent !== 0) {
+        step(detent);
+        accumulated = 0;
+      }
+    });
+  };
+
+  // Sync rotation when selection changes externally
+  useEffect(() => {
+    setSpin(rotationAngle);
+  }, [rotationAngle]);
 
   return (
-    <SlotFrame slot={slot} label="Browse">
+    <SlotFrame slot={slot} label={shaderMode ? "Browse · Shader" : "Browse · Plugin"}>
       <div
-        className="flex h-9 items-center gap-1 rounded px-1"
-        style={{
-          background: "linear-gradient(#202225, #131416)",
-          border: "1px solid #050505",
-          boxShadow: "inset 0 1px 1px rgba(255,255,255,.12)",
-          ...activeRing(slot.active),
-        }}
+        ref={ref}
+        onPointerDown={onDown}
+        className="relative touch-none cursor-grab active:cursor-grabbing rounded-full"
+        style={{ width: 80, height: 80, ...activeRing(slot.active) }}
       >
-        <button
-          type="button"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            step(-1);
+        {/* outer knurled ring */}
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: "radial-gradient(circle at 50% 32%, #45484d 0%, #25272a 55%, #131416 100%)",
+            border: "1px solid #050505",
+            boxShadow: "inset 0 1px 1px rgba(255,255,255,.18), inset 0 -3px 5px rgba(0,0,0,.55), 0 1px 2px rgba(0,0,0,.6)",
           }}
-          className="h-6 w-5 rounded text-ink-dim hover:text-ink"
-        >
-          ‹
-        </button>
-        <span className="w-24 truncate text-center text-[10px] font-medium text-ink">{selectedType || "—"}</span>
-        <button
-          type="button"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            step(1);
-          }}
-          className="h-6 w-5 rounded text-ink-dim hover:text-ink"
-        >
-          ›
-        </button>
+        />
+
+        {/* rotating indicator with detents */}
+        <div className="absolute inset-0" style={{ transform: `rotate(${spin}deg)` }}>
+          {/* primary indicator (top) */}
+          <div className="absolute left-1/2 top-[10%] h-[8%] w-0.5 -translate-x-1/2 rounded-full bg-accent shadow-lg shadow-accent/50" />
+        </div>
+
+        {/* center spindle */}
+        <div
+          className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full"
+          style={{ background: "radial-gradient(circle at 40% 35%, #6a6a6d, #161618)", zIndex: 10 }}
+        />
       </div>
     </SlotFrame>
   );

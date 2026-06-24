@@ -36,13 +36,13 @@ export function registerBuiltins(registry: Registry): void {
   registry.register(harmonographLayerType);
   registry.register(noiseLayerType);
   registry.register(cloudLayerType);
-  registry.register(wireLayerType);
+  //registry.register(wireLayerType);
   registry.register(glyphScatterLayerType);
   // 3D
   registry.register(shapeLayerType);
-  registry.register(modelLayerType);
+  //registry.register(modelLayerType);
   registry.register(landscapeLayerType);
-  registry.register(slicerLayerType);
+  //registry.register(slicerLayerType);
   // Simulation
   registry.register(boidsLayerType);
   registry.register(gameOfLifeLayerType);

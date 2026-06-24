@@ -1,7 +1,7 @@
 import * as Tone from "tone";
 import type { AudioEngine } from "../AudioEngine";
 import type { Instrument, SonicParams } from "../types";
-import { Voice, num, norm, lerp } from "./util";
+import { Voice, num, norm, lerp, clamp01 } from "./util";
 
 /**
  * Phase-1 instrument voices. Each is a distinct synth design pinned to one plugin type, so
@@ -192,6 +192,167 @@ export function createNoiseBass(engine: AudioEngine): Instrument {
       cur = p;
       const contrast = num(p.props, "contrast", 1);
       filter.frequency.rampTo(lerp(120, 1100, 0.6 * norm(contrast, 0.1, 6) + 0.4 * p.energy), 0.2);
+      voice.applyGain(p.presence);
+    },
+    setLevel: (v) => voice.setLevel(v),
+    setMuted: (m) => voice.setMuted(m),
+    dispose() {
+      engine.transport.clear(id);
+      [synth, filter].forEach((n) => n.dispose());
+      voice.dispose();
+    },
+  };
+}
+
+// ─────────────────────────── plant -> kalimba plucks ───────────────────────────
+export function createPlantPluck(engine: AudioEngine): Instrument {
+  const voice = new Voice(engine, { reverb: 0.4, delay: 0.3 });
+  const out = new Tone.Gain(0.5).connect(voice.vca);
+  const synth = new Tone.PluckSynth({ attackNoise: 0.8, dampening: 3800, resonance: 0.92 }).connect(out);
+
+  // A branching arpeggio whose density and pitch shift with the plant's depth + seed.
+  const pattern = [0, 2, 4, 7, 9, 11, 9, 7, 4, 2];
+  let cur: SonicParams | null = null;
+  let i = 0;
+  let step = 0;
+  const id = engine.transport.scheduleRepeat((time) => {
+    const props = cur?.props ?? {};
+    const present = (cur?.presence ?? 0) > 0.03;
+    const iter = Math.round(num(props, "iterations", 4));
+    const div = iter >= 5 ? 1 : iter >= 3 ? 2 : 4; // deeper plant = busier melody
+    if (present && step % div === 0) {
+      const seedShift = Math.round(num(props, "seed", 1)) % 5;
+      synth.triggerAttackRelease(engine.freqOfDegree(pattern[i % pattern.length] + seedShift), "8n", time, 0.7);
+      i++;
+    }
+    step = (step + 1) % 16;
+  }, "8n");
+
+  return {
+    family: "pluck",
+    update(p: SonicParams) {
+      cur = p;
+      voice.applyGain(p.presence);
+    },
+    setLevel: (v) => voice.setLevel(v),
+    setMuted: (m) => voice.setMuted(m),
+    dispose() {
+      engine.transport.clear(id);
+      [synth, out].forEach((n) => n.dispose());
+      voice.dispose();
+    },
+  };
+}
+
+// ───────────────────────── glyphScatter -> mallet grid ─────────────────────────
+export function createGlyphMallet(engine: AudioEngine): Instrument {
+  const voice = new Voice(engine, { reverb: 0.25, delay: 0.25 });
+  const synth = new Tone.PolySynth(Tone.Synth, {
+    oscillator: { type: "triangle" },
+    envelope: { attack: 0.002, decay: 0.22, sustain: 0, release: 0.25 },
+    volume: -16,
+  }).connect(voice.vca);
+
+  const chord = [0, 2, 4, 7];
+  let cur: SonicParams | null = null;
+  let step = 0;
+  const id = engine.transport.scheduleRepeat((time) => {
+    const present = (cur?.presence ?? 0) > 0.03;
+    // A sparser field (high threshold) plays fewer mallet hits.
+    const density = clamp01(1 - num(cur?.props ?? {}, "threshold", 0.5));
+    if (present && step % 2 === 0 && Math.random() < 0.25 + 0.7 * density) {
+      const deg = chord[step % chord.length] + (step % 8 >= 4 ? 7 : 0);
+      synth.triggerAttackRelease(engine.freqOfDegree(deg), "16n", time, 0.4 + 0.4 * density);
+    }
+    step = (step + 1) % 16;
+  }, "16n");
+
+  return {
+    family: "stab",
+    update(p: SonicParams) {
+      cur = p;
+      voice.applyGain(p.presence);
+    },
+    setLevel: (v) => voice.setLevel(v),
+    setMuted: (m) => voice.setMuted(m),
+    dispose() {
+      engine.transport.clear(id);
+      synth.dispose();
+      voice.dispose();
+    },
+  };
+}
+
+// ───────────────────────── shape -> metallic FM bell ─────────────────────────
+export function createShapeChime(engine: AudioEngine): Instrument {
+  const voice = new Voice(engine, { reverb: 0.6, delay: 0.35 });
+  const synth = new Tone.PolySynth(Tone.FMSynth, {
+    harmonicity: 3.01,
+    modulationIndex: 12,
+    oscillator: { type: "sine" },
+    modulation: { type: "square" },
+    envelope: { attack: 0.002, decay: 1.6, sustain: 0, release: 1.8 },
+    modulationEnvelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.4 },
+    volume: -20,
+  }).connect(voice.vca);
+
+  const arp = [0, 4, 7, 11];
+  let cur: SonicParams | null = null;
+  let i = 0;
+  const id = engine.transport.scheduleRepeat((time) => {
+    if ((cur?.presence ?? 0) <= 0.03) return;
+    const res = Math.round(num(cur?.props ?? {}, "resolution", 28));
+    const oct = res > 50 ? 7 : 0; // denser mesh rings higher
+    synth.triggerAttackRelease(engine.freqOfDegree(arp[i % arp.length] + oct), "2n", time, 0.5);
+    i++;
+  }, "2n");
+
+  return {
+    family: "chime",
+    update(p: SonicParams) {
+      cur = p;
+      // Knot complexity detunes the bell's partials — a different shape rings differently.
+      const knot = num(p.props, "knotP", 2) + num(p.props, "knotQ", 3);
+      synth.set({ harmonicity: lerp(1.5, 6, norm(knot, 2, 24)) });
+      voice.applyGain(p.presence);
+    },
+    setLevel: (v) => voice.setLevel(v),
+    setMuted: (m) => voice.setMuted(m),
+    dispose() {
+      engine.transport.clear(id);
+      synth.dispose();
+      voice.dispose();
+    },
+  };
+}
+
+// ───────────────────────── landscape -> wide terrain pad ─────────────────────────
+export function createLandscapePad(engine: AudioEngine): Instrument {
+  const voice = new Voice(engine, { reverb: 0.85, delay: 0.2 });
+  const filter = new Tone.Filter({ type: "lowpass", frequency: 700, Q: 0.8 }).connect(voice.vca);
+  const synth = new Tone.PolySynth(Tone.Synth, {
+    oscillator: { type: "sawtooth" },
+    envelope: { attack: 3, decay: 2, sustain: 0.9, release: 7 },
+    volume: -18,
+  }).connect(filter);
+
+  let cur: SonicParams | null = null;
+  let bar = 0;
+  const id = engine.transport.scheduleRepeat((time) => {
+    const terrace = Math.round(num(cur?.props ?? {}, "terrace", 0));
+    // Terraced terrain → tighter, coloured voicings; smooth terrain → open fifths.
+    const base = terrace > 4 ? [0, 3, 7, 10] : terrace > 0 ? [0, 4, 7, 11] : [0, 7, 12];
+    const oct = bar % 2 === 1 ? 7 : 0;
+    synth.triggerAttackRelease(base.map((d) => engine.freqOfDegree(d + oct)), "2m", time, 0.4);
+    bar++;
+  }, "2m");
+
+  return {
+    family: "pad",
+    update(p: SonicParams) {
+      cur = p;
+      const amp = num(p.props, "amplitude", 0.55);
+      filter.frequency.rampTo(lerp(400, 3000, 0.6 * norm(amp, 0, 1.2) + 0.4 * p.energy), 0.4);
       voice.applyGain(p.presence);
     },
     setLevel: (v) => voice.setLevel(v),

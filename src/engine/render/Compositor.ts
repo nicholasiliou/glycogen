@@ -291,7 +291,10 @@ export class Compositor {
       ctx.setTransform(m.a, m.b, m.c, m.d, m.e, m.f);
       ctx.globalAlpha = alpha;
       ctx.globalCompositeOperation = blend;
-      try { ctx.drawImage(source as CanvasImageSource, 0, 0); } catch { /* skip */ }
+      const canvas = source as HTMLCanvasElement;
+      const offsetX = layer.type === "plant" ? -canvas.width/4: 0;
+      const offsetY = layer.type === "plant" ? -canvas.height /4: 0;
+      try { ctx.drawImage(canvas, offsetX, offsetY); } catch { /* skip */ }
       ctx.restore();
     }
   }

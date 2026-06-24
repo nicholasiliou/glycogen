@@ -2,10 +2,14 @@ import type { AudioEngine } from "../AudioEngine";
 import type { Instrument, InstrumentFamily } from "../types";
 import {
   createBoidsArp,
+  createGlyphMallet,
   createHarmonographLead,
+  createLandscapePad,
   createLifeDrums,
   createNoiseBass,
   createPhysarumPad,
+  createPlantPluck,
+  createShapeChime,
 } from "./builtins";
 
 export type InstrumentFactory = (engine: AudioEngine) => Instrument;
@@ -30,11 +34,12 @@ export const INSTRUMENTS: Record<string, InstrumentSpec> = {
   harmonograph: { family: "lead", blurb: "Harmonic lead — frequencies become intervals", create: createHarmonographLead },
   boids: { family: "arp", blurb: "Flock arp — flock speed sets the note rate", create: createBoidsArp },
   noise: { family: "bass", blurb: "Sub bass — a low, evolving ground", create: createNoiseBass },
+  plant: { family: "pluck", blurb: "Kalimba plucks — branching melody", create: createPlantPluck },
+  landscape: { family: "pad", blurb: "Wide evolving pad — terrain as chords", create: createLandscapePad },
+  shape: { family: "chime", blurb: "Metallic FM bell — the shape rings", create: createShapeChime },
+  glyphScatter: { family: "stab", blurb: "Mallet grid — the glyph field plays marimba", create: createGlyphMallet },
   // ── planned (renders now, sound coming) ──
   reactionDiffusion: { family: "texture", blurb: "FM texture — bubbling chemistry" },
-  plant: { family: "pluck", blurb: "Kalimba plucks — branching melody" },
-  landscape: { family: "pad", blurb: "Wide evolving pad — terrain as chords" },
-  shape: { family: "chime", blurb: "Metallic FM bell" },
   slicer: { family: "stab", blurb: "Rhythmic chord stutter" },
   wire: { family: "lead", blurb: "Laser glide lead" },
   cloud: { family: "pad", blurb: "Airy noise wash" },
@@ -51,15 +56,3 @@ export function instrumentSpec(type: string): InstrumentSpec | undefined {
   return INSTRUMENTS[type];
 }
 
-/** Display metadata per family (sundial colours / labels). */
-export const FAMILY_META: Record<InstrumentFamily, { label: string; color: string }> = {
-  drums: { label: "Drums", color: "#ff5500" },
-  pad: { label: "Pad", color: "#3601fb" },
-  lead: { label: "Lead", color: "#c0fc04" },
-  bass: { label: "Bass", color: "#8a2be2" },
-  arp: { label: "Arp", color: "#00d4ff" },
-  pluck: { label: "Pluck", color: "#36d399" },
-  texture: { label: "Texture", color: "#ea027e" },
-  stab: { label: "Stab", color: "#ffd000" },
-  chime: { label: "Chime", color: "#d6ffaa" },
-};

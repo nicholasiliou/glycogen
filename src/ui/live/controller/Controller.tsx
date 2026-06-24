@@ -4,18 +4,17 @@
  * play the visuals, or switch the surface to map mode to bind hardware controls to it.
  */
 import { useEffect, useState } from "react";
-import { useEngine } from "@/ui/engine/EngineProvider";
-import { cn } from "@/ui/lib/cn";
 import type { Deck } from "@/midi/preset";
-import { useLive } from "../LiveProvider";
 import {
   BrowsePanel,
+  ControllerModeContext,
   Crossfader,
   Fader,
   JogWheel,
   Knob,
   Pad,
-} from "./widgets";
+  type ControllerMode,
+} from "./widgets"; // Knob is used in MixerPanel
 
 /** ~30fps tick so live meters / "just moved" glows animate while the surface is mounted. */
 function useRaf(): void {
@@ -40,49 +39,63 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 function DeckPanel({ deck }: { deck: Deck }) {
-  const live = useLive();
   const A = deck === "A";
 
-  const amount = <Fader assignment={`${deck}:amount`} label="Amount" />;
   const stack = (
     <div className="flex flex-col items-center gap-6">
+      <JogWheel assignment={`${deck}:evolveX`} label="Evolve" />
       <div className="flex items-center gap-3">
         <Pad assignment={`${deck}:trigger`} label="Reseed" />
         <Pad assignment={`${deck}:toggle`} label="Toggle" />
+        <Pad assignment="" className="w-24" />
+        <Pad assignment={A ? "swapA" : "swapB"} label="Stash" className="w-24" />
       </div>
-      <JogWheel assignment={`${deck}:evolveX`} label="Evolve" />
-      <div className="flex items-end gap-6">
-        <Knob assignment={`${deck}:evolveY`} label="Evolve Y" />
-        <Knob assignment={`${deck}:toneX`} label="Tone X" />
-        <Knob assignment={`${deck}:toneY`} label="Tone Y" />
-      </div>
-      <Pad assignment={A ? "loadA" : "loadB"} label={`Load ${deck}`} className="w-24" />
     </div>
   );
 
   return (
-    <div
-      className="relative flex flex-col gap-4 rounded-xl p-6"
-    >
-
+    <div className="relative flex flex-col gap-4 rounded-xl p-6">
       <div className="flex items-center justify-between px-1">
         <SectionLabel>Deck {deck}</SectionLabel>
       </div>
-
-      <div className={cn("flex items-stretch gap-8", A ? "flex-row" : "flex-row-reverse")}>
-        <div className="flex flex-col items-center justify-center">{amount}</div>
-        {stack}
-      </div>
+      {stack}
     </div>
   );
 }
 
 function MixerPanel() {
   return (
-    <div className="flex flex-col items-center gap-8 px-8 py-6"
-    >
-      <BrowsePanel />
+    <div className="flex flex-col items-center gap-8 px-8 py-6">
 
+
+      <div className="flex items-center gap-3">
+        <div className="flex flex-col items-center gap-2">
+          <Knob assignment="A:evolveY" label="Evolve Y" />
+          <Knob assignment="A:toneX" label="Tone X" />
+          <Knob assignment="A:toneY" label="Tone Y" />
+          <Pad assignment="loadA" label="Load A"/>
+        </div>
+        <div className="flex flex-col gap-2 border-8 border-mist-950 rounded-2xl p-4">
+          <Knob assignment="1" label="test1" />
+          <Knob assignment="2" label="test2" />
+        <BrowsePanel />
+        <Pad assignment="browseMode" label="Browser Toggle" className="h-9 w-16" />
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <Knob assignment="B:evolveY" label="Evolve Y" />
+          <Knob assignment="B:toneX" label="Tone X" />
+          <Knob assignment="B:toneY" label="Tone Y" />
+          <Pad assignment="loadB" label="Load B"/>
+        </div>
+      </div>
+      <div className="flex flex-row gap-8">
+        <div className="flex flex-col items-center gap-2">
+          <Fader assignment="A:amount" label="Amount A" />
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <Fader assignment="B:amount" label="Amount B" />
+        </div>
+      </div>
       <div className="flex flex-col items-center gap-2">
         <SectionLabel>Crossfade</SectionLabel>
         <Crossfader />
@@ -91,15 +104,20 @@ function MixerPanel() {
   );
 }
 
-export function Controller() {
+export function Controller({ allowMap = true }: { allowMap?: boolean }) {
   useRaf();
+  const [mode] = useState<ControllerMode>("map");
+  const effective: ControllerMode = allowMap ? mode : "play";
+
   return (
-    <div className="flex h-full w-full items-center justify-center overflow-auto from-ink to-ink-dim/95">
-      <div className="flex items-stretch gap-4 p-4">
-        <DeckPanel deck="A" />
-        <MixerPanel />
-        <DeckPanel deck="B" />
+    <ControllerModeContext.Provider value={effective}>
+      <div className="relative flex h-full w-full flex-col items-center justify-center overflow-auto">
+        <div className="flex items-stretch gap-4 p-4">
+          <DeckPanel deck="A" />
+          <MixerPanel />
+          <DeckPanel deck="B" />
+        </div>
       </div>
-    </div>
+    </ControllerModeContext.Provider>
   );
 }

@@ -13,6 +13,7 @@ import {
   duplicatePreset,
   effectiveControls,
   exportPreset,
+  isMomentaryAssignment,
   loadActiveId,
   loadPresets,
   parsePreset,
@@ -29,6 +30,7 @@ import { AudioEngine } from "@/audio/AudioEngine";
 import { LivePerformer } from "@/audio/LivePerformer";
 import type { ScaleName } from "@/audio/scale";
 import { clamp, clamp01, driveContinuousSlot, fireMomentarySlot, macroMapFor } from "./macros";
+import { openLiveChannel, type LiveMessage, type LiveSnapshot } from "./liveChannel";
 
 interface LiveContextValue {
   midi: MidiManager;
@@ -43,12 +45,26 @@ interface LiveContextValue {
   types: string[];
   selectedType: string;
   setSelectedType: (t: string) => void;
+  /** The MIDI-managed ("active") layer for each side. */
   deckA: string | null;
   deckB: string | null;
+  /** The stashed layer for each side: still rendering + sounding, just not MIDI-controlled. */
+  deckAStash: string | null;
+  deckBStash: string | null;
   loadDeck: (deck: Deck) => void;
   clearDeck: (deck: Deck) => void;
+  /** Swap which of a side's two plugins the controller drives (the other keeps running). */
+  swapDeck: (deck: Deck) => void;
   crossfade: number;
   setCrossfade: (x: number) => void;
+
+  // ── full-canvas shader (instagram-filter style; "none" = off) ──
+  shaders: string[];
+  shaderType: string;
+  setShaderType: (type: string) => void;
+  /** Whether the browse wheel scrolls plugins or shaders. */
+  browseMode: "plugin" | "shader";
+  toggleBrowseMode: () => void;
 
   // ── MIDI keymap (the persistent preset) ──
   presets: MidiPreset[];
@@ -90,13 +106,14 @@ interface LiveContextValue {
   setKey: (root: number, scale: ScaleName) => void;
 }
 
-const LiveContext = createContext<LiveContextValue | null>(null);
+export const LiveContext = createContext<LiveContextValue | null>(null);
+export type { LiveContextValue };
 
-/** Layer types offered on the stage: everything except pure containers. */
+/** Layer types offered on the stage: everything except pure containers and full-canvas shaders. */
 function selectableTypes(registry: Registry): string[] {
   return registry
     .all()
-    .filter((d) => d.kind !== "group" && d.kind !== "layout" && d.type !== "null")
+    .filter((d) => d.kind !== "group" && d.kind !== "layout" && d.kind !== "effect" && d.type !== "null")
     .map((d) => d.type);
 }
 
@@ -122,12 +139,24 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     return { ps, id };
   }, []);
 
+  // Each side holds two plugin slots; `managed` is the one the MIDI controller drives. Both slots
+  // keep rendering + sounding — stashing just moves the controller's focus to the other slot.
+  type DeckState = { slots: [string | null, string | null]; managed: 0 | 1 };
+  const [decks, setDecks] = useState<{ A: DeckState; B: DeckState }>({
+    A: { slots: [null, null], managed: 0 },
+    B: { slots: [null, null], managed: 0 },
+  });
+  const deckA = decks.A.slots[decks.A.managed];
+  const deckB = decks.B.slots[decks.B.managed];
+  const deckAStash = decks.A.slots[decks.A.managed === 0 ? 1 : 0];
+  const deckBStash = decks.B.slots[decks.B.managed === 0 ? 1 : 0];
+
   const [started, setStarted] = useState(false);
   const [midiRev, setMidiRev] = useState(0);
   const [selectedType, setSelectedType] = useState("");
-  const [deckA, setDeckA] = useState<string | null>(null);
-  const [deckB, setDeckB] = useState<string | null>(null);
   const [crossfade, setCrossfadeState] = useState(0.5);
+  const [browseMode, setBrowseMode] = useState<"plugin" | "shader">("plugin");
+  const [shaderType, setShaderTypeState] = useState("none");
   const [presets, setPresets] = useState<MidiPreset[]>(boot.ps);
   const [activeId, setActiveId] = useState<string>(boot.id);
   const [master, setMasterState] = useState(0.9);
@@ -152,18 +181,44 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const activeIdRef = useRef(activeId);
   const selectedTypeRef = useRef("");
   const typesRef = useRef<string[]>(types);
-  const deckARef = useRef<string | null>(null);
-  const deckBRef = useRef<string | null>(null);
+  const decksRef = useRef(decks);
   const crossfadeRef = useRef(0);
-  const browseAccumRef = useRef(0);
+  /** Timestamp of the last browse step — gates out the burst of messages a single detent emits. */
+  const lastBrowseAtRef = useRef(0);
+  const browseModeRef = useRef<"plugin" | "shader">("plugin");
+  const shaderTypeRef = useRef("none");
+  /** The engine layer id of the active full-canvas shader (null when "none"). */
+  const shaderLayerIdRef = useRef<string | null>(null);
+  // Coalescing buffer for continuous drives (flushed once per animation frame — see driveAssignment).
+  const pendingDriveRef = useRef<Map<ControlAssignment, { value: number; delta: number; relative: boolean }>>(new Map());
+  const driveRafRef = useRef(0);
+  /** Last press state per control id, for momentary actions bound to continuous-detected controls. */
+  const pressEdgeRef = useRef<Map<string, boolean>>(new Map());
   activePresetRef.current = activePreset;
   controlsRef.current = controls;
   activeIdRef.current = activeId;
   selectedTypeRef.current = selectedType;
   typesRef.current = types;
-  deckARef.current = deckA;
-  deckBRef.current = deckB;
+  decksRef.current = decks;
   crossfadeRef.current = crossfade;
+  browseModeRef.current = browseMode;
+  shaderTypeRef.current = shaderType;
+
+  /** The MIDI-managed layer id for a side (reads live deck state). */
+  const managedId = useCallback((deck: Deck): string | null => {
+    const d = decksRef.current[deck];
+    return d.slots[d.managed];
+  }, []);
+  const nameOf = useCallback(
+    (id: string | null): string | null => (id ? engine.getLayer(id)?.name ?? null : null),
+    [engine],
+  );
+
+  // Full-canvas shaders are the registered "effect" layer types; "none" disables.
+  const shaders = useMemo(
+    () => ["none", ...engine.registry.all().filter((d) => d.kind === "effect").map((d) => d.type)],
+    [engine],
+  );
 
   useEffect(() => {
     savePresets(boot.ps);
@@ -206,63 +261,84 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     },
     [setOpacity],
   );
+  const commitDecks = useCallback((next: { A: DeckState; B: DeckState }) => {
+    decksRef.current = next;
+    setDecks(next);
+  }, []);
+
+  /** Keep the full-canvas shader pinned above all content so it filters everything. */
+  const pinShader = useCallback(() => {
+    const id = shaderLayerIdRef.current;
+    if (id) engine.comp.moveLayer(id, 0);
+  }, [engine]);
+
   const setCrossfade = useCallback(
     (x: number) => {
       const v = clamp01(x);
       setCrossfadeState(v);
-      applyCrossfade(v, deckARef.current, deckBRef.current);
+      applyCrossfade(v, managedId("A"), managedId("B"));
     },
-    [applyCrossfade],
+    [applyCrossfade, managedId],
   );
 
+  // Loading replaces the side's *managed* slot — the stashed plugin keeps running untouched.
   const loadDeck = useCallback(
     (deck: Deck) => {
       const type = selectedTypeRef.current;
       if (!type) return;
-      const prev = deck === "A" ? deckARef.current : deckBRef.current;
+      const d = decksRef.current[deck];
+      const prev = d.slots[d.managed];
       if (prev) engine.removeLayers([prev]);
-      const layer = engine.addLayer(type);
+      const layer = engine.addLayer(type, { select: false });
       if (!layer) return;
-      if (deck === "A") {
-        deckARef.current = layer.id;
-        setDeckA(layer.id);
-      } else {
-        deckBRef.current = layer.id;
-        setDeckB(layer.id);
-      }
-      applyCrossfade(crossfadeRef.current, deckARef.current, deckBRef.current);
+      const slots = [...d.slots] as [string | null, string | null];
+      slots[d.managed] = layer.id;
+      commitDecks({ ...decksRef.current, [deck]: { slots, managed: d.managed } });
+      pinShader();
+      applyCrossfade(crossfadeRef.current, managedId("A"), managedId("B"));
     },
-    [engine, applyCrossfade],
+    [engine, applyCrossfade, commitDecks, managedId, pinShader],
   );
 
   const clearDeck = useCallback(
     (deck: Deck) => {
-      const id = deck === "A" ? deckARef.current : deckBRef.current;
+      const d = decksRef.current[deck];
+      const id = d.slots[d.managed];
       if (id) engine.removeLayers([id]);
-      if (deck === "A") {
-        deckARef.current = null;
-        setDeckA(null);
-      } else {
-        deckBRef.current = null;
-        setDeckB(null);
-      }
+      const slots = [...d.slots] as [string | null, string | null];
+      slots[d.managed] = null;
+      commitDecks({ ...decksRef.current, [deck]: { slots, managed: d.managed } });
     },
-    [engine],
+    [engine, commitDecks],
+  );
+
+  // Move the controller's focus to the side's other slot; both layers keep rendering + sounding.
+  const swapDeck = useCallback(
+    (deck: Deck) => {
+      const d = decksRef.current[deck];
+      commitDecks({ ...decksRef.current, [deck]: { slots: d.slots, managed: d.managed === 0 ? 1 : 0 } });
+      applyCrossfade(crossfadeRef.current, managedId("A"), managedId("B"));
+    },
+    [applyCrossfade, commitDecks, managedId],
   );
 
   // ── shared driving core: one routing used by both real MIDI and the on-screen controller ──
   const deckLayer = useCallback(
     (deck: Deck) => {
-      const id = deck === "A" ? deckARef.current : deckBRef.current;
+      const id = managedId(deck);
       return id ? engine.getLayer(id) : null;
     },
-    [engine],
+    [engine, managedId],
   );
+  // Functional update so several browse steps within one flush each build on the *committed*
+  // selection — otherwise rapid encoder ticks all read the same stale ref and collapse to one move.
   const browseStep = useCallback((dir: number) => {
-    const list = typesRef.current;
-    if (!list.length) return;
-    const i = Math.max(0, list.indexOf(selectedTypeRef.current));
-    setSelectedType(list[(i + dir + list.length) % list.length]);
+    setSelectedType((curr) => {
+      const list = typesRef.current;
+      if (!list.length) return curr;
+      const i = Math.max(0, list.indexOf(curr));
+      return list[(i + dir + list.length) % list.length];
+    });
   }, []);
   const browseTo = useCallback((u: number) => {
     const list = typesRef.current;
@@ -270,29 +346,49 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     setSelectedType(list[Math.round(clamp01(u) * (list.length - 1))]);
   }, []);
 
-  const driveAssignment = useCallback(
-    (a: ControlAssignment, input: { value: number; delta?: number; relative?: boolean }) => {
-      if (a === "browse") {
-        if (input.relative) {
-          browseAccumRef.current += input.delta ?? 0;
-          const STEP = 3;
-          while (browseAccumRef.current >= STEP) {
-            browseStep(1);
-            browseAccumRef.current -= STEP;
-          }
-          while (browseAccumRef.current <= -STEP) {
-            browseStep(-1);
-            browseAccumRef.current += STEP;
-          }
-        } else {
-          browseTo(input.value);
-        }
-        return;
+  // ── full-canvas shader: add/remove a top-most effect layer, applied immediately as you scroll ──
+  const applyShader = useCallback(
+    (type: string) => {
+      const prev = shaderLayerIdRef.current;
+      if (prev) {
+        engine.removeLayers([prev]);
+        shaderLayerIdRef.current = null;
       }
-      if (a === "crossfade") {
-        setCrossfade(input.value);
-        return;
+      if (type && type !== "none") {
+        const layer = engine.addLayer(type, { index: 0, select: false });
+        if (layer) shaderLayerIdRef.current = layer.id;
       }
+      shaderTypeRef.current = type;
+      setShaderTypeState(type);
+    },
+    [engine],
+  );
+  const shaderStep = useCallback(
+    (dir: number) => {
+      const list = shaders;
+      const i = Math.max(0, list.indexOf(shaderTypeRef.current));
+      applyShader(list[(i + dir + list.length) % list.length]);
+    },
+    [shaders, applyShader],
+  );
+  const shaderTo = useCallback(
+    (u: number) => {
+      const list = shaders;
+      if (list.length) applyShader(list[Math.round(clamp01(u) * (list.length - 1))]);
+    },
+    [shaders, applyShader],
+  );
+  const toggleBrowseMode = useCallback(() => {
+    setBrowseMode((m) => {
+      const next = m === "plugin" ? "shader" : "plugin";
+      browseModeRef.current = next;
+      return next;
+    });
+  }, []);
+
+  // Resolve + apply one continuous slot to its deck's layer (the expensive part).
+  const applyContinuousSlot = useCallback(
+    (a: ControlAssignment, input: { value: number; delta: number; relative: boolean }) => {
       const deck = assignmentDeck(a);
       const slot = assignmentSlot(a);
       if (!deck || !slot || !SLOT_META[slot].continuous) return;
@@ -301,20 +397,78 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       const schema = engine.registry.get(layer.type)?.schema ?? [];
       const macro = macroMapFor(layer.type, schema);
       const spec = macro[slot as "amount" | "evolveX" | "evolveY" | "toneX" | "toneY"];
-      if (spec)
-        driveContinuousSlot(engine, layer, schema, spec, {
-          value: input.value,
-          delta: input.delta ?? 0,
-          relative: !!input.relative,
-        });
+      if (spec) driveContinuousSlot(engine, layer, schema, spec, input);
     },
-    [engine, setCrossfade, browseStep, browseTo, deckLayer],
+    [engine, deckLayer],
+  );
+
+  // Flush all coalesced drives accumulated since the last frame, then clear.
+  const flushDrives = useCallback(() => {
+    driveRafRef.current = 0;
+    const pending = pendingDriveRef.current;
+    pendingDriveRef.current = new Map();
+    for (const [a, input] of pending) applyContinuousSlot(a, input);
+  }, [applyContinuousSlot]);
+
+  const driveAssignment = useCallback(
+    (a: ControlAssignment, input: { value: number; delta?: number; relative?: boolean }) => {
+      if (a === "browse") {
+        const shaderMode = browseModeRef.current === "shader";
+        const step = shaderMode ? shaderStep : browseStep;
+        const seek = shaderMode ? shaderTo : browseTo;
+        if (input.relative) {
+          // A single physical detent usually fires several CC messages a few ms apart; without
+          // gating that skips multiple entries. Step once per burst (the sign of the first
+          // message wins), then ignore anything for a short window — one detent = one move.
+          const d = input.delta ?? 0;
+          if (d !== 0) {
+            const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+            if (now - lastBrowseAtRef.current >= 60) {
+              step(d > 0 ? 1 : -1);
+              lastBrowseAtRef.current = now;
+            }
+          }
+        } else {
+          seek(input.value);
+        }
+        return;
+      }
+      if (a === "crossfade") {
+        setCrossfade(1 - input.value);
+        return;
+      }
+      // Continuous deck slots are coalesced to one apply per animation frame: a fader/knob emits
+      // a flood of messages, and applying every one (reseeding agents, recomputing the frame) is
+      // what makes Amount/Gain feel laggy. Keep the latest absolute value; sum relative deltas.
+      const deck = assignmentDeck(a);
+      const slot = assignmentSlot(a);
+      if (!deck || !slot || !SLOT_META[slot].continuous) return;
+      const prev = pendingDriveRef.current.get(a);
+      if (input.relative) {
+        pendingDriveRef.current.set(a, {
+          value: input.value,
+          delta: (prev?.delta ?? 0) + (input.delta ?? 0),
+          relative: true,
+        });
+      } else {
+        pendingDriveRef.current.set(a, { value: input.value, delta: 0, relative: false });
+      }
+      if (typeof requestAnimationFrame === "undefined") {
+        flushDrives();
+      } else if (!driveRafRef.current) {
+        driveRafRef.current = requestAnimationFrame(flushDrives);
+      }
+    },
+    [setCrossfade, browseStep, browseTo, shaderStep, shaderTo, flushDrives],
   );
 
   const fireAssignment = useCallback(
     (a: ControlAssignment) => {
       if (a === "loadA") return loadDeck("A");
       if (a === "loadB") return loadDeck("B");
+      if (a === "swapA") return swapDeck("A");
+      if (a === "swapB") return swapDeck("B");
+      if (a === "browseMode") return toggleBrowseMode();
       const deck = assignmentDeck(a);
       const slot = assignmentSlot(a);
       if (!deck || !slot || SLOT_META[slot].continuous) return;
@@ -325,7 +479,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       const spec = macro[slot as "trigger" | "toggle"];
       if (spec) fireMomentarySlot(engine, layer, schema, slot as "trigger" | "toggle", spec);
     },
-    [engine, loadDeck, deckLayer],
+    [engine, loadDeck, swapDeck, toggleBrowseMode, deckLayer],
   );
 
   // ── keymap mutation helpers (auto-save) ──
@@ -494,6 +648,16 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         }
         const m = activePresetRef.current?.controls[ctl.id];
         if (!m || m.disabled) return;
+        if (isMomentaryAssignment(m.assignment)) {
+          // Fire on rising edge regardless of how the control is detected (button-kind CC,
+          // plain CC auto-detected as knob, or note). "trigger" fires for note/button-kind
+          // but not for plain CC — handle all cases here so nothing is missed.
+          const down = ctl.value > 0 || ctl.pressed;
+          const prev = pressEdgeRef.current.get(ctl.id) ?? false;
+          pressEdgeRef.current.set(ctl.id, down);
+          if (down && !prev) fireAssignment(m.assignment);
+          return;
+        }
         driveAssignment(m.assignment, { value: ctl.value, delta: ctl.delta, relative: ctl.relative });
       }),
       midi.on("trigger", (c) => {
@@ -502,9 +666,11 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
           setLearn(null);
           return;
         }
+        // Only handle trigger for controls NOT mapped to a momentary assignment — those are
+        // already handled (edge-detected) in the "control" handler above to avoid double-firing.
         const m = activePresetRef.current?.controls[c.id];
         if (!m || m.disabled) return;
-        fireAssignment(m.assignment);
+        if (!isMomentaryAssignment(m.assignment)) fireAssignment(m.assignment);
       }),
     ];
     return () => {
@@ -514,6 +680,59 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       audio.dispose();
     };
   }, [midi, audio, performer, driveAssignment, fireAssignment, bindAssignment, setLearn]);
+
+  // Drop any queued drive frame on unmount.
+  useEffect(() => () => { if (driveRafRef.current) cancelAnimationFrame(driveRafRef.current); }, []);
+
+  // ── digital-controller popup bridge (host side): apply the remote's taps, mirror state back ──
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  useEffect(() => {
+    const ch = openLiveChannel();
+    if (!ch) return;
+    channelRef.current = ch;
+    const snapshot = (): LiveSnapshot => ({
+      types: typesRef.current,
+      selectedType: selectedTypeRef.current,
+      deckAName: nameOf(managedId("A")),
+      deckBName: nameOf(managedId("B")),
+      deckAStashName: nameOf(decksRef.current.A.slots[decksRef.current.A.managed === 0 ? 1 : 0]),
+      deckBStashName: nameOf(decksRef.current.B.slots[decksRef.current.B.managed === 0 ? 1 : 0]),
+      crossfade: crossfadeRef.current,
+      browseMode: browseModeRef.current,
+      shaders,
+      shaderType: shaderTypeRef.current,
+    });
+    ch.onmessage = (e: MessageEvent<LiveMessage>) => {
+      const m = e.data;
+      if (m.kind === "drive") driveAssignment(m.a, m.input);
+      else if (m.kind === "fire") fireAssignment(m.a);
+      else if (m.kind === "selectType") setSelectedType(m.type);
+      else if (m.kind === "hello") ch.postMessage({ kind: "state", snapshot: snapshot() });
+    };
+    return () => {
+      ch.close();
+      channelRef.current = null;
+    };
+  }, [shaders, driveAssignment, fireAssignment, managedId, nameOf]);
+
+  // Mirror display state to any open remote whenever the relevant pieces change.
+  useEffect(() => {
+    channelRef.current?.postMessage({
+      kind: "state",
+      snapshot: {
+        types,
+        selectedType,
+        deckAName: nameOf(deckA),
+        deckBName: nameOf(deckB),
+        deckAStashName: nameOf(deckAStash),
+        deckBStashName: nameOf(deckBStash),
+        crossfade,
+        browseMode,
+        shaders,
+        shaderType,
+      },
+    });
+  }, [types, selectedType, deckA, deckB, deckAStash, deckBStash, crossfade, browseMode, shaders, shaderType, nameOf]);
 
   const startAudio = useCallback(async () => {
     await audio.start();
@@ -529,7 +748,9 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
 
   const value: LiveContextValue = {
     midi, audio, performer, started, startAudio, midiRev,
-    types, selectedType, setSelectedType, deckA, deckB, loadDeck, clearDeck, crossfade, setCrossfade,
+    types, selectedType, setSelectedType,
+    deckA, deckB, deckAStash, deckBStash, loadDeck, clearDeck, swapDeck, crossfade, setCrossfade,
+    shaders, shaderType, setShaderType: applyShader, browseMode, toggleBrowseMode,
     presets, activePreset, controls,
     selectPreset, createNewPreset, renamePreset, duplicateActive, deletePreset, importPresetJson, exportActive,
     renameControl, setControlKind, setControlAssignment, setControlDisabled, resetControl, applyAutoAssign, forgetDevice,

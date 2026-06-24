@@ -5,7 +5,21 @@ import { Engine, Exporter, serializeProject } from "@/engine";
 import { registerBuiltins } from "@/plugins";
 import { EngineProvider } from "@/ui/engine/EngineProvider";
 import { LiveApp } from "@/ui/live/LiveApp";
+import { isRemoteWindow } from "@/ui/live/liveChannel";
+import { RemoteControllerApp } from "@/ui/live/RemoteControllerApp";
 
+// Popup "digital controller" window: no engine here — it relays to the host over BroadcastChannel.
+if (isRemoteWindow()) {
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <RemoteControllerApp />
+    </StrictMode>,
+  );
+} else {
+  bootEditor();
+}
+
+function bootEditor() {
 const engine = new Engine();
 registerBuiltins(engine.registry);
 
@@ -30,3 +44,4 @@ createRoot(document.getElementById("root")!).render(
     </EngineProvider>
   </StrictMode>,
 );
+}

@@ -1,7 +1,8 @@
 import { useRef } from "react";
-import { Download, Plus, Trash2, Upload, X } from "lucide-react";
+import { Download, ExternalLink, Plus, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/ui/components/ui/button";
 import { Input } from "@/ui/components/ui/input";
+import { REMOTE_HASH } from "../liveChannel";
 import {
   Select,
   SelectContent,
@@ -37,6 +38,12 @@ export function MidiSettingsDialog({ onClose }: { onClose: () => void }) {
     const text = await file.text();
     if (!live.importPresetJson(text)) window.alert("That file isn't a valid MIDI preset.");
     if (fileRef.current) fileRef.current.value = "";
+  };
+
+  // Pop the on-screen DJ surface out into its own window (drives this session over BroadcastChannel).
+  const openControllerWindow = () => {
+    const url = `${window.location.origin}${window.location.pathname}${REMOTE_HASH}`;
+    window.open(url, "marathon-controller", "width=1100,height=680");
   };
 
   return (
@@ -75,6 +82,14 @@ export function MidiSettingsDialog({ onClose }: { onClose: () => void }) {
         </Button>
         <Button size="sm" variant="ghost" onClick={() => fileRef.current?.click()} title="Import preset JSON">
           <Upload className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={openControllerWindow}
+          title="Open the digital controller in a separate window (no MIDI hardware needed)"
+        >
+          <ExternalLink className="h-3.5 w-3.5" /> Window
         </Button>
         <Button
           size="sm"
@@ -120,8 +135,21 @@ export function MidiSettingsDialog({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* controller surface */}
-      <div className="flex min-h-0 flex-1 items-center justify-center p-8">
+      <div className="relative flex min-h-0 flex-1 items-center justify-center p-8">
         <Controller />
+        {devices.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/60 backdrop-blur-xs">
+            <div className="flex flex-col items-center gap-4">
+              <div className="max-w-xs bg-black/80 p-6 text-center">
+                <p className="mb-4 text-sm text-ink-dim">No MIDI controller connected</p>
+                <p className="mb-6 text-xs text-ink-dim/70">Either connect a hardware controller or use the digital controller</p>
+                <Button size="sm" onClick={openControllerWindow}>
+                  Open Digital Controller
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
