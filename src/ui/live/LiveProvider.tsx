@@ -417,6 +417,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
 
   const driveAssignment = useCallback(
     (a: ControlAssignment, input: { value: number; delta?: number; relative?: boolean }) => {
+      if (a === "none" || a.startsWith("placeholder")) return;
       if (a === "browse") {
         const shaderMode = browseModeRef.current === "shader";
         const step = shaderMode ? shaderStep : browseStep;
@@ -469,6 +470,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
 
   const fireAssignment = useCallback(
     (a: ControlAssignment) => {
+      if (a === "none" || a.startsWith("placeholder")) return;
       if (a === "loadA") return loadDeck("A");
       if (a === "loadB") return loadDeck("B");
       if (a === "swapA") return swapDeck("A");

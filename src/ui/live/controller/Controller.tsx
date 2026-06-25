@@ -46,26 +46,26 @@ function DeckPanel({ deck }: { deck: Deck }) {
   const stack = (
     <div className="flex flex-col items-center gap-6">
     <div className="grid grid-cols-4 gap-3">
-      <Pad />
-      <Pad />
-      <Pad />
-      <Pad />
+      <Pad assignment={A ? "placeholder1" : "placeholder11"} label="" />
+      <Pad assignment={A ? "placeholder2" : "placeholder12"} label="" />
+      <Pad assignment={A ? "placeholder3" : "placeholder13"} label="" />
+      <Pad assignment={A ? "placeholder4" : "placeholder14"} label="" />
 
-      <Pad />
-      <SmoothKnob />
-      <SmoothKnob />
-      <SmoothKnob />
+      <Pad assignment={A ? "placeholder5" : "placeholder15"} label="" />
+      <SmoothKnob assignment={A ? "placeholder6" : "placeholder16"} label="" />
+      <SmoothKnob assignment={A ? "placeholder7" : "placeholder17"} label="" />
+      <SmoothKnob assignment={A ? "placeholder8" : "placeholder18"} label="" />
 
-      <Pad />
-      <Pad />
-      <Pad />
-      <Pad />
+      <Pad assignment={A ? "placeholder9" : "placeholder19"} label="" />
+      <Pad assignment={A ? "placeholder10" : "placeholder20"} label="" />
+      <Pad assignment={A ? "placeholder11" : "placeholder21"} label="" />
+      <Pad assignment={A ? "placeholder12" : "placeholder22"} label="" />
     </div>
       <JogWheel assignment={`${deck}:evolveX`} label="Evolve" />
       <div className="flex items-center gap-3">
         <Pad assignment={`${deck}:trigger`} label="Reseed" />
         <Pad assignment={`${deck}:toggle`} label="Toggle" />
-        <Pad/>
+        <Pad assignment={A ? "placeholder23" : "placeholder24"} label="" />
         <Pad assignment={A ? "swapA" : "swapB"} label="Stash" />
       </div>
     </div>
@@ -88,28 +88,32 @@ function MixerPanel() {
 
 <div className="grid grid-cols-3 gap-4 gap-x-0 items-top">
   <Knob assignment="A:evolveY" label="Evolve Y" />
-  <Knob label="test1" />
+  <Knob assignment="placeholder25" label="" />
   <Knob assignment="B:evolveY" label="Evolve Y" />
 
   <Knob assignment="A:toneX" label="Tone X" />
-  <Knob label="test2" />
+  <Knob assignment="placeholder26" label="" />
   <Knob assignment="B:toneX" label="Tone X" />
 
   <Knob assignment="A:toneY" label="Tone Y" />
   <BrowsePanel />
   <Knob assignment="B:toneY" label="Tone Y" />
 
-  <Circle/>
+  <Circle assignment="placeholder27" label="" />
   <div></div>
-  <Circle/>
+  <Circle assignment="placeholder28" label="" />
   <Pad assignment="loadA" label="Load A" />
   <Pad assignment="browseMode" label="Browser Toggle" className="h-9 w-16" />
   <Pad assignment="loadB" label="Load B" />
-
-          <Fader assignment="A:amount" label="Amount A" />
-          <Fader/>
-          <Fader assignment="B:amount" label="Amount B" />
 </div>
+      <div className="flex flex-row gap-8">
+        <div className="flex flex-col items-center gap-2">
+          <Fader assignment="A:amount" label="Amount A" />
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <Fader assignment="B:amount" label="Amount B" />
+        </div>
+      </div>
       <div className="flex flex-col items-center gap-2">
         <SectionLabel>Crossfade</SectionLabel>
         <Crossfader />

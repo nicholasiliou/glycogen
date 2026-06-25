@@ -17,6 +17,37 @@ import { KIND_BEHAVIOR, type ControlKind, type MidiControl } from "./types";
  */
 export type Deck = "A" | "B";
 export type Slot = "amount" | "evolveX" | "evolveY" | "toneX" | "toneY" | "trigger" | "toggle";
+export type PlaceholderAssignment =
+  | "placeholder1"
+  | "placeholder2"
+  | "placeholder3"
+  | "placeholder4"
+  | "placeholder5"
+  | "placeholder6"
+  | "placeholder7"
+  | "placeholder8"
+  | "placeholder9"
+  | "placeholder10"
+  | "placeholder11"
+  | "placeholder12"
+  | "placeholder13"
+  | "placeholder14"
+  | "placeholder15"
+  | "placeholder16"
+  | "placeholder17"
+  | "placeholder18"
+  | "placeholder19"
+  | "placeholder20"
+  | "placeholder21"
+  | "placeholder22"
+  | "placeholder23"
+  | "placeholder24"
+  | "placeholder25"
+  | "placeholder26"
+  | "placeholder27"
+  | "placeholder28"
+  | "placeholder29"
+  | "placeholder30";
 export type GlobalAssignment =
   | "browse"
   | "loadA"
@@ -25,7 +56,7 @@ export type GlobalAssignment =
   | "swapA"
   | "swapB"
   | "browseMode";
-export type ControlAssignment = "none" | GlobalAssignment | `${Deck}:${Slot}`;
+export type ControlAssignment = "none" | GlobalAssignment | PlaceholderAssignment | `${Deck}:${Slot}`;
 
 export const SLOTS: Slot[] = ["amount", "evolveX", "evolveY", "toneX", "toneY", "trigger", "toggle"];
 
@@ -58,7 +89,16 @@ export interface AssignmentGroup {
 
 /** Grouped options for the inline assignment picker in settings. */
 export const ASSIGNMENT_GROUPS: AssignmentGroup[] = [
-  { label: "—", options: [{ value: "none", label: "Unassigned" }] },
+  {
+    label: "—",
+    options: [
+      { value: "none", label: "Unassigned" },
+      ...Array.from({ length: 30 }, (_, i) => ({
+        value: `placeholder${i + 1}` as PlaceholderAssignment,
+        label: `Placeholder ${i + 1}`,
+      })),
+    ],
+  },
   {
     label: "Stage",
     options: [
@@ -68,7 +108,7 @@ export const ASSIGNMENT_GROUPS: AssignmentGroup[] = [
       { value: "crossfade", label: "Crossfade A/B" },
       { value: "swapA", label: "Swap A (stash/active)" },
       { value: "swapB", label: "Swap B (stash/active)" },
-      { value: "browseMode", label: "Browse" },
+      { value: "browseMode", label: "Browse Mode" },
     ],
   },
   { label: "Deck A", options: SLOTS.map((s) => ({ value: `A:${s}` as ControlAssignment, label: SLOT_META[s].label })) },
