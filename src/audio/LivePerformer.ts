@@ -134,6 +134,8 @@ function computeEnergy(type: string, props: Record<string, PropertyValue>): numb
       return clamp01(0.5 * norm(Math.abs(n("spin", 24)), 0, 360) + 0.5 * norm(n("resolution", 28), 8, 80));
     case "landscape":
       return clamp01(0.6 * norm(n("amplitude", 0.55), 0, 1.2) + 0.4 * norm(Math.abs(n("speed", 0.15)), 0, 3));
+    case "cloud":
+      return clamp01(0.5 * norm(n("coverage", 0.5), 0.1, 0.9) + 0.3 * norm(n("density", 1.4), 0.2, 4) + 0.2 * norm(Math.abs(n("speed", 0.25)), 0, 3));
     default:
       return 0.4;
   }

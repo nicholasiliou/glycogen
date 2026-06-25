@@ -2,6 +2,7 @@ import type { AudioEngine } from "../AudioEngine";
 import type { Instrument, InstrumentFamily } from "../types";
 import {
   createBoidsArp,
+  createCloudPad,
   createGlyphMallet,
   createHarmonographLead,
   createLandscapePad,
@@ -36,13 +37,13 @@ export const INSTRUMENTS: Record<string, InstrumentSpec> = {
   noise: { family: "bass", blurb: "Sub bass — a low, evolving ground", create: createNoiseBass },
   plant: { family: "pluck", blurb: "Kalimba plucks — branching melody", create: createPlantPluck },
   landscape: { family: "pad", blurb: "Wide evolving pad — terrain as chords", create: createLandscapePad },
-  shape: { family: "chime", blurb: "Metallic FM bell — the shape rings", create: createShapeChime },
+  shape: { family: "chime", blurb: "FM bell + saw lead — each shape sounds different", create: createShapeChime },
   glyphScatter: { family: "stab", blurb: "Mallet grid — the glyph field plays marimba", create: createGlyphMallet },
+  cloud: { family: "pad", blurb: "Airy noise wash — drifting cloud pad", create: createCloudPad },
   // ── planned (renders now, sound coming) ──
   reactionDiffusion: { family: "texture", blurb: "FM texture — bubbling chemistry" },
   slicer: { family: "stab", blurb: "Rhythmic chord stutter" },
   wire: { family: "lead", blurb: "Laser glide lead" },
-  cloud: { family: "pad", blurb: "Airy noise wash" },
   model: { family: "pad", blurb: "Glassy pad" },
 };
 
