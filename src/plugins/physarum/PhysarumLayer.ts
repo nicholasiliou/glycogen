@@ -1,6 +1,6 @@
 import type { LayerTypeDefinition } from "../../engine/plugins/Registry";
 import type { LayerRenderer, RenderFrame } from "../../engine/render/types";
-import { fieldToMask, physarumConfineTrail, physarumAttract, physarumSeedAgentsOnMask, textModeOf, type TextMode } from "../_shared/textField";
+import { fieldToMask, physarumConfineTrail, physarumAttract, physarumSeedAgentsOnMask, resolveTextMode, textSettingOf, type TextMode } from "../_shared/textField";
 
 function num(v: unknown, f: number): number {
   return typeof v === "number" ? v : f;
@@ -224,15 +224,16 @@ class PhysarumRenderer implements LayerRenderer {
       this.resize(frame.width, frame.height);
     }
     const pr = frame.props;
-    const resolution = Math.max(0.1, Math.min(0.6, num(pr.resolution, 0.4)));
+    const resolution = 1;
     const [cols, rows] = this.gridSize(resolution);
     const count = Math.max(1, Math.min(HARD_MAX, Math.round(num(pr.count, 5000))));
     const seed = Math.round(num(pr.seed, 1));
 
-    // ── text-field influence (consumed from the layer directly below) ──
-    const mode = textModeOf(pr.textInfluence);
+    // ── text-field influence: mode owned by the text layer's textInfluence prop ──
+    const textSrc = frame.textField ?? frame.below;
+    const mode = resolveTextMode(textSettingOf(textSrc?.props?.textInfluence), !!textSrc?.field);
     const strength = Math.max(0, Math.min(1, num(pr.textStrength, 0.8)));
-    const field = mode !== "off" ? frame.below?.field : undefined;
+    const field = mode !== "off" ? textSrc?.field : undefined;
     const needReinit =
       cols !== this.cols || rows !== this.rows || count !== this.lastCount || seed !== this.lastSeed || this.forceInitial || mode !== this.textMode;
     this.cols = cols;
@@ -241,7 +242,7 @@ class PhysarumRenderer implements LayerRenderer {
     this.lastSeed = seed;
     this.textMode = mode;
     if (field) {
-      const key = `${frame.below?.key ?? ""}|${cols}x${rows}`;
+      const key = `${textSrc?.key ?? ""}|${cols}x${rows}`;
       if (this.mask.length !== cols * rows) this.mask = new Float32Array(cols * rows);
       if (key !== this.maskKey) {
         fieldToMask(field, cols, rows, this.mask);
@@ -319,8 +320,6 @@ export const physarumLayerType: LayerTypeDefinition = {
     { key: "colorHigh", name: "High Color", type: "color", default: [192, 252, 4, 255], group: "Look" },
     { key: "smooth", name: "Smooth Upscale", type: "boolean", default: true, group: "Look" },
     { key: "resolution", name: "Resolution (perf)", type: "percent", default: 0.4, group: "Look", animatable: false, meta: { min: 0.1, max: 0.6, step: 0.02 } },
-    { key: "textInfluence", name: "Text Influence", type: "select", default: "off", group: "Text", animatable: false, meta: { options: [
-      { label: "Off", value: "off" }, { label: "Fill text", value: "fill" }, { label: "Grow from text", value: "grow" }, { label: "Attract to text", value: "attract" } ] } },
     { key: "textStrength", name: "Text Strength", type: "percent", default: 0.8, group: "Text", meta: { min: 0, max: 1, step: 0.01 } },
   ],
   createRenderer: () => new PhysarumRenderer(),

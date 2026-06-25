@@ -26,6 +26,8 @@ import {
   type EffectiveControl,
   type MidiPreset,
 } from "@/midi/preset";
+import { type TextSetting, textSettingOf } from "@/plugins/_shared/textField";
+import { useRevision } from "@/ui/engine/EngineProvider";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { LivePerformer } from "@/audio/LivePerformer";
 import type { ScaleName } from "@/audio/scale";
@@ -57,6 +59,8 @@ interface LiveContextValue {
   swapDeck: (deck: Deck) => void;
   crossfade: number;
   setCrossfade: (x: number) => void;
+  /** Current text-influence setting of the active deck plugin (for popup display). */
+  textMode: TextSetting;
 
   // ── full-canvas shader (instagram-filter style; "none" = off) ──
   shaders: string[];
@@ -150,6 +154,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const deckB = decks.B.slots[decks.B.managed];
   const deckAStash = decks.A.slots[decks.A.managed === 0 ? 1 : 0];
   const deckBStash = decks.B.slots[decks.B.managed === 0 ? 1 : 0];
+
 
   const [started, setStarted] = useState(false);
   const [midiRev, setMidiRev] = useState(0);
@@ -746,10 +751,26 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const setBpm = useCallback((v: number) => { setBpmState(v); audio.setBpm(v); }, [audio]);
   const setKey = useCallback((r: number, s: ScaleName) => { setRoot(r); setScale(s); audio.setKey(r, s); }, [audio]);
 
+  // Derive the current text-influence mode from the first text layer in the comp — the
+  // text layer owns this prop so the toggle button on its deck controls all simulations.
+  useRevision();
+  const textMode: TextSetting = (() => {
+    const textLayer = engine.comp.layers.find((l) => l.type === "text" && l.enabled);
+    if (textLayer) return textSettingOf(textLayer.property("textInfluence")?.valueAt(engine.transport.time));
+    // Fall back to reading from whichever active deck has the prop (non-text plugin case).
+    for (const id of [deckA, deckB]) {
+      if (!id) continue;
+      const prop = engine.getLayer(id)?.property("textInfluence");
+      if (prop) return textSettingOf(prop.valueAt(engine.transport.time));
+    }
+    return "auto";
+  })();
+
   const value: LiveContextValue = {
     midi, audio, performer, started, startAudio, midiRev,
     types, selectedType, setSelectedType,
     deckA, deckB, deckAStash, deckBStash, loadDeck, clearDeck, swapDeck, crossfade, setCrossfade,
+    textMode,
     shaders, shaderType, setShaderType: applyShader, browseMode, toggleBrowseMode,
     presets, activePreset, controls,
     selectPreset, createNewPreset, renamePreset, duplicateActive, deletePreset, importPresetJson, exportActive,

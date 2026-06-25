@@ -3,6 +3,14 @@ import type { LayerRenderer, RenderFrame } from "../../engine/render/types";
 import type { PropertyValue } from "../../engine/core/types";
 import { sampleGrid } from "../_shared/textField";
 
+// Register and load Maratype programmatically so canvas ctx.font picks it up
+// without depending on CSS @font-face timing.
+const maratypeReady: Promise<void> = (() => {
+  if (document.fonts.check("400 1em Maratype")) return Promise.resolve();
+  const face = new FontFace("Maratype", "url('/Maratype.otf') format('opentype')", { weight: "400" });
+  return face.load().then((loaded) => { document.fonts.add(loaded); }).catch(() => {});
+})();
+
 function rgba(v: unknown, fallback = "rgba(255,255,255,1)"): string {
   if (!Array.isArray(v)) return fallback;
   const [r, g, b, a] = v as number[];
@@ -16,6 +24,11 @@ class TextRenderer implements LayerRenderer {
   private lastW = 1920;
   private lastH = 1080;
   private gridCache: { key: string; data: Float32Array; gw: number; gh: number } | null = null;
+  private fontReady = false;
+
+  constructor() {
+    maratypeReady.then(() => { this.fontReady = true; this.gridCache = null; });
+  }
 
   resize(w: number, h: number): void {
     this.canvas.width = Math.max(1, w);
@@ -32,7 +45,7 @@ class TextRenderer implements LayerRenderer {
     const text = String(frame.props.text ?? "");
     const size = Number(frame.props.fontSize) || 120;
     const weight = frame.props.bold ? "700" : "400";
-    const family = String(frame.props.fontFamily || "sans-serif");
+    const family = String(frame.props.fontFamily || "Maratype");
     ctx.fillStyle = rgba(frame.props.color);
     ctx.font = `${weight} ${size}px ${family}`;
     ctx.textAlign = "center";
@@ -92,7 +105,7 @@ function rasterTextGrid(
   if (!text) return { data, gw, gh };
   const size = (Number(props.fontSize) || 120) * scale;
   const weight = props.bold ? "700" : "400";
-  const family = String(props.fontFamily || "sans-serif");
+  const family = String(props.fontFamily || "Maratype");
   ctx.fillStyle = "#fff";
   ctx.font = `${weight} ${size}px ${family}`;
   ctx.textAlign = "center";
@@ -121,7 +134,9 @@ export const textLayerType: LayerTypeDefinition = {
     { key: "tracking", name: "Tracking", type: "number", default: 0, group: "Text", meta: { min: -50, max: 200, step: 1 } },
     { key: "bold", name: "Bold", type: "boolean", default: false, group: "Text" },
     { key: "color", name: "Color", type: "color", default: [255, 255, 255, 255], group: "Text" },
+    { key: "textInfluence", name: "Text Influence", type: "select", default: "auto", group: "Interaction", animatable: false, meta: { options: [
+      { label: "Auto (fill)", value: "auto" }, { label: "Off", value: "off" }, { label: "Fill", value: "fill" }, { label: "Grow", value: "grow" }, { label: "Attract", value: "attract" } ] } },
   ],
-  defaultData: () => ({ fontFamily: "sans-serif" }),
+  defaultData: () => ({ fontFamily: "Maratype" }),
   createRenderer: () => new TextRenderer(),
 };

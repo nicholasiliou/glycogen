@@ -57,9 +57,12 @@ class BoidsRenderer implements LayerRenderer {
 
   private px = new Float32Array(0);
   private py = new Float32Array(0);
+  private pz = new Float32Array(0);
   private vx = new Float32Array(0);
   private vy = new Float32Array(0);
+  private vz = new Float32Array(0);
   private capacity = 0;
+  private drawOrder = new Int32Array(0);
 
   // grid scratch (reused across steps)
   private cellStart = new Int32Array(0);
@@ -82,10 +85,13 @@ class BoidsRenderer implements LayerRenderer {
     if (n <= this.capacity) return;
     this.px = new Float32Array(n);
     this.py = new Float32Array(n);
+    this.pz = new Float32Array(n);
     this.vx = new Float32Array(n);
     this.vy = new Float32Array(n);
+    this.vz = new Float32Array(n);
     this.sorted = new Int32Array(n);
     this.cellOf = new Int32Array(n);
+    this.drawOrder = new Int32Array(n);
     this.capacity = n;
   }
 
@@ -95,10 +101,12 @@ class BoidsRenderer implements LayerRenderer {
     for (let i = 0; i < count; i++) {
       this.px[i] = rnd() * w;
       this.py[i] = rnd() * h;
+      this.pz[i] = rnd() * 2 - 1;
       const a = rnd() * Math.PI * 2;
       const sp = 0.5 + rnd();
       this.vx[i] = Math.cos(a) * sp;
       this.vy[i] = Math.sin(a) * sp;
+      this.vz[i] = (rnd() - 0.5) * 0.08;
     }
     this.simFrame = 0;
   }
@@ -112,7 +120,7 @@ class BoidsRenderer implements LayerRenderer {
       this.cellStart = new Int32Array(cells + 1);
       this.cursor = new Int32Array(cells + 1);
     }
-    const { px, py, vx, vy, cellStart, cursor, sorted, cellOf } = this;
+    const { px, py, pz, vx, vy, vz, cellStart, cursor, sorted, cellOf } = this;
     const wrap = p.wrap;
 
     // ---- build spatial grid via counting sort ----
@@ -239,15 +247,20 @@ class BoidsRenderer implements LayerRenderer {
     for (let i = 0; i < count; i++) {
       let x = px[i] + vx[i];
       let y = py[i] + vy[i];
+      let z = pz[i] + vz[i] * 0.3;
+      vz[i] *= 0.95;
       if (wrap) {
         if (x < 0) x += w; else if (x >= w) x -= w;
         if (y < 0) y += h; else if (y >= h) y -= h;
+        if (z < -1) z += 2; else if (z > 1) z -= 2;
       } else {
         if (x < 0) { x = 0; vx[i] = Math.abs(vx[i]); } else if (x > w) { x = w; vx[i] = -Math.abs(vx[i]); }
         if (y < 0) { y = 0; vy[i] = Math.abs(vy[i]); } else if (y > h) { y = h; vy[i] = -Math.abs(vy[i]); }
+        if (z < -1) { z = -1; vz[i] = Math.abs(vz[i]); } else if (z > 1) { z = 1; vz[i] = -Math.abs(vz[i]); }
       }
       px[i] = x;
       py[i] = y;
+      pz[i] = z;
     }
   }
 
@@ -255,7 +268,6 @@ class BoidsRenderer implements LayerRenderer {
     const ctx = this.ctx;
     const trail = num(props.trail, 0) / 100;
     if (trail > 0.01) {
-      // Fade existing pixels' alpha (keeps the layer transparent → clean trails).
       ctx.globalCompositeOperation = "destination-out";
       ctx.fillStyle = `rgba(0,0,0,${1 - trail})`;
       ctx.fillRect(0, 0, w, h);
@@ -264,30 +276,45 @@ class BoidsRenderer implements LayerRenderer {
       ctx.clearRect(0, 0, w, h);
     }
 
-    ctx.fillStyle = rgba(props.color);
     const size = num(props.size, 9);
-    const { px, py, vx, vy } = this;
+    const { px, py, pz, vx, vy } = this;
+    const baseColor = rgba(props.color);
+    const isDot = props.shape === "dot";
 
-    ctx.beginPath();
-    if (props.shape === "dot") {
-      const r = size * 0.5;
-      for (let i = 0; i < count; i++) ctx.rect(px[i] - r, py[i] - r, size, size);
-    } else {
-      for (let i = 0; i < count; i++) {
+    for (let i = 0; i < count; i++) this.drawOrder[i] = i;
+    this.drawOrder.set(this.drawOrder.subarray(0, count));
+    this.drawOrder.sort((a, b) => pz[a] - pz[b]);
+
+    for (let idx = 0; idx < count; idx++) {
+      const i = this.drawOrder[idx];
+      const z = pz[i];
+      const depth = (z + 1) * 0.5;
+      const scale = 0.5 + depth * 0.5;
+      const alpha = 0.4 + depth * 0.6;
+
+      const [r, g, b] = baseColor.match(/\d+/g)?.slice(0, 3).map(Number) || [192, 252, 4];
+      ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
+
+      if (isDot) {
+        const r = size * scale * 0.5;
+        ctx.fillRect(px[i] - r, py[i] - r, r * 2, r * 2);
+      } else {
         let dx = vx[i], dy = vy[i];
         const sp = Math.hypot(dx, dy) || 1;
         dx /= sp;
         dy /= sp;
-        const bcx = px[i] - dx * size * 0.6;
-        const bcy = py[i] - dy * size * 0.6;
-        const ox = -dy * size * 0.5;
-        const oy = dx * size * 0.5;
-        ctx.moveTo(px[i] + dx * size, py[i] + dy * size);
+        const scaledSize = size * scale;
+        const bcx = px[i] - dx * scaledSize * 0.6;
+        const bcy = py[i] - dy * scaledSize * 0.6;
+        const ox = -dy * scaledSize * 0.5;
+        const oy = dx * scaledSize * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px[i] + dx * scaledSize, py[i] + dy * scaledSize);
         ctx.lineTo(bcx + ox, bcy + oy);
         ctx.lineTo(bcx - ox, bcy - oy);
+        ctx.fill();
       }
     }
-    ctx.fill();
   }
 
   render(frame: RenderFrame): HTMLCanvasElement {
@@ -352,7 +379,8 @@ class BoidsRenderer implements LayerRenderer {
 
   dispose(): void {
     this.canvas.width = this.canvas.height = 0;
-    this.px = this.py = this.vx = this.vy = new Float32Array(0);
+    this.px = this.py = this.pz = this.vx = this.vy = this.vz = new Float32Array(0);
+    this.drawOrder = new Int32Array(0);
   }
 }
 
@@ -377,7 +405,7 @@ export const boidsLayerType: LayerTypeDefinition = {
     { key: "mouseAttract", name: "Cursor Pull", type: "number", default: 0, group: "Forces", meta: { min: -2, max: 2, step: 0.05 } },
     { key: "color", name: "Color", type: "color", default: [192, 252, 4, 255], group: "Appearance" },
     { key: "size", name: "Boid Size", type: "number", default: 9, group: "Appearance", meta: { min: 1, max: 60, step: 0.5 } },
-    { key: "shape", name: "Shape", type: "select", default: "triangle", group: "Appearance", meta: { options: [ { label: "Triangle", value: "triangle" }, { label: "Dot", value: "dot" } ] } },
+    { key: "shape", name: "Shape", type: "select", default: "dot", group: "Appearance", meta: { options: [ { label: "Triangle", value: "triangle" }, { label: "Dot", value: "dot" } ] } },
     { key: "trail", name: "Trails", type: "percent", default: 0, group: "Appearance", meta: { min: 0, max: 98, step: 1 } },
   ],
   createRenderer: () => new BoidsRenderer(),

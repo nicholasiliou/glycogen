@@ -1,5 +1,20 @@
-/** How a text mask (from the layer below) influences a simulation. */
+/** How a text mask influences a simulation. "auto" = react with `fill` when a text
+ *  field is present, otherwise stay off (the on-by-default behaviour). */
 export type TextMode = "off" | "fill" | "grow" | "attract";
+export type TextSetting = TextMode | "auto";
+
+/** Validate an arbitrary prop value into a TextSetting (defaults to "auto"). */
+export function textSettingOf(v: unknown): TextSetting {
+  return v === "off" || v === "fill" || v === "grow" || v === "attract" ? v : "auto";
+}
+
+/** Resolve the effective mode for this frame: "auto" becomes `fill` when a text field is
+ *  present, else off. Explicit settings pass through (but only act when a field exists). */
+export function resolveTextMode(setting: TextSetting, hasField: boolean): TextMode {
+  if (!hasField) return "off";
+  if (setting === "auto") return "fill";
+  return setting;
+}
 
 /** Validate an arbitrary prop value into a TextMode (defaults to "off"). */
 export function textModeOf(v: unknown): TextMode {

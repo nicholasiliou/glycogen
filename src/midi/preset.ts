@@ -68,7 +68,7 @@ export const ASSIGNMENT_GROUPS: AssignmentGroup[] = [
       { value: "crossfade", label: "Crossfade A/B" },
       { value: "swapA", label: "Swap A (stash/active)" },
       { value: "swapB", label: "Swap B (stash/active)" },
-      { value: "browseMode", label: "Browse: plugin ⇄ shader" },
+      { value: "browseMode", label: "Browse" },
     ],
   },
   { label: "Deck A", options: SLOTS.map((s) => ({ value: `A:${s}` as ControlAssignment, label: SLOT_META[s].label })) },

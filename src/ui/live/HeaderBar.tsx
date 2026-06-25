@@ -38,7 +38,7 @@ function DeckSlot({ deck, layerId, stashId }: { deck: "A" | "B"; layerId: string
       <span className="max-w-[120px] truncate text-[11px] text-ink" title="Active (MIDI-controlled)">{name}</span>
       {stashName && (
         <span className="max-w-[90px] truncate text-[10px] text-ink-dim/70" title="Stashed (running, not controlled)">
-          ⇄ {stashName}
+          {stashName}
         </span>
       )}
     </div>
@@ -85,16 +85,6 @@ export function HeaderBar({
       )}
 
       <div className="flex-1" />
-
-      {/* active full-canvas shader */}
-      {shaderType !== "none" && (
-        <span
-          className="rounded border border-edge px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-ink-dim"
-          title="Full-canvas shader"
-        >
-          FX · {shaderType.replace(/^fx\./, "")}
-        </span>
-      )}
 
       {/* decks + crossfade indicator */}
       <div className="flex items-center gap-2">

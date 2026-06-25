@@ -37,7 +37,8 @@ class HarmonographRenderer implements LayerRenderer {
     const fY1 = num(p.freqY1, 2);
     const fX2 = num(p.freqX2, 5);
     const fY2 = num(p.freqY2, 4);
-    const phase = (num(p.phase, 0) * Math.PI) / 180;
+    const phaseSpeed = num(p.phaseSpeed, 0.5);
+    const phase = ((num(p.phase, 0) + frame.time * phaseSpeed) * Math.PI) / 180;
     const damping = Math.max(0, num(p.damping, 0.6)) * 0.02;
     const points = Math.max(64, Math.round(num(p.points, 6000)));
     const cycles = Math.max(1, num(p.cycles, 12));
@@ -82,6 +83,7 @@ export const harmonographLayerType: LayerTypeDefinition = {
     { key: "color", name: "Color", type: "color", default: [192, 252, 4, 255], group: "Harmonograph" },
     { key: "lineWidth", name: "Line Width", type: "number", default: 2, group: "Harmonograph", meta: { min: 0.5, max: 20, step: 0.5 } },
     { key: "phase", name: "Phase", type: "angle", default: 0, group: "Harmonograph", meta: { step: 1, unit: "°" } },
+    { key: "phaseSpeed", name: "Phase Speed", type: "number", default: 0.5, group: "Harmonograph", meta: { min: 0, max: 5, step: 0.1 } },
     { key: "freqX1", name: "Freq X1", type: "number", default: 3, group: "Frequencies", meta: { min: 1, max: 24, step: 1 } },
     { key: "freqY1", name: "Freq Y1", type: "number", default: 2, group: "Frequencies", meta: { min: 1, max: 24, step: 1 } },
     { key: "freqX2", name: "Freq X2", type: "number", default: 5, group: "Frequencies", meta: { min: 1, max: 24, step: 1 } },

@@ -28,7 +28,7 @@ export function registerBuiltins(registry: Registry): void {
   registry.register(layoutLayerType);
   registry.register(nullLayerType);
   // Content
-  registry.register(solidLayerType);
+  //registry.register(solidLayerType);
   registry.register(textLayerType);
   registry.register(glyphLayerType);
   // Generators

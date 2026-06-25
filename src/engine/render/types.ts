@@ -30,6 +30,12 @@ export interface RenderFrame extends FrameContext {
   backdrop?: HTMLCanvasElement | null;
   /** Source output of the layer directly beneath this one (noise field / 3D geometry). */
   below?: BelowSource | null;
+  /**
+   * The first text layer anywhere in the composition, exposed as a coverage field so
+   * simulations can react to on-screen text automatically (no need to stack the text
+   * directly beneath them). Null when the comp has no text layer.
+   */
+  textField?: BelowSource | null;
 }
 
 /**
@@ -52,6 +58,8 @@ export interface BelowSource {
   mesh?: () => { tris: number[] } | null;
   /** Changes when the field/mesh would change — lets consumers cache. */
   key?: string;
+  /** Arbitrary prop values the source layer wants to communicate to consumers (e.g. textInfluence). */
+  props?: Record<string, unknown>;
 }
 
 export interface LayerRenderer {

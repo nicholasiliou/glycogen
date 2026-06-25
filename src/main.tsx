@@ -16,7 +16,7 @@ if (isRemoteWindow()) {
     </StrictMode>,
   );
 } else {
-  bootEditor();
+  document.fonts.ready.then(bootEditor);
 }
 
 function bootEditor() {

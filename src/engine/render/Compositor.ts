@@ -44,6 +44,8 @@ export class Compositor {
   private renderers = new Map<string, { renderer: LayerRenderer; type: string }>();
   private groupBuffers: Buffer[] = [];
   private backdropBuffers: Buffer[] = [];
+  /** Comp-wide text coverage field for the current frame (see render()). */
+  private textField: BelowSource | null = null;
 
   constructor(
     private registry: Registry,
@@ -180,6 +182,11 @@ export class Compositor {
 
     const ev = new Evaluator(comp, frame, input, globals);
 
+    // Resolve a comp-wide text field once: the first enabled text layer becomes a
+    // coverage source every simulation can read (frame.textField), so plugins react to
+    // on-screen text wherever it sits in the stack.
+    this.textField = this.resolveTextField(comp, ev, frame.time);
+
     // Solo: any soloed layer hides non-soloed siblings, but groups containing a soloed
     // layer still render.
     const hasSolo = comp.layers.some((l) => l.solo && l.enabled);
@@ -282,7 +289,7 @@ export class Compositor {
 
       // content — also receives the "source" of the layer directly below it
       const below = this.belowSource(comp, members[k + 1], ev, frame.time);
-      const rf: RenderFrame = { ...frame, props, evaluator: ev, input, layer, below };
+      const rf: RenderFrame = { ...frame, props, evaluator: ev, input, layer, below, textField: this.textField };
       let source: CanvasSource | null = null;
       try { source = renderer.render(rf); } catch (err) { console.error(`[compositor] "${layer.name}"`, err); }
       if (!source) continue;
@@ -316,6 +323,24 @@ export class Compositor {
     m.scaleSelf((s * t.scale[0]) / 100, (s * t.scale[1]) / 100);
     m.translateSelf(-t.anchor[0], -t.anchor[1]);
     return m;
+  }
+
+  /** Build a coverage field from the first enabled text layer in the comp (if any), so
+   *  simulations can react to on-screen text regardless of stack position. */
+  private resolveTextField(comp: Composition, ev: Evaluator, time: number): BelowSource | null {
+    const textLayer = comp.layers.find((l) => l.type === "text" && l.enabled);
+    if (!textLayer) return null;
+    const r = this.rendererFor(textLayer);
+    if (!r?.fieldSource) return null;
+    const props = this.evalProps(textLayer, ev);
+    const field = r.fieldSource(props);
+    if (!field) return null;
+    return {
+      layerType: "text",
+      field,
+      key: r.sourceKey?.(props, time) ?? textLayer.id,
+      props: { textInfluence: props.textInfluence ?? "auto" },
+    };
   }
 
   /** Build the source output (field/mesh) of the layer directly beneath a consumer. */

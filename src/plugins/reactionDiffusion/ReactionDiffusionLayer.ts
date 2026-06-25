@@ -1,6 +1,6 @@
 import type { LayerTypeDefinition } from "../../engine/plugins/Registry";
 import type { LayerRenderer, RenderFrame } from "../../engine/render/types";
-import { fieldToMask, rdSeedAlongMask, rdConfine, rdAttract, textModeOf, type TextMode } from "../_shared/textField";
+import { fieldToMask, rdSeedAlongMask, rdConfine, rdAttract, resolveTextMode, textSettingOf, type TextMode } from "../_shared/textField";
 
 function num(v: unknown, f: number): number {
   return typeof v === "number" ? v : f;
@@ -192,10 +192,12 @@ class ReactionDiffusionRenderer implements LayerRenderer {
     const [cols, rows] = this.gridSize(resolution);
     const seed = Math.round(num(pr.seed, 1));
 
-    // ── text-field influence (consumed from the layer directly below) ──
-    const mode = textModeOf(pr.textInfluence);
+    // ── text-field influence: mode is owned by the text layer (its textInfluence prop),
+    //    read here from frame.textField.props so the text deck's toggle button controls all sims ──
+    const textSrc = frame.textField ?? frame.below;
+    const mode = resolveTextMode(textSettingOf(textSrc?.props?.textInfluence), !!textSrc?.field);
     const strength = Math.max(0, Math.min(1, num(pr.textStrength, 0.8)));
-    const field = mode !== "off" ? frame.below?.field : undefined;
+    const field = mode !== "off" ? textSrc?.field : undefined;
     const needReinit =
       cols !== this.cols || rows !== this.rows || seed !== this.lastSeed || this.forceInitial || mode !== this.textMode;
     this.cols = cols;
@@ -203,7 +205,7 @@ class ReactionDiffusionRenderer implements LayerRenderer {
     this.lastSeed = seed;
     this.textMode = mode;
     if (field) {
-      const key = `${frame.below?.key ?? ""}|${cols}x${rows}`;
+      const key = `${textSrc?.key ?? ""}|${cols}x${rows}`;
       if (this.mask.length !== cols * rows) this.mask = new Float32Array(cols * rows);
       if (key !== this.maskKey) {
         fieldToMask(field, cols, rows, this.mask);
@@ -275,8 +277,6 @@ export const reactionDiffusionLayerType: LayerTypeDefinition = {
     { key: "colorHigh", name: "High Color", type: "color", default: [192, 252, 4, 255], group: "Look" },
     { key: "smooth", name: "Smooth Upscale", type: "boolean", default: true, group: "Look" },
     { key: "resolution", name: "Resolution (perf)", type: "percent", default: 0.26, group: "Look", animatable: false, meta: { min: 0.08, max: 0.6, step: 0.02 } },
-    { key: "textInfluence", name: "Text Influence", type: "select", default: "off", group: "Text", animatable: false, meta: { options: [
-      { label: "Off", value: "off" }, { label: "Fill text", value: "fill" }, { label: "Grow from text", value: "grow" }, { label: "Attract to text", value: "attract" } ] } },
     { key: "textStrength", name: "Text Strength", type: "percent", default: 0.8, group: "Text", meta: { min: 0, max: 1, step: 0.01 } },
   ],
   createRenderer: () => new ReactionDiffusionRenderer(),

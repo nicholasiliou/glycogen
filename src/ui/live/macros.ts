@@ -56,6 +56,8 @@ export interface TriggerSlot {
 }
 export interface ToggleSlot {
   key: string;
+  /** Optional action: "reseed" (random), "bump" (+1), or "cycle" (next option). If absent, toggles a boolean. */
+  action?: "reseed" | "bump" | "cycle";
 }
 export interface MacroMap {
   amount?: ContinuousSlot;
@@ -108,10 +110,10 @@ export const MACRO_MAPS: Record<string, MacroMap> = {
   },
   noise: {
     amount: g("octaves", "linear"),
-    evolveX: { key: "scale", curve: "linear" },
+    evolveX: { key: "speed", curve: "growth" },
     evolveY: { key: "contrast", curve: "linear" },
-    toneX: { key: "speed", curve: "centered" },
-    toneY: { key: "bands", curve: "linear" },
+    toneX: { key: "persistence", curve: "centered" },
+    toneY: { key: "lacunarity", curve: "centered" },
     trigger: { key: "seed", action: "reseed" },
     toggle: { key: "smooth" },
   },
@@ -121,11 +123,11 @@ export const MACRO_MAPS: Record<string, MacroMap> = {
     evolveX: { key: "spinSpeed", curve: "linear" },
     evolveY: { key: "evolutionSpeed", curve: "linear" },
     trigger: { key: "seed", action: "reseed" },
-    toggle: { key: "autoEvolve" },
+    toggle: { key: "seed", action: "bump" },
   },
   harmonograph: {
     amount: g("cycles", "linear"),
-    evolveX: { key: "phase", curve: "linear" },
+    evolveX: { key: "phaseSpeed", curve: "linear" },
     evolveY: { key: "damping", curve: "linear" },
     toneX: { key: "lineWidth", curve: "centered" },
     toggle: { key: "glow" },
@@ -141,15 +143,18 @@ export const MACRO_MAPS: Record<string, MacroMap> = {
     trigger: { key: "shape", action: "cycle" },
     toggle: { key: "style" },
   },
-  // Landscape: `radius` (Size) omitted so the terrain fills the canvas; `scale` here is the
-  // terrain's noise feature size, not the layer's scale.
+  // Landscape: `radius` (Size) omitted so the terrain fills the canvas.
   landscape: {
     amount: g("amplitude", "linear"),
-    evolveX: { key: "scale", curve: "linear" },
     evolveY: { key: "terrace", curve: "linear" },
     toneX: { key: "spin", curve: "centered" },
     toneY: { key: "speed", curve: "centered" },
     toggle: { key: "depthShade" },
+  },
+  text: {
+    amount: { key: "fontSize", curve: "growth" },
+    evolveX: { key: "tracking", curve: "linear" },
+    toggle: { key: "textInfluence" },
   },
   glyphScatter: {
     // `scale` (glyph scale) omitted so the field fills the canvas regardless of MIDI.
@@ -273,7 +278,7 @@ export function driveContinuousSlot(
   engine.setPropertyValue(layer.id, prop.id, value, true);
 }
 
-/** Fire a momentary slot (Trigger reseeds / bumps; Toggle flips a boolean). Call on press. */
+/** Fire a momentary slot (Trigger reseeds / bumps; Toggle flips a boolean or performs an action). Call on press. */
 export function fireMomentarySlot(
   engine: Engine,
   layer: Layer,
@@ -294,13 +299,14 @@ export function fireMomentarySlot(
     engine.setPropertyValue(layer.id, prop.id, opts[(i + 1) % opts.length].value);
     return;
   }
-  if (slot === "toggle") {
+  // Toggle with an action (e.g. "bump") is handled like trigger; plain toggle is a boolean flip.
+  const action = (spec as TriggerSlot).action;
+  if (slot === "toggle" && !action) {
     const cur = prop.valueAt(engine.transport.time);
     engine.setPropertyValue(layer.id, prop.id, typeof cur === "boolean" ? !cur : true);
     return;
   }
   const { min, max } = bounds(ps);
-  const action = (spec as TriggerSlot).action;
   const next =
     action === "bump"
       ? clamp(Number(prop.valueAt(engine.transport.time)) + 1, min, max)

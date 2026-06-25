@@ -6,6 +6,7 @@ import { Stage } from "./Stage";
 import { MidiSettingsDialog } from "./settings/MidiSettingsDialog";
 import { useLive } from "./LiveProvider";
 import { Power } from "lucide-react";
+import type { TextSetting } from "@/plugins/_shared/textField";
 
 function isTyping(): boolean {
   const el = document.activeElement as HTMLElement | null;
@@ -17,6 +18,33 @@ export function LiveApp() {
     <LiveProvider>
       <LiveShell />
     </LiveProvider>
+  );
+}
+
+/** Briefly shows the current text-influence mode whenever it changes. */
+function TextModePopup() {
+  const { textMode } = useLive();
+  const [visible, setVisible] = useState(false);
+  const [label, setLabel] = useState<TextSetting>(textMode);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setLabel(textMode);
+    setVisible(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setVisible(false), 1200);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [textMode]);
+
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
+      style={{ transition: "opacity 400ms ease", opacity: visible ? 1 : 0 }}
+    >
+      <span className="rounded bg-black/60 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/80">
+        text · {label}
+      </span>
+    </div>
   );
 }
 
@@ -94,6 +122,7 @@ function LiveShell() {
         ) : (
           <>
             <Stage />
+            <TextModePopup />
             <AudioGate />
           </>
         )}
