@@ -7,12 +7,14 @@ import { useEffect, useState } from "react";
 import type { Deck } from "@/midi/preset";
 import {
   BrowsePanel,
+  Circle,
   ControllerModeContext,
   Crossfader,
   Fader,
   JogWheel,
   Knob,
   Pad,
+  SmoothKnob,
   type ControllerMode,
 } from "./widgets"; // Knob is used in MixerPanel
 
@@ -43,12 +45,28 @@ function DeckPanel({ deck }: { deck: Deck }) {
 
   const stack = (
     <div className="flex flex-col items-center gap-6">
+    <div className="grid grid-cols-4 gap-3">
+      <Pad />
+      <Pad />
+      <Pad />
+      <Pad />
+
+      <Pad />
+      <SmoothKnob />
+      <SmoothKnob />
+      <SmoothKnob />
+
+      <Pad />
+      <Pad />
+      <Pad />
+      <Pad />
+    </div>
       <JogWheel assignment={`${deck}:evolveX`} label="Evolve" />
       <div className="flex items-center gap-3">
         <Pad assignment={`${deck}:trigger`} label="Reseed" />
         <Pad assignment={`${deck}:toggle`} label="Toggle" />
-        <Pad assignment="" className="w-24" />
-        <Pad assignment={A ? "swapA" : "swapB"} label="Stash" className="w-24" />
+        <Pad/>
+        <Pad assignment={A ? "swapA" : "swapB"} label="Stash" />
       </div>
     </div>
   );
@@ -68,34 +86,30 @@ function MixerPanel() {
     <div className="flex flex-col items-center gap-8 px-8 py-6">
 
 
-      <div className="flex items-center gap-3">
-        <div className="flex flex-col items-center gap-2">
-          <Knob assignment="A:evolveY" label="Evolve Y" />
-          <Knob assignment="A:toneX" label="Tone X" />
-          <Knob assignment="A:toneY" label="Tone Y" />
-          <Pad assignment="loadA" label="Load A"/>
-        </div>
-        <div className="flex flex-col gap-2 border-8 border-mist-950 rounded-2xl p-4">
-          <Knob assignment="1" label="test1" />
-          <Knob assignment="2" label="test2" />
-        <BrowsePanel />
-        <Pad assignment="browseMode" label="Browser Toggle" className="h-9 w-16" />
-        </div>
-        <div className="flex flex-col items-center gap-2">
-          <Knob assignment="B:evolveY" label="Evolve Y" />
-          <Knob assignment="B:toneX" label="Tone X" />
-          <Knob assignment="B:toneY" label="Tone Y" />
-          <Pad assignment="loadB" label="Load B"/>
-        </div>
-      </div>
-      <div className="flex flex-row gap-8">
-        <div className="flex flex-col items-center gap-2">
+<div className="grid grid-cols-3 gap-4 gap-x-0 items-top">
+  <Knob assignment="A:evolveY" label="Evolve Y" />
+  <Knob label="test1" />
+  <Knob assignment="B:evolveY" label="Evolve Y" />
+
+  <Knob assignment="A:toneX" label="Tone X" />
+  <Knob label="test2" />
+  <Knob assignment="B:toneX" label="Tone X" />
+
+  <Knob assignment="A:toneY" label="Tone Y" />
+  <BrowsePanel />
+  <Knob assignment="B:toneY" label="Tone Y" />
+
+  <Circle/>
+  <div></div>
+  <Circle/>
+  <Pad assignment="loadA" label="Load A" />
+  <Pad assignment="browseMode" label="Browser Toggle" className="h-9 w-16" />
+  <Pad assignment="loadB" label="Load B" />
+
           <Fader assignment="A:amount" label="Amount A" />
-        </div>
-        <div className="flex flex-col items-center gap-2">
+          <Fader/>
           <Fader assignment="B:amount" label="Amount B" />
-        </div>
-      </div>
+</div>
       <div className="flex flex-col items-center gap-2">
         <SectionLabel>Crossfade</SectionLabel>
         <Crossfader />

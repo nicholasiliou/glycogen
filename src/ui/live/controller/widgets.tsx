@@ -7,7 +7,7 @@
  * The overlay stays visible while learning is active so you can wiggle the hardware control.
  */
 import * as React from "react";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/ui/lib/cn";
 import type { ControlAssignment } from "@/midi/preset";
 import { clamp01 } from "../macros";
@@ -63,6 +63,17 @@ function useSlot(a: ControlAssignment): SlotState {
     drive: (input) => live.driveAssignment(a, input),
     fire: () => live.fireAssignment(a),
   };
+}
+
+/**
+ * Like useSlot but accepts an optional assignment. When undefined, uses a stable generated key
+ * so the widget can still be armed for MIDI learn — binding will be stored even though no
+ * function is wired yet. drive/fire no-op for unrecognised keys.
+ */
+function useOptionalSlot(a: ControlAssignment | undefined): SlotState {
+  const generatedId = useId();
+  const stable = (a ?? generatedId) as ControlAssignment;
+  return useSlot(stable);
 }
 
 // ── chrome ───────────────────────────────────────────────────────────────────────────────────
@@ -132,8 +143,8 @@ const activeRing = (active: boolean) =>
 
 // ── knob ───────────────────────────────────────────────────────────────────────────────────
 
-export function Knob({ assignment, label, size = 64 }: { assignment: ControlAssignment; label: string; size?: number }) {
-  const slot = useSlot(assignment);
+export function Knob({ assignment, label = "", size = 32 }: { assignment?: ControlAssignment; label?: string; size?: number }) {
+  const slot = useOptionalSlot(assignment);
   const [local, setLocal] = useState(0.5);
   // Keep local in sync with incoming MIDI value so position persists when hardware goes quiet
   useEffect(() => {
@@ -176,18 +187,92 @@ export function Knob({ assignment, label, size = 64 }: { assignment: ControlAssi
   );
 }
 
+// ── smooth knob (no indicator) ──────────────────────────────────────────────────────────────
+
+export function SmoothKnob({
+  assignment,
+  label = "",
+  size = 32,
+}: {
+  assignment?: ControlAssignment;
+  label?: string;
+  size?: number;
+}) {
+  const slot = useOptionalSlot(assignment);
+  const [local, setLocal] = useState(0.5);
+  useEffect(() => {
+    if (slot.liveValue !== undefined) setLocal(slot.liveValue);
+  }, [slot.liveValue]);
+  const v = local;
+  const angle = v * 360;
+
+  const onDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startV = v;
+    dragWith((ev) => {
+      const nv = clamp01(startV - (ev.clientY - startY) / 180);
+      setLocal(nv);
+      slot.drive({ value: nv });
+    });
+  };
+
+  return (
+<SlotFrame slot={slot} label={label}>
+  <div
+    onPointerDown={onDown}
+    className="relative touch-none cursor-ns-resize"
+    style={{ width: size, height: size, ...activeRing(slot.active) }}
+  >
+      {/* Rotating knurling */}
+      <div className="absolute" style={{ inset: size * 0.08, transform: `rotate(${angle}deg)` }}>
+        {Array.from({ length: 32 }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute left-1/2 top-1/2"
+            style={{
+              width: 2,
+              height: 6,
+              background: i % 2 ? "#555" : "",
+              transform: `
+                translate(-50%, -50%)
+                rotate(${i * 11.25}deg)
+                translateY(${-size / 2 + 4}px)
+              `,
+            }}
+          />
+        ))}
+      </div>
+
+    {/* Inner knob */}
+    <div
+      className="absolute rounded-full"
+      style={{
+        inset: size * 0.14,
+        background:
+          "radial-gradient(circle at 50% 28%, #5a5d62 0%, #323438 55%, #18191b 100%)",
+        border: "1px solid #111",
+        boxShadow:
+          "inset 0 2px 3px rgba(255,255,255,.18), inset 0 -4px 8px rgba(0,0,0,.6)",
+      }}
+    />
+  </div>
+</SlotFrame>
+  );
+}
+
 // ── vertical fader ───────────────────────────────────────────────────────────────────────────
 
 export function Fader({
   assignment,
-  label,
+  label = "",
   height = 160,
 }: {
-  assignment: ControlAssignment;
-  label: string;
+  assignment?: ControlAssignment;
+  label?: string;
   height?: number;
 }) {
-  const slot = useSlot(assignment);
+  const slot = useOptionalSlot(assignment);
   const [local, setLocal] = useState(0);
   useEffect(() => {
     if (slot.liveValue !== undefined) setLocal(slot.liveValue);
@@ -294,15 +379,15 @@ export function Crossfader({ width = 240 }: { width?: number }) {
 
 // ── jog wheel (angular drag → relative delta for an Evolve slot) ──────────────────────────────
 
-export function JogWheel({ assignment, label, size = 360 }: { assignment: ControlAssignment; label: string; size?: number }) {
-  const slot = useSlot(assignment);
+export function JogWheel({ assignment, label = "", size = 360 }: { assignment?: ControlAssignment; label?: string; size?: number }) {
+  const slot = useOptionalSlot(assignment);
   const ref = useRef<HTMLDivElement>(null);
   const last = useRef(0);
   const [spin, setSpin] = useState(0);
 
   useEffect(() => {
     if (slot.liveValue !== undefined) {
-      setSpin((s) => s + slot.liveValue * 360);
+      setSpin((s) => s + (slot.liveValue ?? 0) * 360);
     }
   }, [slot.liveValue]);
 
@@ -357,14 +442,14 @@ export function JogWheel({ assignment, label, size = 360 }: { assignment: Contro
 
 export function Pad({
   assignment,
-  label,
+  label = "",
   className,
 }: {
-  assignment: ControlAssignment;
-  label: string;
+  assignment?: ControlAssignment;
+  label?: string;
   className?: string;
 }) {
-  const slot = useSlot(assignment);
+  const slot = useOptionalSlot(assignment);
   const [flash, setFlash] = useState(false);
   const lit = slot.pressed || flash;
 
@@ -379,7 +464,7 @@ export function Pad({
     <SlotFrame slot={slot} label={label}>
       <div
         onPointerDown={onDown}
-        className={cn("flex h-12 w-20 touch-none cursor-pointer items-center justify-center rounded", className)}
+        className={cn("flex h-8 w-16 touch-none cursor-pointer items-center justify-center rounded", className)}
         style={{
           background: lit
             ? "linear-gradient(#1c2a00, #0e1500)"
@@ -388,6 +473,52 @@ export function Pad({
           boxShadow: lit
             ? "inset 0 0 8px rgba(192,252,4,.5), 0 0 8px -1px var(--color-accent)"
             : "inset 0 1px 1px rgba(255,255,255,.16), 0 2px 3px rgba(0,0,0,.55)",
+        }}
+      >
+        <div className={cn("h-2 w-2 rounded-full", lit ? "bg-accent" : "bg-ink-dim/40")} />
+      </div>
+    </SlotFrame>
+  );
+}
+
+// ── circle button ───────────────────────────────────────────────────────────────────────────
+
+export function Circle({
+  assignment,
+  label = "",
+  size = 20,
+}: {
+  assignment?: ControlAssignment;
+  label?: string;
+  size?: number;
+}) {
+  const slot = useOptionalSlot(assignment);
+  const [flash, setFlash] = useState(false);
+  const lit = slot.pressed || flash;
+
+  const onDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    slot.fire();
+    setFlash(true);
+    window.setTimeout(() => setFlash(false), 140);
+  };
+
+  return (
+    <SlotFrame slot={slot} label={label}>
+      <div
+        onPointerDown={onDown}
+        className="flex touch-none cursor-pointer items-center justify-center rounded-full"
+        style={{
+          width: size,
+          height: size,
+          background: lit
+            ? "radial-gradient(circle at 40% 35%, #1c2a00, #0e1500)"
+            : "radial-gradient(circle at 40% 35%, #303236, #1a1b1d 60%, #131416)",
+          border: lit ? "1px solid var(--color-accent)" : "1px solid #050505",
+          boxShadow: lit
+            ? "inset 0 0 8px rgba(192,252,4,.5), 0 0 8px -1px var(--color-accent)"
+            : "inset 0 1px 1px rgba(255,255,255,.16), 0 2px 3px rgba(0,0,0,.55)",
+          ...activeRing(slot.active),
         }}
       >
         <div className={cn("h-2 w-2 rounded-full", lit ? "bg-accent" : "bg-ink-dim/40")} />
