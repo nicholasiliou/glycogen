@@ -47,7 +47,9 @@ export type PlaceholderAssignment =
   | "placeholder27"
   | "placeholder28"
   | "placeholder29"
-  | "placeholder30";
+  | "placeholder30"
+  | "placeholder31";
+
 export type GlobalAssignment =
   | "browse"
   | "loadA"
@@ -93,7 +95,7 @@ export const ASSIGNMENT_GROUPS: AssignmentGroup[] = [
     label: "—",
     options: [
       { value: "none", label: "Unassigned" },
-      ...Array.from({ length: 30 }, (_, i) => ({
+      ...Array.from({ length: 31 }, (_, i) => ({
         value: `placeholder${i + 1}` as PlaceholderAssignment,
         label: `Placeholder ${i + 1}`,
       })),

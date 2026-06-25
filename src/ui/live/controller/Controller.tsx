@@ -46,8 +46,8 @@ function DeckPanel({ deck }: { deck: Deck }) {
   const stack = (
     <div className="flex flex-col items-center gap-6">
     <div className="grid grid-cols-4 gap-3">
-      <Pad assignment={A ? "placeholder1" : "placeholder11"} label="" />
-      <Pad assignment={A ? "placeholder2" : "placeholder12"} label="" />
+      <Pad assignment={A ? "placeholder1" : "placeholder29"} label="" />
+      <Pad assignment={A ? "placeholder2" : "placeholder30"} label="" />
       <Pad assignment={A ? "placeholder3" : "placeholder13"} label="" />
       <Pad assignment={A ? "placeholder4" : "placeholder14"} label="" />
 
@@ -105,15 +105,10 @@ function MixerPanel() {
   <Pad assignment="loadA" label="Load A" />
   <Pad assignment="browseMode" label="Browser Toggle" className="h-9 w-16" />
   <Pad assignment="loadB" label="Load B" />
-</div>
-      <div className="flex flex-row gap-8">
-        <div className="flex flex-col items-center gap-2">
-          <Fader assignment="A:amount" label="Amount A" />
-        </div>
-        <div className="flex flex-col items-center gap-2">
-          <Fader assignment="B:amount" label="Amount B" />
-        </div>
-      </div>
+  <Fader assignment="A:amount" label="Amount A" />
+  <Fader assignment="placeholder31" label="" />
+  <Fader assignment="B:amount" label="Amount B" />
+  </div>
       <div className="flex flex-col items-center gap-2">
         <SectionLabel>Crossfade</SectionLabel>
         <Crossfader />
