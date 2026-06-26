@@ -160,6 +160,17 @@ export class MidiManager {
     out.send([status, cc & 0x7f, value & 0x7f]);
   }
 
+  /** Turn off every LED on every output by sending Note Off across all notes and channels. */
+  allLedsOff(): void {
+    for (const out of this.outputs()) {
+      for (let ch = 0; ch < 16; ch++) {
+        for (let n = 0; n < 128; n++) {
+          out.send([0x90 | ch, n, 0]);
+        }
+      }
+    }
+  }
+
   private resolveOutput(outputId?: string): WMOutput | undefined {
     if (!this.access) return undefined;
     if (outputId) return this.access.outputs.get(outputId);

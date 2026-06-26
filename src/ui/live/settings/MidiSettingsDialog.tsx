@@ -35,7 +35,7 @@ export function MidiSettingsDialog() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex mt-6 mr-20 ml-20 h-10 shrink-0 items-center gap-2 px-3 text-xs">
+      <div className="flex mt-4 ml-34 h-10 shrink-0 items-center gap-2 px-3 text-xs">
         {/* device info */}
         <span className="text-[10px] uppercase tracking-wide text-ink-dim">Device</span>
         {status === "unsupported" ? (
@@ -55,7 +55,7 @@ export function MidiSettingsDialog() {
       </div>
 
       {/* controller surface */}
-      <div className="relative flex min-h-0 flex-1 items-center justify-center p-8">
+      <div className="relative flex min-h-0 flex-1 items-center justify-center">
         <Controller />
       </div>
     </div>

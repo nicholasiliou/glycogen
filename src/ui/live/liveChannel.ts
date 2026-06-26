@@ -22,8 +22,12 @@ export interface LiveSnapshot {
   selectedType: string;
   deckAName: string | null;
   deckBName: string | null;
-  deckAStashName: string | null;
-  deckBStashName: string | null;
+  /** Plugin name in each of the side's three storage banks (null = empty). */
+  deckABankNames: (string | null)[];
+  deckBBankNames: (string | null)[];
+  /** Which bank index is active (MIDI-controlled) on each side. */
+  activeBankA: number;
+  activeBankB: number;
   crossfade: number;
   browseMode: "plugin" | "shader";
   shaders: string[];

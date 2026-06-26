@@ -8,6 +8,7 @@ import {
   assignmentDeck,
   assignmentSlot,
   autoAssign,
+  bankOf,
   createPreset,
   defaultKindFor,
   duplicatePreset,
@@ -22,6 +23,7 @@ import {
   savePresets,
   SLOT_META,
   type ControlAssignment,
+  type BankIndex,
   type ControlMapping,
   type Deck,
   type EffectiveControl,
@@ -48,16 +50,18 @@ interface LiveContextValue {
   types: string[];
   selectedType: string;
   setSelectedType: (t: string) => void;
-  /** The MIDI-managed ("active") layer for each side. */
+  /** The MIDI-managed ("active") layer for each side (the active bank's layer). */
   deckA: string | null;
   deckB: string | null;
-  /** The stashed layer for each side: still rendering + sounding, just not MIDI-controlled. */
-  deckAStash: string | null;
-  deckBStash: string | null;
-  loadDeck: (deck: Deck) => void;
+  /** Per-side storage banks: each holds a live (rendering + sounding) layer id, or null if empty. */
+  deckBanks: { A: (string | null)[]; B: (string | null)[] };
+  /** Which bank index is active (MIDI-controlled) on each side. */
+  activeBank: { A: BankIndex; B: BankIndex };
+  /** Store the browse-wheel plugin into a bank, make it active, and give it MIDI control. */
+  loadBank: (deck: Deck, index: BankIndex) => void;
+  /** Make a filled bank the active (MIDI-controlled) one for its side; no-op if empty. */
+  selectBank: (deck: Deck, index: BankIndex) => void;
   clearDeck: (deck: Deck) => void;
-  /** Swap which of a side's two plugins the controller drives (the other keeps running). */
-  swapDeck: (deck: Deck) => void;
   crossfade: number;
   setCrossfade: (x: number) => void;
   /** Current text-influence setting of the active deck plugin (for popup display). */
@@ -144,17 +148,16 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     return { ps, id };
   }, []);
 
-  // Each side holds two plugin slots; `managed` is the one the MIDI controller drives. Both slots
-  // keep rendering + sounding — stashing just moves the controller's focus to the other slot.
-  type DeckState = { slots: [string | null, string | null]; managed: 0 | 1 };
+  // Each side holds three storage banks (buttons 1-3 per turntable side); `active` is the bank the
+  // MIDI controller drives. Every filled bank keeps rendering + sounding — selecting a bank just
+  // moves the controller's focus to it. Pressing a bank stores the browse-wheel plugin into it.
+  type DeckState = { banks: [string | null, string | null, string | null]; active: BankIndex };
   const [decks, setDecks] = useState<{ A: DeckState; B: DeckState }>({
-    A: { slots: [null, null], managed: 0 },
-    B: { slots: [null, null], managed: 0 },
+    A: { banks: [null, null, null], active: 0 },
+    B: { banks: [null, null, null], active: 0 },
   });
-  const deckA = decks.A.slots[decks.A.managed];
-  const deckB = decks.B.slots[decks.B.managed];
-  const deckAStash = decks.A.slots[decks.A.managed === 0 ? 1 : 0];
-  const deckBStash = decks.B.slots[decks.B.managed === 0 ? 1 : 0];
+  const deckA = decks.A.banks[decks.A.active];
+  const deckB = decks.B.banks[decks.B.active];
 
 
   const [started, setStarted] = useState(false);
@@ -213,7 +216,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   /** The MIDI-managed layer id for a side (reads live deck state). */
   const managedId = useCallback((deck: Deck): string | null => {
     const d = decksRef.current[deck];
-    return d.slots[d.managed];
+    return d.banks[d.active];
   }, []);
   const nameOf = useCallback(
     (id: string | null): string | null => (id ? engine.getLayer(id)?.name ?? null : null),
@@ -246,6 +249,13 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     midi.applyOverrides(presetToOverrides(activePreset));
   }, [midi, activePreset]);
+
+  // Blank all LEDs whenever a device is (re)recognized.
+  useEffect(() => {
+    if (midiRev) midi.allLedsOff();
+  }, [midi, midiRev]);
+
+
 
   // ── deck opacity crossfade (equal-power); audio is left untouched (stays derived) ──
   const setOpacity = useCallback(
@@ -287,45 +297,48 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     [applyCrossfade, managedId],
   );
 
-  // Loading replaces the side's *managed* slot — the stashed plugin keeps running untouched.
-  const loadDeck = useCallback(
-    (deck: Deck) => {
+  // Store the browse-wheel plugin into a bank, replacing whatever it held, then make that bank the
+  // side's active (MIDI-controlled) one. The other filled banks on this side keep running untouched.
+  const loadBank = useCallback(
+    (deck: Deck, index: BankIndex) => {
       const type = selectedTypeRef.current;
       if (!type) return;
       const d = decksRef.current[deck];
-      const prev = d.slots[d.managed];
+      const prev = d.banks[index];
       if (prev) engine.removeLayers([prev]);
       const layer = engine.addLayer(type, { select: false });
       if (!layer) return;
-      const slots = [...d.slots] as [string | null, string | null];
-      slots[d.managed] = layer.id;
-      commitDecks({ ...decksRef.current, [deck]: { slots, managed: d.managed } });
+      const banks = [...d.banks] as DeckState["banks"];
+      banks[index] = layer.id;
+      commitDecks({ ...decksRef.current, [deck]: { banks, active: index } });
       pinShader();
       applyCrossfade(crossfadeRef.current, managedId("A"), managedId("B"));
     },
     [engine, applyCrossfade, commitDecks, managedId, pinShader],
   );
 
+  // Bank press: if inactive → activate (all filled banks keep running); if already active → load
+  // the browse-wheel plugin into it (re-store). Empty inactive bank → also loads into it.
+  const selectBank = useCallback(
+    (deck: Deck, index: BankIndex) => {
+      const d = decksRef.current[deck];
+      if (d.active === index || !d.banks[index]) return loadBank(deck, index);
+      commitDecks({ ...decksRef.current, [deck]: { banks: d.banks, active: index } });
+      applyCrossfade(crossfadeRef.current, managedId("A"), managedId("B"));
+    },
+    [loadBank, applyCrossfade, commitDecks, managedId],
+  );
+
   const clearDeck = useCallback(
     (deck: Deck) => {
       const d = decksRef.current[deck];
-      const id = d.slots[d.managed];
+      const id = d.banks[d.active];
       if (id) engine.removeLayers([id]);
-      const slots = [...d.slots] as [string | null, string | null];
-      slots[d.managed] = null;
-      commitDecks({ ...decksRef.current, [deck]: { slots, managed: d.managed } });
+      const banks = [...d.banks] as DeckState["banks"];
+      banks[d.active] = null;
+      commitDecks({ ...decksRef.current, [deck]: { banks, active: d.active } });
     },
     [engine, commitDecks],
-  );
-
-  // Move the controller's focus to the side's other slot; both layers keep rendering + sounding.
-  const swapDeck = useCallback(
-    (deck: Deck) => {
-      const d = decksRef.current[deck];
-      commitDecks({ ...decksRef.current, [deck]: { slots: d.slots, managed: d.managed === 0 ? 1 : 0 } });
-      applyCrossfade(crossfadeRef.current, managedId("A"), managedId("B"));
-    },
-    [applyCrossfade, commitDecks, managedId],
   );
 
   // ── shared driving core: one routing used by both real MIDI and the on-screen controller ──
@@ -472,10 +485,12 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const fireAssignment = useCallback(
     (a: ControlAssignment) => {
       if (a === "none" || a.startsWith("placeholder")) return;
-      if (a === "loadA") return loadDeck("A");
-      if (a === "loadB") return loadDeck("B");
-      if (a === "swapA") return swapDeck("A");
-      if (a === "swapB") return swapDeck("B");
+      const bank = bankOf(a);
+      if (bank) return selectBank(bank.deck, bank.index);
+      if (a === "loadA") return loadBank("A", decksRef.current["A"].active);
+      if (a === "loadB") return loadBank("B", decksRef.current["B"].active);
+      if (a === "clearA") return clearDeck("A");
+      if (a === "clearB") return clearDeck("B");
       if (a === "browseMode") return toggleBrowseMode();
       const deck = assignmentDeck(a);
       const slot = assignmentSlot(a);
@@ -487,7 +502,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       const spec = macro[slot as "trigger" | "toggle"];
       if (spec) fireMomentarySlot(engine, layer, schema, slot as "trigger" | "toggle", spec);
     },
-    [engine, loadDeck, swapDeck, toggleBrowseMode, deckLayer],
+    [engine, selectBank, loadBank, clearDeck, toggleBrowseMode, deckLayer],
   );
 
   // ── keymap mutation helpers (auto-save) ──
@@ -707,8 +722,10 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       selectedType: selectedTypeRef.current,
       deckAName: nameOf(managedId("A")),
       deckBName: nameOf(managedId("B")),
-      deckAStashName: nameOf(decksRef.current.A.slots[decksRef.current.A.managed === 0 ? 1 : 0]),
-      deckBStashName: nameOf(decksRef.current.B.slots[decksRef.current.B.managed === 0 ? 1 : 0]),
+      deckABankNames: decksRef.current.A.banks.map(nameOf),
+      deckBBankNames: decksRef.current.B.banks.map(nameOf),
+      activeBankA: decksRef.current.A.active,
+      activeBankB: decksRef.current.B.active,
       crossfade: crossfadeRef.current,
       browseMode: browseModeRef.current,
       shaders,
@@ -736,15 +753,17 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         selectedType,
         deckAName: nameOf(deckA),
         deckBName: nameOf(deckB),
-        deckAStashName: nameOf(deckAStash),
-        deckBStashName: nameOf(deckBStash),
+        deckABankNames: decks.A.banks.map(nameOf),
+        deckBBankNames: decks.B.banks.map(nameOf),
+        activeBankA: decks.A.active,
+        activeBankB: decks.B.active,
         crossfade,
         browseMode,
         shaders,
         shaderType,
       },
     });
-  }, [types, selectedType, deckA, deckB, deckAStash, deckBStash, crossfade, browseMode, shaders, shaderType, nameOf]);
+  }, [types, selectedType, deckA, deckB, decks, crossfade, browseMode, shaders, shaderType, nameOf]);
 
   const startAudio = useCallback(async () => {
     await audio.start();
@@ -770,13 +789,16 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       const prop = engine.getLayer(id)?.property("textInfluence");
       if (prop) return textSettingOf(prop.valueAt(engine.transport.time));
     }
-    return "auto";
+    return "attract";
   })();
 
   const value: LiveContextValue = {
     midi, audio, performer, started, startAudio, midiRev,
     types, selectedType, setSelectedType,
-    deckA, deckB, deckAStash, deckBStash, loadDeck, clearDeck, swapDeck, crossfade, setCrossfade,
+    deckA, deckB,
+    deckBanks: { A: decks.A.banks, B: decks.B.banks },
+    activeBank: { A: decks.A.active, B: decks.B.active },
+    loadBank, selectBank, clearDeck, crossfade, setCrossfade,
     textMode,
     shaders, shaderType, setShaderType: applyShader, browseMode, toggleBrowseMode,
     presets, activePreset, controls,

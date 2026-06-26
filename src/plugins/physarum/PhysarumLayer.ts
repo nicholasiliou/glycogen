@@ -104,7 +104,7 @@ class PhysarumRenderer implements LayerRenderer {
       this.trail.fill(0);
     }
     const rnd = mulberry32((seed | 0) * 2654435761 + 31);
-    if ((this.textMode === "grow" || this.textMode === "fill") && this.maskActive) {
+    if ((this.textMode === "fill" || this.textMode === "attract") && this.maskActive) {
       physarumSeedAgentsOnMask(this.ax, this.ay, this.ah, count, this.mask, this.cols, this.rows, rnd);
     } else {
       for (let i = 0; i < count; i++) {

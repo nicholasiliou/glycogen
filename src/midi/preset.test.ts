@@ -144,8 +144,8 @@ describe("autoAssign", () => {
     expect(map["cc:0:3"]).toBe("crossfade");
     expect(map["cc:0:10"]).toBe("browse");
     expect(map["cc:0:11"]).toBe("A:evolveX");
-    expect(map["note:0:1"]).toBe("loadA");
-    expect(map["note:0:2"]).toBe("loadB");
+    expect(map["note:0:1"]).toBe("clearA");
+    expect(map["note:0:2"]).toBe("clearB");
   });
 });
 

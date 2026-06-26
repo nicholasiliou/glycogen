@@ -8,14 +8,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LiveContext, type LiveContextValue } from "./LiveProvider";
 import { openLiveChannel, type LiveMessage, type LiveSnapshot } from "./liveChannel";
+import { bankAssignment, type BankIndex } from "@/midi/preset";
 
 const EMPTY_SNAPSHOT: LiveSnapshot = {
   types: [],
   selectedType: "",
   deckAName: null,
   deckBName: null,
-  deckAStashName: null,
-  deckBStashName: null,
+  deckABankNames: [null, null, null],
+  deckBBankNames: [null, null, null],
+  activeBankA: 0,
+  activeBankB: 0,
   crossfade: 0.5,
   browseMode: "plugin",
   shaders: ["none"],
@@ -50,8 +53,8 @@ export function RemoteLiveProvider({ children }: { children: React.ReactNode }) 
       fireAssignment: (a) => post({ kind: "fire", a }),
       setSelectedType: (t: string) => post({ kind: "selectType", type: t }),
       setCrossfade: (x: number) => post({ kind: "drive", a: "crossfade", input: { value: x } }),
-      loadDeck: (d) => post({ kind: "fire", a: d === "A" ? "loadA" : "loadB" }),
-      swapDeck: (d) => post({ kind: "fire", a: d === "A" ? "swapA" : "swapB" }),
+      loadBank: (d, i) => post({ kind: "fire", a: bankAssignment(d, i) }),
+      selectBank: (d, i) => post({ kind: "fire", a: bankAssignment(d, i) }),
       // mirrored display state:
       types: snap.types,
       selectedType: snap.selectedType,
@@ -61,8 +64,8 @@ export function RemoteLiveProvider({ children }: { children: React.ReactNode }) 
       shaderType: snap.shaderType,
       deckA: null,
       deckB: null,
-      deckAStash: null,
-      deckBStash: null,
+      deckBanks: { A: snap.deckABankNames, B: snap.deckBBankNames },
+      activeBank: { A: snap.activeBankA as BankIndex, B: snap.activeBankB as BankIndex },
       // inert on the remote:
       controls: [],
       learn: null,

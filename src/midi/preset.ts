@@ -50,15 +50,36 @@ export type PlaceholderAssignment =
   | "placeholder30"
   | "placeholder31";
 
+/**
+ * A storage bank for a turntable side. Pressing a bank stores the plugin currently selected by the
+ * browse wheel into that bank and makes it the side's active (MIDI-controlled) layer; all filled
+ * banks keep rendering + sounding. Three banks per side, one active per side. `bankA1..bankB3`.
+ */
+export type BankAssignment = `bank${Deck}${1 | 2 | 3}`;
+export const BANK_INDICES = [0, 1, 2] as const;
+export type BankIndex = (typeof BANK_INDICES)[number];
+
 export type GlobalAssignment =
   | "browse"
   | "loadA"
   | "loadB"
+  | "clearA"
+  | "clearB"
   | "crossfade"
-  | "swapA"
-  | "swapB"
-  | "browseMode";
+  | "browseMode"
+  | BankAssignment;
 export type ControlAssignment = "none" | GlobalAssignment | PlaceholderAssignment | `${Deck}:${Slot}`;
+
+/** Parse a bank assignment into its side + 0-based bank index, or null if it isn't one. */
+export function bankOf(a: ControlAssignment): { deck: Deck; index: BankIndex } | null {
+  const m = /^bank([AB])([123])$/.exec(a);
+  if (!m) return null;
+  return { deck: m[1] as Deck, index: (Number(m[2]) - 1) as BankIndex };
+}
+/** The assignment for a side's bank button (1-based-looking but takes a 0-based index). */
+export function bankAssignment(deck: Deck, index: BankIndex): BankAssignment {
+  return `bank${deck}${(index + 1) as 1 | 2 | 3}`;
+}
 
 export const SLOTS: Slot[] = ["amount", "evolveX", "evolveY", "toneX", "toneY", "trigger", "toggle"];
 
@@ -105,12 +126,17 @@ export const ASSIGNMENT_GROUPS: AssignmentGroup[] = [
     label: "Stage",
     options: [
       { value: "browse", label: "Browse" },
-      { value: "loadA", label: "Load → A" },
-      { value: "loadB", label: "Load → B" },
+      { value: "clearA", label: "Clear A (active bank)" },
+      { value: "clearB", label: "Clear B (active bank)" },
       { value: "crossfade", label: "Crossfade A/B" },
-      { value: "swapA", label: "Swap A (stash/active)" },
-      { value: "swapB", label: "Swap B (stash/active)" },
       { value: "browseMode", label: "Browse Mode" },
+    ],
+  },
+  {
+    label: "Banks",
+    options: [
+      ...BANK_INDICES.map((i) => ({ value: bankAssignment("A", i), label: `Bank A${i + 1}` })),
+      ...BANK_INDICES.map((i) => ({ value: bankAssignment("B", i), label: `Bank B${i + 1}` })),
     ],
   },
   { label: "Deck A", options: SLOTS.map((s) => ({ value: `A:${s}` as ControlAssignment, label: SLOT_META[s].label })) },
@@ -145,15 +171,15 @@ export function isSmoothKnobAssignment(a: ControlAssignment): boolean {
 }
 
 /** Global assignments that fire once on press rather than sweeping a value. */
-const MOMENTARY_GLOBALS = new Set<ControlAssignment>(["loadA", "loadB", "swapA", "swapB", "browseMode"]);
+const MOMENTARY_GLOBALS = new Set<ControlAssignment>(["loadA", "loadB", "clearA", "clearB", "browseMode"]);
 /**
- * Whether an assignment is momentary (fired on press: load/swap/browse-mode + per-deck
+ * Whether an assignment is momentary (fired on press: load/bank-select/browse-mode + per-deck
  * trigger/toggle) as opposed to continuous (browse/crossfade + amount/evolve/tone, which sweep).
  */
 export function isMomentaryAssignment(a: ControlAssignment): boolean {
   const slot = assignmentSlot(a);
   if (slot) return !SLOT_META[slot].continuous;
-  return MOMENTARY_GLOBALS.has(a);
+  return !!bankOf(a) || MOMENTARY_GLOBALS.has(a);
 }
 
 /** One physical control's user-authored identity + function. */
@@ -393,10 +419,12 @@ export function autoAssign(controls: EffectiveControl[]): Record<string, Control
   assign(faders, faders.length >= 3 ? ["A:amount", "B:amount", "crossfade"] : ["A:amount", "B:amount"]);
   assign(rotaries, ["browse", "A:evolveX", "A:evolveY", "B:evolveX", "B:evolveY"]);
   assign(knobs, ["A:toneX", "A:toneY", "B:toneX", "B:toneY"]);
-  // Buttons also cover the stage actions the on-screen surface exposes (stash/swap each side +
-  // browse-mode), so a captured controller can drive them too — same assignments, one keymap.
+  // Buttons also cover the stage actions the on-screen surface exposes (load each side + the six
+  // storage banks + browse-mode), so a captured controller can drive them too — one keymap.
   assign(buttons, [
-    "loadA", "loadB", "swapA", "swapB", "browseMode",
+    "clearA", "clearB", "browseMode",
+    bankAssignment("A", 0), bankAssignment("A", 1), bankAssignment("A", 2),
+    bankAssignment("B", 0), bankAssignment("B", 1), bankAssignment("B", 2),
     "A:trigger", "A:toggle", "B:trigger", "B:toggle",
   ]);
   return out;

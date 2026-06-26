@@ -134,8 +134,8 @@ export const textLayerType: LayerTypeDefinition = {
     { key: "tracking", name: "Tracking", type: "number", default: 0, group: "Text", meta: { min: -50, max: 200, step: 1 } },
     { key: "bold", name: "Bold", type: "boolean", default: false, group: "Text" },
     { key: "color", name: "Color", type: "color", default: [255, 255, 255, 255], group: "Text" },
-    { key: "textInfluence", name: "Text Influence", type: "select", default: "auto", group: "Interaction", animatable: false, meta: { options: [
-      { label: "Auto (fill)", value: "auto" }, { label: "Off", value: "off" }, { label: "Fill", value: "fill" }, { label: "Grow", value: "grow" }, { label: "Attract", value: "attract" } ] } },
+    { key: "textInfluence", name: "Text Influence", type: "select", default: "attract", group: "Interaction", animatable: false, meta: { options: [
+      { label: "Off", value: "off" }, { label: "Fill", value: "fill" }, { label: "Attract", value: "attract" } ] } },
   ],
   defaultData: () => ({ fontFamily: "Maratype" }),
   createRenderer: () => new TextRenderer(),

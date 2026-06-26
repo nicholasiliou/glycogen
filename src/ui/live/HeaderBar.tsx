@@ -29,19 +29,43 @@ function MiniDial({ index, count }: { index: number; count: number }) {
   );
 }
 
-function DeckSlot({ deck, layerId, stashId }: { deck: "A" | "B"; layerId: string | null; stashId: string | null }) {
+/**
+ * Minimal per-side bank readout: the side letter, the active bank's plugin name, and three dots
+ * for the storage banks — filled when a bank holds a plugin, ringed + bright for the active one.
+ */
+function DeckSlot({ deck, layerId, banks, active }: {
+  deck: "A" | "B";
+  layerId: string | null;
+  banks: (string | null)[];
+  active: number;
+}) {
   const engine = useEngine();
-  const name = layerId ? engine.getLayer(layerId)?.name ?? "—" : "empty";
-  const stashName = stashId ? engine.getLayer(stashId)?.name ?? null : null;
+  const nameOf = (id: string | null) => (id ? engine.getLayer(id)?.name ?? "—" : null);
+  const name = nameOf(layerId) ?? "empty";
+  const dots = (
+    <div className="flex items-center gap-1">
+      {banks.map((bank, i) => {
+        const filled = !!bank;
+        const isActive = i === active;
+        return (
+          <span
+            key={i}
+            title={`Bank ${deck}${i + 1}${bank ? ` · ${nameOf(bank)}` : " · empty"}${isActive ? " (active)" : ""}`}
+            className={cn(
+              "h-2 w-2 rounded-full border",
+              isActive ? "border-accent" : "border-transparent",
+              filled ? (isActive ? "bg-accent" : "bg-ink/50") : "bg-edge",
+            )}
+          />
+        );
+      })}
+    </div>
+  );
   return (
     <div className="flex min-w-0 items-center gap-1.5">
       <span className={cn("text-[10px] font-semibold", layerId ? "text-ink" : "text-ink-dim")}>{deck}</span>
-      <span className="max-w-[120px] truncate text-[11px] text-ink" title="Active (MIDI-controlled)">{name}</span>
-      {stashName && (
-        <span className="max-w-[90px] truncate text-[10px] text-ink-dim/70" title="Stashed (running, not controlled)">
-          {stashName}
-        </span>
-      )}
+      <span className="max-w-[120px] truncate text-[11px] text-ink" title="Active bank (MIDI-controlled)">{name}</span>
+      {dots}
     </div>
   );
 }
@@ -55,7 +79,7 @@ export function HeaderBar({
 }) {
   const engine = useEngine();
   const live = useLive();
-  const { types, selectedType, deckA, deckB, deckAStash, deckBStash, crossfade, shaderType } = live;
+  const { types, selectedType, deckA, deckB, deckBanks, activeBank, crossfade, shaderType } = live;
   const { browseMode, shaders, toggleBrowseMode } = live;
 
   const shaderMode = browseMode === "shader";
@@ -89,14 +113,14 @@ export function HeaderBar({
 
       {/* decks + crossfade indicator */}
       <div className="flex items-center gap-2">
-        <DeckSlot deck="A" layerId={deckA} stashId={deckAStash} />
+        <DeckSlot deck="A" layerId={deckA} banks={deckBanks.A} active={activeBank.A} />
         <div className="relative h-1 w-20 rounded-full bg-edge" title="A / B crossfade">
           <div
             className="absolute top-1/2 h-2.5 w-1 -translate-y-1/2 rounded-full bg-ink"
             style={{ left: `calc(${xfadePos * 100}% - 2px)` }}
           />
         </div>
-        <DeckSlot deck="B" layerId={deckB} stashId={deckBStash} />
+        <DeckSlot deck="B" layerId={deckB} banks={deckBanks.B} active={activeBank.B} />
       </div>
 
       {/* export + controller toggle */}

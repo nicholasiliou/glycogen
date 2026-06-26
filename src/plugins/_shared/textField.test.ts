@@ -8,7 +8,6 @@ import {
 describe("textModeOf", () => {
   it("accepts known modes and falls back to off", () => {
     expect(textModeOf("fill")).toBe("fill");
-    expect(textModeOf("grow")).toBe("grow");
     expect(textModeOf("attract")).toBe("attract");
     expect(textModeOf("off")).toBe("off");
     expect(textModeOf("garbage")).toBe("off");

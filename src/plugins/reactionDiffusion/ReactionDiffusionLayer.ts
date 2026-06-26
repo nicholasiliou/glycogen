@@ -93,7 +93,7 @@ class ReactionDiffusionRenderer implements LayerRenderer {
     }
     this.u.fill(1);
     this.v.fill(0);
-    if ((this.textMode === "grow" || this.textMode === "fill") && this.maskActive) {
+    if ((this.textMode === "fill" || this.textMode === "attract") && this.maskActive) {
       // Pattern nucleates on the letters instead of random spots.
       rdSeedAlongMask(this.u, this.v, this.mask, n);
     } else {

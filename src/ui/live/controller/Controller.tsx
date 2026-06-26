@@ -46,10 +46,10 @@ function DeckPanel({ deck }: { deck: Deck }) {
   const stack = (
     <div className="flex flex-col items-center gap-6">
     <div className="grid grid-cols-4 gap-3">
-      <Pad assignment={A ? "placeholder1" : "placeholder29"} label="" />
-      <Pad assignment={A ? "placeholder2" : "placeholder30"} label="" />
-      <Pad assignment={A ? "placeholder3" : "placeholder13"} label="" />
-      <Pad assignment={A ? "placeholder4" : "placeholder14"} label="" />
+      <Pad assignment={A ? "clearA" : "clearB"} label="Del" />
+      <Pad assignment={A ? "bankA1" : "bankB1"} label="1" />
+      <Pad assignment={A ? "bankA2" : "bankB2"} label="2" />
+      <Pad assignment={A ? "bankA3" : "bankB3"} label="3" />
 
       <Pad assignment={A ? "placeholder5" : "placeholder15"} label="" />
       <SmoothKnob assignment={A ? "placeholder6" : "placeholder16"} label="" />
@@ -66,7 +66,7 @@ function DeckPanel({ deck }: { deck: Deck }) {
         <Pad assignment={`${deck}:trigger`} label="Reseed" />
         <Pad assignment={`${deck}:toggle`} label="Toggle" />
         <Pad assignment={A ? "placeholder23" : "placeholder24"} label="" />
-        <Pad assignment={A ? "swapA" : "swapB"} label="Stash" />
+        <Pad assignment={A ? "placeholder1" : "placeholder29"} label="" />
       </div>
     </div>
   );
