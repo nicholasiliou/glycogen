@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useEngine, useRevision } from "@/ui/engine/EngineProvider";
+import { useExportSettings } from "./ExportContext";
+import { masksFor } from "@/engine";
 
 /**
  * The live stage: mounts the engine canvas, fit + centered, with no editor chrome. Pointer
@@ -8,6 +10,7 @@ import { useEngine, useRevision } from "@/ui/engine/EngineProvider";
 export function Stage() {
   const engine = useEngine();
   useRevision();
+  const ex = useExportSettings();
   const comp = engine.comp;
   const hostRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
@@ -57,5 +60,46 @@ export function Stage() {
     canvas.style.height = `${dispH}px`;
   }, [engine, ox, oy, dispW, dispH]);
 
-  return <div ref={hostRef} className="relative h-full w-full touch-none overflow-visible bg-black" />;
+  // Export-framing preview: the centered crop rect of the chosen aspect ratio inscribed in the
+  // displayed canvas (matches the exporter's cover-crop), with the export mask shown when enabled.
+  const ratioWH = ex.ratio.width / ex.ratio.height;
+  const canvasWH = dispW / dispH;
+  const cropW = ratioWH > canvasWH ? dispW : dispH * ratioWH;
+  const cropH = ratioWH > canvasWH ? dispW / ratioWH : dispH;
+  const cropX = ox + (dispW - cropW) / 2;
+  const cropY = oy + (dispH - cropH) / 2;
+  const maskUrl = ex.maskEnabled ? masksFor(ex.ratioId)[ex.maskVariant]?.url : undefined;
+
+  return (
+    <div ref={hostRef} className="relative h-full w-full touch-none overflow-visible bg-black">
+      {/* dim the area outside the export crop */}
+      <div
+        className="pointer-events-none absolute z-5 border border-white/40"
+        style={{
+          left: cropX,
+          top: cropY,
+          width: cropW,
+          height: cropH,
+          boxShadow: "0 0 0 9999px rgba(0,0,0,0.45)",
+        }}
+      />
+      {/* export mask overlay (on top of the shadow, not affecting it) */}
+      {maskUrl && (
+        <div
+          className="pointer-events-none absolute z-4"
+          style={{
+            left: cropX,
+            top: cropY,
+            width: cropW,
+            height: cropH,
+            WebkitMaskImage: `url(${maskUrl})`,
+            maskImage: `url(${maskUrl})`,
+            WebkitMaskSize: "100% 100%",
+            maskSize: "100% 100%",
+            borderRadius: "4px",
+          }}
+        />
+      )}
+    </div>
+  );
 }

@@ -6,8 +6,7 @@
   "description": "Unified composition engine — a lightweight fusion of After Effects, Figma and a procedural creative-coding runtime.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && npm run build:runtime && vite build",
-    "build:runtime": "vite build --config vite.runtime.config.ts",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

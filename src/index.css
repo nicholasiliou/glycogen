@@ -39,20 +39,14 @@ body {
   box-sizing: border-box;
 }
 
-/* Thin, unobtrusive scrollbars befitting a dense editor UI. */
+/* Hide scrollbars globally */
 ::-webkit-scrollbar {
-  width: 9px;
-  height: 9px;
+  display: none;
 }
-::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 6px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #444;
-  background-clip: content-box;
+
+html {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 input[type="number"]::-webkit-outer-spin-button,

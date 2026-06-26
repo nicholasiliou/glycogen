@@ -1,10 +1,11 @@
 import { useMemo } from "react";
-import { ChevronLeft, ChevronRight, Settings } from "lucide-react";
+import { Gamepad } from "lucide-react";
 import { useEngine } from "@/ui/engine/EngineProvider";
 import { Button } from "@/ui/components/ui/button";
 import { cn } from "@/ui/lib/cn";
 import { useLive } from "./LiveProvider";
 import { PluginPreview } from "./PluginPreview";
+import { ExportPanel } from "./ExportPanel";
 
 /** A tiny monochrome dial that mirrors the browse position across all plugin types. */
 function MiniDial({ index, count }: { index: number; count: number }) {
@@ -98,14 +99,15 @@ export function HeaderBar({
         <DeckSlot deck="B" layerId={deckB} stashId={deckBStash} />
       </div>
 
-      {/* controller toggle */}
+      {/* export + controller toggle */}
+      <ExportPanel />
       <Button
         size="icon-sm"
         variant={controllerOpen ? "default" : "ghost"}
         onClick={onControllerToggle}
         title={controllerOpen ? "Close controller" : "Open controller"}
       >
-        <Settings className="h-4 w-4" />
+        <Gamepad className="h-4 w-4" />
       </Button>
     </div>
   );

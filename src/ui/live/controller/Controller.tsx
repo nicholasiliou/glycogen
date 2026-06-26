@@ -73,9 +73,6 @@ function DeckPanel({ deck }: { deck: Deck }) {
 
   return (
     <div className="relative flex flex-col gap-4 rounded-xl p-6">
-      <div className="flex items-center justify-between px-1">
-        <SectionLabel>Deck {deck}</SectionLabel>
-      </div>
       {stack}
     </div>
   );
@@ -124,7 +121,7 @@ export function Controller({ allowMap = true }: { allowMap?: boolean }) {
 
   return (
     <ControllerModeContext.Provider value={effective}>
-      <div className="relative flex h-full w-full flex-col items-center justify-center overflow-auto">
+      <div className="overflow-hidden relative flex h-full w-full flex-col items-center justify-center">
         <div className="flex items-stretch gap-4 p-4">
           <DeckPanel deck="A" />
           <MixerPanel />

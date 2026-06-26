@@ -8,10 +8,10 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-panel-raised hover:bg-[#262626] text-ink border border-edge",
+        default: "bg-panel-raised hover:bg-[#262626] text-ink",
         ghost: "text-ink-dim hover:text-ink hover:bg-panel-raised",
-        accent: "bg-accent text-black hover:brightness-110 border border-accent",
-        outline: "border border-edge text-ink hover:bg-panel-raised",
+        accent: "bg-accent text-black hover:brightness-110",
+        outline: "text-ink hover:bg-panel-raised",
         danger: "text-red-400 hover:bg-red-500/10",
       },
       size: {

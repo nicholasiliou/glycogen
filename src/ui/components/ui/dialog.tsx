@@ -28,7 +28,7 @@ export const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-1/2 top-1/2 z-50 flex max-h-[88vh] w-[min(880px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg border border-edge bg-panel text-ink shadow-2xl outline-none",
+        "fixed left-1/2 top-1/2 z-50 flex max-h-[88vh] w-[min(880px,94vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg bg-panel text-ink shadow-2xl outline-none",
         className,
       )}
       {...props}
@@ -44,7 +44,7 @@ export const DialogContent = React.forwardRef<
 DialogContent.displayName = "DialogContent";
 
 export function DialogHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("shrink-0 border-b border-edge px-4 py-3", className)} {...props} />;
+  return <div className={cn("shrink-0  px-4 py-3", className)} {...props} />;
 }
 
 export const DialogTitle = React.forwardRef<

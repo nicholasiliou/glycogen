@@ -46,7 +46,11 @@ export type { Command } from "./commands/History";
 export { serializeProject, deserializeProject, PROJECT_FORMAT, PROJECT_VERSION } from "./io/serialize";
 export type { ProjectFile } from "./io/serialize";
 export { Exporter } from "./io/Exporter";
-export type { StillFormat, ExportProgress } from "./io/Exporter";
+export type { StillFormat, ExportProgress, ExportSettings } from "./io/Exporter";
+export { ASPECT_RATIO_LIST, ASPECT_RATIOS, resolveAspectRatio } from "./io/exporters/aspectRatios";
+export type { AspectRatio, AspectRatioId } from "./io/exporters/aspectRatios";
+export { masksFor } from "./io/exporters/masks";
+export type { MaskVariant } from "./io/exporters/masks";
 
 // Inputs
 export { InputManager } from "./inputs/InputManager";

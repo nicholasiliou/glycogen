@@ -4,6 +4,7 @@ import { LiveProvider } from "./LiveProvider";
 import { HeaderBar } from "./HeaderBar";
 import { Stage } from "./Stage";
 import { MidiSettingsDialog } from "./settings/MidiSettingsDialog";
+import { ExportProvider } from "./ExportContext";
 import { useLive } from "./LiveProvider";
 import { Power } from "lucide-react";
 import type { TextSetting } from "@/plugins/_shared/textField";
@@ -16,7 +17,9 @@ function isTyping(): boolean {
 export function LiveApp() {
   return (
     <LiveProvider>
-      <LiveShell />
+      <ExportProvider>
+        <LiveShell />
+      </ExportProvider>
     </LiveProvider>
   );
 }
@@ -66,7 +69,7 @@ function AudioGate() {
   if (phase === "gone" || started) return null;
 
   return (
-    <div className="pointer-events-auto absolute inset-0 z-20">
+    <div className="pointer-events-auto absolute inset-0 z-20" style={{ maskImage: "url(/mask.svg)", maskSize: "100% 100%", maskPosition: "0 0", maskRepeat: "no-repeat" }}>
       {/* blinds */}
       {Array.from({ length: SLAT_COUNT }, (_, i) => (
         <div
@@ -117,14 +120,13 @@ function LiveShell() {
         onControllerToggle={() => setControllerOpen((o) => !o)}
       />
       <div className="relative min-h-0 flex-1">
-        {controllerOpen ? (
-          <MidiSettingsDialog onClose={() => setControllerOpen(false)} />
-        ) : (
-          <>
-            <Stage />
-            <TextModePopup />
-            <AudioGate />
-          </>
+        <Stage />
+        <TextModePopup />
+        <AudioGate />
+        {controllerOpen && (
+          <div className="absolute inset-0 z-50 bg-black/90" style={{ maskImage: "url(/mask.svg)", maskSize: "100% 100%", maskPosition: "0 0", maskRepeat: "no-repeat" }}>
+            <MidiSettingsDialog onClose={() => setControllerOpen(false)} />
+          </div>
         )}
       </div>
     </div>
