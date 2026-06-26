@@ -406,14 +406,20 @@ export function JogWheel({ assignment, label, size = 360 }: { assignment: Contro
         className="relative touch-none cursor-grab active:cursor-grabbing rounded-full"
         style={{ width: size, height: size, ...activeRing(slot.active) }}
       >
-        {/* outer rim with textured SVG */}
-        <img
-          src="/Rim.svg"
-          alt="rim"
-          className="absolute inset-0 rounded-full"
-          style={{ width: size, height: size, transform: `rotate(${spin}deg)` }}
-          draggable={false}
-        />
+        {/* outer rim – image sequence (5 frames, ~3° per frame) */}
+        {(() => {
+          const frameIndex = Math.floor((spin % 360 / 5)) % 5;
+          return Array.from({ length: 5 }, (_, i) => (
+            <img
+              key={i}
+              src={`/animations/rim/${String(i + 1).padStart(4, "0")}.webp`}
+              alt=""
+              className="absolute inset-0 rounded-full"
+              style={{ width: size, height: size, display: i === frameIndex ? "block" : "none" }}
+              draggable={false}
+            />
+          ));
+        })()}
         {/* spindle */}
         <img
           src="/Spindle.svg"

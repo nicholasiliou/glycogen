@@ -127,7 +127,6 @@ export function MidiSettingsDialog({ onClose }: { onClose: () => void }) {
             </span>
           ))
         )}
-        <span className="text-ink-dim">· {bound} bound</span>
 
         <Button size="icon-sm" variant="ghost" onClick={onClose} title="Close controller">
           <X className="h-4 w-4" />

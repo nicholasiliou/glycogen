@@ -35,8 +35,14 @@ interface WMInput {
   state: string;
   onmidimessage: ((e: WMMessageEvent) => void) | null;
 }
+interface WMOutput {
+  id: string;
+  name: string | null;
+  send(data: number[] | Uint8Array): void;
+}
 interface WMAccess {
   inputs: Map<string, WMInput>;
+  outputs: Map<string, WMOutput>;
   onstatechange: ((e: unknown) => void) | null;
 }
 type RequestMIDIAccess = (opts?: { sysex?: boolean }) => Promise<WMAccess>;
@@ -332,6 +338,34 @@ export class MidiManager {
     if (isNew) this.emit("discover", ctl);
     this.emit("control", { control: ctl, kind: on ? "noteon" : "noteoff" });
     this.emit(on ? "trigger" : "release", ctl);
+  }
+
+  /** All connected MIDI outputs. */
+  outputs(): WMOutput[] {
+    if (!this.access) return [];
+    return [...this.access.outputs.values()];
+  }
+
+  /** Send a Note On to a specific output (defaults to first output). Velocity 0 = LED off. */
+  sendNote(channel: number, note: number, velocity: number, outputId?: string): void {
+    const out = this.resolveOutput(outputId);
+    if (!out) return;
+    const status = 0x90 | (channel & 0x0f);
+    out.send([status, note & 0x7f, velocity & 0x7f]);
+  }
+
+  /** Send a CC message to a specific output (defaults to first output). */
+  sendCC(channel: number, cc: number, value: number, outputId?: string): void {
+    const out = this.resolveOutput(outputId);
+    if (!out) return;
+    const status = 0xb0 | (channel & 0x0f);
+    out.send([status, cc & 0x7f, value & 0x7f]);
+  }
+
+  private resolveOutput(outputId?: string): WMOutput | undefined {
+    if (!this.access) return undefined;
+    if (outputId) return this.access.outputs.get(outputId);
+    return this.access.outputs.values().next().value;
   }
 
   dispose(): void {
