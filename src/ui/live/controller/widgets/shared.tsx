@@ -33,6 +33,10 @@ export interface SlotState {
   bound: boolean;
   name?: string;
   liveValue?: number;
+  /** Last signed encoder step (only meaningful for relative/encoder controls). */
+  liveDelta?: number;
+  /** Monotonically-bumped counter: increments on every hardware message so widgets can react. */
+  liveSeq?: number;
   pressed: boolean;
   active: boolean;
   learning: boolean;
@@ -51,6 +55,8 @@ export function useSlot(a: ControlAssignment): SlotState {
     bound: !!ctl,
     name: ctl?.name,
     liveValue: snap?.value,
+    liveDelta: snap?.delta,
+    liveSeq: snap ? snap.hits : undefined,
     pressed: !!snap?.pressed,
     active: !!snap && performance.now() - snap.lastSeen < 300,
     learning: live.learn === a,

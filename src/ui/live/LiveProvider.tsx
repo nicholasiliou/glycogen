@@ -14,6 +14,7 @@ import {
   effectiveControls,
   exportPreset,
   isMomentaryAssignment,
+  isSmoothKnobAssignment,
   loadActiveId,
   loadPresets,
   parsePreset,
@@ -517,7 +518,11 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         for (const [id, m] of Object.entries(next)) {
           if (id !== controlId && m.assignment === a) next[id] = { ...m, assignment: "none" };
         }
-        next[controlId] = { ...ensureMapping(p, controlId), assignment: a };
+        // A control bound to an on-screen SmoothKnob is an endless encoder — register it relative
+        // so the engine accumulates its steps instead of reading it as an absolute potentiometer.
+        const mapping = { ...ensureMapping(p, controlId), assignment: a };
+        if (isSmoothKnobAssignment(a)) mapping.kind = "encoder";
+        next[controlId] = mapping;
         return { ...p, controls: next };
       });
     },

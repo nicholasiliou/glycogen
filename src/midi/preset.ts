@@ -131,6 +131,19 @@ export function assignmentSlot(a: ControlAssignment): Slot | null {
   return a[1] === ":" ? (a.slice(2) as Slot) : null;
 }
 
+/**
+ * Placeholder slots driven by the on-screen SmoothKnob (endless encoder) widget — kept in sync
+ * with the layout in Controller.tsx. A control bound to one of these is an encoder: it should be
+ * registered relative so the engine accumulates its steps rather than reading an absolute sweep.
+ */
+export const SMOOTHKNOB_ASSIGNMENTS = new Set<ControlAssignment>([
+  "placeholder6", "placeholder7", "placeholder8",
+  "placeholder16", "placeholder17", "placeholder18",
+]);
+export function isSmoothKnobAssignment(a: ControlAssignment): boolean {
+  return SMOOTHKNOB_ASSIGNMENTS.has(a);
+}
+
 /** Global assignments that fire once on press rather than sweeping a value. */
 const MOMENTARY_GLOBALS = new Set<ControlAssignment>(["loadA", "loadB", "swapA", "swapB", "browseMode"]);
 /**
@@ -311,12 +324,16 @@ export function sanitizePreset(raw: unknown): MidiPreset | null {
   for (const [id, v] of Object.entries(rawControls)) {
     if (!v || typeof v !== "object") continue;
     const c = v as Record<string, unknown>;
-    const kind = CONTROL_KINDS.includes(c.kind as ControlKind) ? (c.kind as ControlKind) : "knob";
+    let kind = CONTROL_KINDS.includes(c.kind as ControlKind) ? (c.kind as ControlKind) : "knob";
+    const assignment = isAssignment(c.assignment) ? c.assignment : "none";
+    // A control on an on-screen SmoothKnob is an endless encoder — fix any saved preset where it
+    // was typed as an absolute knob/fader so it accumulates relative steps in the engine.
+    if (isSmoothKnobAssignment(assignment)) kind = "encoder";
     controls[id] = {
       controlId: id,
       name: typeof c.name === "string" ? c.name : id,
       kind,
-      assignment: isAssignment(c.assignment) ? c.assignment : "none",
+      assignment,
       ...(c.disabled === true ? { disabled: true } : {}),
     };
   }
