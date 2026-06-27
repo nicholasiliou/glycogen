@@ -1,8 +1,8 @@
 import { useRef } from "react";
 import { Button } from "@/ui/components/ui/button";
-import { REMOTE_HASH } from "../liveChannel";
-import { Controller } from "../controller/Controller";
-import { useLive } from "../LiveProvider";
+import { REMOTE_HASH } from "@/ui/live/channel/liveChannel";
+import { Controller } from "@/ui/live/controller/Controller";
+import { useLive } from "@/ui/live/app/LiveProvider";
 
 export function MidiSettingsDialog() {
   const live = useLive();
@@ -11,7 +11,6 @@ export function MidiSettingsDialog() {
   const status = midi.status;
   const devices = midi.devices();
 
-  // Pop the on-screen DJ surface out into its own window (drives this session over BroadcastChannel).
   const openControllerWindow = () => {
     const url = `${window.location.origin}${window.location.pathname}${REMOTE_HASH}`;
     window.open(url, "marathon-controller", "width=1100,height=680");
@@ -36,7 +35,6 @@ export function MidiSettingsDialog() {
   return (
     <div className="flex h-full flex-col">
       <div className="flex mt-4 ml-34 h-10 shrink-0 items-center gap-2 px-3 text-xs">
-        {/* device info */}
         <span className="text-[10px] uppercase tracking-wide text-ink-dim">Device</span>
         {status === "unsupported" ? (
           <span className="text-amber-400">Web MIDI unavailable</span>
@@ -53,8 +51,6 @@ export function MidiSettingsDialog() {
           ))
         )}
       </div>
-
-      {/* controller surface */}
       <div className="relative flex min-h-0 flex-1 items-center justify-center">
         <Controller />
       </div>

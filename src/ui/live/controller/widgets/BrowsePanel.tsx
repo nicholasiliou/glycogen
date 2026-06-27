@@ -1,7 +1,7 @@
 // ── browse selector (rotary encoder with detents) ────────────────────────────────────────────
 import { useEffect, useRef, useState } from "react";
 import * as React from "react";
-import { useLive } from "../../LiveProvider";
+import { useLive } from "@/ui/live/app/LiveProvider";
 import { activeRing, dragWith, SlotFrame, useSlot } from "./shared";
 
 export function BrowsePanel() {

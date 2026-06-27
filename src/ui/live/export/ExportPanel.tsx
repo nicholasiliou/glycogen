@@ -5,7 +5,7 @@ import { useEngine } from "@/ui/engine/EngineProvider";
 import { Button } from "@/ui/components/ui/button";
 import { Switch } from "@/ui/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/ui/components/ui/popover";
-import { useExportSettings } from "./ExportContext";
+import { useExportSettings } from "@/ui/live/export/ExportContext";
 import { Slider } from "@/ui/components/ui/slider";
 
 /** Lean export: pick an aspect ratio (+ custom size), toggle the mask, export a still or video. */

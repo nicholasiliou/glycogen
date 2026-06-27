@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useEngine } from "@/ui/engine/EngineProvider";
-import { LiveProvider } from "./LiveProvider";
-import { HeaderBar } from "./HeaderBar";
-import { Stage } from "./Stage";
-import { MidiSettingsDialog } from "./settings/MidiSettingsDialog";
-import { ExportProvider } from "./ExportContext";
-import { useLive } from "./LiveProvider";
+import { LiveProvider, useLive } from "@/ui/live/app/LiveProvider";
+import { HeaderBar } from "@/ui/live/stage/HeaderBar";
+import { Stage } from "@/ui/live/stage/Stage";
+import { MidiSettingsDialog } from "@/ui/live/settings/MidiSettingsDialog";
+import { ExportProvider } from "@/ui/live/export/ExportContext";
 import { Power } from "lucide-react";
 import type { TextSetting } from "@/plugins/_shared/textField";
 
@@ -24,7 +23,6 @@ export function LiveApp() {
   );
 }
 
-/** Briefly shows the current text-influence mode whenever it changes. */
 function TextModePopup() {
   const { textMode } = useLive();
   const [visible, setVisible] = useState(false);
@@ -70,7 +68,6 @@ function AudioGate() {
 
   return (
     <div className="pointer-events-auto absolute inset-0 z-20" style={{ maskImage: "url(/mask.svg)", maskSize: "100% 100%", maskPosition: "0 0", maskRepeat: "no-repeat" }}>
-      {/* blinds */}
       {Array.from({ length: SLAT_COUNT }, (_, i) => (
         <div
           key={i}
@@ -84,15 +81,14 @@ function AudioGate() {
           }}
         />
       ))}
-    {/* center button */}
-    {phase === "idle" && (
-      <button
-        onClick={() => void handleStart()}
-        className="absolute h-full w-full text-white/60 hover:bg-white/5"
-      >
-        <Power className="mx-auto h-8 w-8" />
-      </button>
-    )}
+      {phase === "idle" && (
+        <button
+          onClick={() => void handleStart()}
+          className="absolute h-full w-full text-white/60 hover:bg-white/5"
+        >
+          <Power className="mx-auto h-8 w-8" />
+        </button>
+      )}
     </div>
   );
 }
@@ -125,7 +121,7 @@ function LiveShell() {
         <AudioGate />
         {controllerOpen && (
           <div className="absolute inset-0 z-50 bg-black/90" style={{ maskImage: "url(/mask.svg)", maskSize: "100% 100%", maskPosition: "0 0", maskRepeat: "no-repeat" }}>
-            <MidiSettingsDialog onClose={() => setControllerOpen(false)} />
+            <MidiSettingsDialog />
           </div>
         )}
       </div>

@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as React from "react";
 import type { ControlAssignment } from "@/midi/preset";
-import { clamp01 } from "../../macros";
+import { clamp01 } from "@/ui/live/macros/macros";
 import { activeRing, dragWith, SlotFrame, useSlot } from "./shared";
 
 export function Fader({
