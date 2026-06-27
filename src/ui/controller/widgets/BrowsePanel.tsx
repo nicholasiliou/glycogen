@@ -5,11 +5,11 @@ import { useLive } from "@/ui/app/LiveProvider";
 import { activeRing, dragWith, SlotFrame, useSlot } from "./shared";
 
 export function BrowsePanel() {
-  const live = useLive();
+  const { decks, dispatch } = useLive();
   const slot = useSlot("browse");
-  const shaderMode = live.browseMode === "shader";
-  const label = shaderMode ? live.shaderType : live.selectedType;
-  const list = shaderMode ? live.shaders : live.types;
+  const shaderMode = decks.browseMode === "shader";
+  const label = shaderMode ? decks.shaderType : decks.selectedType;
+  const list = shaderMode ? decks.shaders : decks.types;
   const currentIndex = list.indexOf(label);
 
   // Normalized rotation: each detent is ~26.67 degrees (360 / 13.5 avg slots)
@@ -21,7 +21,7 @@ export function BrowsePanel() {
   const lastAngle = useRef(0);
 
   const step = (d: number) => {
-    live.driveAssignment("browse", { value: 0, relative: true, delta: d });
+    dispatch.driveAssignment("browse", { value: 0, relative: true, delta: d });
   };
 
   const onDown = (e: React.PointerEvent) => {

@@ -49,8 +49,8 @@ export interface SlotState {
 
 /** Everything a widget needs about its assignment: the bound control, its live activity, actions. */
 export function useSlot(a: ControlAssignment, preferKind?: ControlKind): SlotState {
-  const live = useLive();
-  const ctl = live.controls.find((c) => c.assignment === a && !c.disabled);
+  const { keymap, dispatch } = useLive();
+  const ctl = keymap.controls.find((c) => c.assignment === a && !c.disabled);
   const snap = ctl?.live;
   return {
     bound: !!ctl,
@@ -60,11 +60,11 @@ export function useSlot(a: ControlAssignment, preferKind?: ControlKind): SlotSta
     liveSeq: snap ? snap.hits : undefined,
     pressed: !!snap?.pressed,
     active: !!snap && performance.now() - snap.lastSeen < 300,
-    learning: live.learn === a,
-    arm: () => live.setLearn(live.learn === a ? null : a, preferKind),
-    unbind: () => ctl && live.setControlAssignment(ctl.id, "none"),
-    drive: (input) => live.driveAssignment(a, input),
-    fire: () => live.fireAssignment(a),
+    learning: keymap.learn === a,
+    arm: () => keymap.setLearn(keymap.learn === a ? null : a, preferKind),
+    unbind: () => ctl && keymap.setControlAssignment(ctl.id, "none"),
+    drive: (input) => dispatch.driveAssignment(a, input),
+    fire: () => dispatch.fireAssignment(a),
   };
 }
 

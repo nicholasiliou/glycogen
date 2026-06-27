@@ -23,15 +23,8 @@ import { useAssignmentDispatch } from "@/ui/hooks/useAssignmentDispatch";
 import { useLiveChannel } from "@/ui/hooks/useLiveChannel";
 import { useTextMode } from "@/ui/hooks/useTextMode";
 
-interface LiveContextValue {
-  midi: MidiManager;
-  audio: AudioEngine;
-  performer: LivePerformer;
-  started: boolean;
-  startAudio: () => Promise<void>;
-  midiRev: number;
-
-  // ── browse + decks ──
+/** The DJ surface: browse selection, the two decks + their banks, crossfade, and the shader slot. */
+export interface DecksContext {
   types: string[];
   selectedType: string;
   setSelectedType: (t: string) => void;
@@ -44,16 +37,16 @@ interface LiveContextValue {
   clearDeck: (deck: Deck) => void;
   crossfade: number;
   setCrossfade: (x: number) => void;
-  textMode: TextSetting;
-
-  // ── full-canvas shader ──
+  // full-canvas shader slot
   shaders: string[];
   shaderType: string;
   setShaderType: (type: string) => void;
   browseMode: "plugin" | "shader";
   toggleBrowseMode: () => void;
+}
 
-  // ── MIDI keymap ──
+/** The persistent, named MIDI keymap: preset CRUD, per-control edits, and learn/bind state. */
+export interface KeymapContext {
   presets: MidiPreset[];
   activePreset: MidiPreset | null;
   controls: EffectiveControl[];
@@ -71,15 +64,19 @@ interface LiveContextValue {
   resetControl: (id: string) => void;
   applyAutoAssign: () => void;
   forgetDevice: () => void;
-
-  // ── live driving + on-screen mapping ──
-  driveAssignment: (a: ControlAssignment, input: { value: number; delta?: number; relative?: boolean }) => void;
-  fireAssignment: (a: ControlAssignment) => void;
   learn: ControlAssignment | null;
   setLearn: (a: ControlAssignment | null, preferKind?: ControlKind) => void;
   bindAssignment: (controlId: string, a: ControlAssignment, preferKind?: ControlKind) => void;
+}
 
-  // ── transport / audio ──
+/** Driving assignments — the shared core both the hardware router and the on-screen widgets call. */
+export interface DispatchContext {
+  driveAssignment: (a: ControlAssignment, input: { value: number; delta?: number; relative?: boolean }) => void;
+  fireAssignment: (a: ControlAssignment) => void;
+}
+
+/** Audio transport: master level, tempo, musical key. */
+export interface TransportContext {
   master: number;
   setMaster: (v: number) => void;
   bpm: number;
@@ -87,6 +84,23 @@ interface LiveContextValue {
   root: number;
   scale: ScaleName;
   setKey: (root: number, scale: ScaleName) => void;
+}
+
+interface LiveContextValue {
+  // engine / audio instance handles + session lifecycle
+  midi: MidiManager;
+  audio: AudioEngine;
+  performer: LivePerformer;
+  started: boolean;
+  startAudio: () => Promise<void>;
+  midiRev: number;
+  textMode: TextSetting;
+
+  // grouped concerns
+  decks: DecksContext;
+  keymap: KeymapContext;
+  dispatch: DispatchContext;
+  transport: TransportContext;
 }
 
 export const LiveContext = createContext<LiveContextValue | null>(null);
@@ -181,9 +195,9 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     if (midiRev) midi.allLedsOff();
   }, [midi, midiRev]);
 
-  const value: LiveContextValue = {
-    midi, audio, performer,
-    started: transport.started, startAudio: transport.startAudio, midiRev,
+  const forgetDevice = useCallback(() => { midi.forget(); setMidiRev((r) => r + 1); }, [midi]);
+
+  const decks: DecksContext = {
     types, selectedType, setSelectedType,
     deckA: deck.deckA, deckB: deck.deckB,
     deckBanks: { A: deck.decks.A.banks, B: deck.decks.B.banks },
@@ -192,9 +206,11 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     selectBank: (d, i) => deck.selectBank(d, i, selectedTypeRef.current),
     clearDeck: deck.clearDeck,
     crossfade: deck.crossfade, setCrossfade: deck.setCrossfade,
-    textMode,
     shaders: deck.shaders, shaderType: deck.shaderType, setShaderType: deck.applyShader,
     browseMode: deck.browseMode, toggleBrowseMode: deck.toggleBrowseMode,
+  };
+
+  const keymap: KeymapContext = {
     presets: preset.presets, activePreset: preset.activePreset, controls: preset.controls,
     selectPreset: preset.selectPreset,
     createNewPreset: preset.createNewPreset,
@@ -209,11 +225,21 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
     setControlDisabled: preset.setControlDisabled,
     resetControl: preset.resetControl,
     applyAutoAssign: preset.applyAutoAssign,
-    forgetDevice: useCallback(() => { midi.forget(); setMidiRev((r) => r + 1); }, [midi]),
-    driveAssignment, fireAssignment, learn, setLearn, bindAssignment: preset.bindAssignment,
-    master: transport.master, setMaster: transport.setMaster,
-    bpm: transport.bpm, setBpm: transport.setBpm,
-    root: transport.root, scale: transport.scale, setKey: transport.setKey,
+    forgetDevice,
+    learn, setLearn, bindAssignment: preset.bindAssignment,
+  };
+
+  const value: LiveContextValue = {
+    midi, audio, performer,
+    started: transport.started, startAudio: transport.startAudio, midiRev, textMode,
+    decks,
+    keymap,
+    dispatch: { driveAssignment, fireAssignment },
+    transport: {
+      master: transport.master, setMaster: transport.setMaster,
+      bpm: transport.bpm, setBpm: transport.setBpm,
+      root: transport.root, scale: transport.scale, setKey: transport.setKey,
+    },
   };
 
   return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;

@@ -41,6 +41,45 @@ export type LiveMessage =
   | { kind: "hello" } // remote → host: "send me the current state"
   | { kind: "state"; snapshot: LiveSnapshot };
 
+/** Per-side deck state in the form the snapshot needs (ref.current or live state both fit). */
+export interface SnapshotDeckSide {
+  banks: (string | null)[];
+  active: number;
+  /** Active (MIDI-controlled) layer id for the side, or null. */
+  activeId: string | null;
+}
+
+/** Everything a snapshot is built from. Both the ref-read and state-read call sites in
+ * useLiveChannel supply these, so the snapshot's shape is defined in exactly one place. */
+export interface SnapshotSource {
+  types: string[];
+  selectedType: string;
+  A: SnapshotDeckSide;
+  B: SnapshotDeckSide;
+  crossfade: number;
+  browseMode: "plugin" | "shader";
+  shaders: string[];
+  shaderType: string;
+}
+
+/** Single definition of how a {@link LiveSnapshot} is assembled (names resolved via `nameOf`). */
+export function buildSnapshot(s: SnapshotSource, nameOf: (id: string | null) => string | null): LiveSnapshot {
+  return {
+    types: s.types,
+    selectedType: s.selectedType,
+    deckAName: nameOf(s.A.activeId),
+    deckBName: nameOf(s.B.activeId),
+    deckABankNames: s.A.banks.map(nameOf),
+    deckBBankNames: s.B.banks.map(nameOf),
+    activeBankA: s.A.active,
+    activeBankB: s.B.active,
+    crossfade: s.crossfade,
+    browseMode: s.browseMode,
+    shaders: s.shaders,
+    shaderType: s.shaderType,
+  };
+}
+
 export function openLiveChannel(): BroadcastChannel | null {
   if (typeof BroadcastChannel === "undefined") return null;
   return new BroadcastChannel(LIVE_CHANNEL);

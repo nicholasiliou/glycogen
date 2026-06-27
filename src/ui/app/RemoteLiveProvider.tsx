@@ -5,7 +5,13 @@
  * Controller surface actually reads are populated — the rest are inert stubs.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { LiveContext, type LiveContextValue } from "@/ui/app/LiveProvider";
+import {
+  LiveContext,
+  type DecksContext,
+  type DispatchContext,
+  type KeymapContext,
+  type LiveContextValue,
+} from "@/ui/app/LiveProvider";
 import { openLiveChannel, type LiveMessage, type LiveSnapshot } from "@/ui/channel/liveChannel";
 import { bankAssignment, type BankIndex } from "@/midi/preset";
 
@@ -46,9 +52,13 @@ export function RemoteLiveProvider({ children }: { children: React.ReactNode }) 
 
   const value = useMemo(() => {
     const noop = () => {};
-    const used = {
+    // Only the fields the on-screen Controller surface reads are populated; the rest are inert
+    // stubs. Grouped to mirror LiveContextValue so this stays in lockstep with the real provider.
+    const dispatch: DispatchContext = {
       driveAssignment: (a, input) => post({ kind: "drive", a, input }),
       fireAssignment: (a) => post({ kind: "fire", a }),
+    };
+    const decks: Partial<DecksContext> = {
       setSelectedType: (t: string) => post({ kind: "selectType", type: t }),
       setCrossfade: (x: number) => post({ kind: "drive", a: "crossfade", input: { value: x } }),
       loadBank: (d, i) => post({ kind: "fire", a: bankAssignment(d, i) }),
@@ -63,14 +73,21 @@ export function RemoteLiveProvider({ children }: { children: React.ReactNode }) 
       deckB: null,
       deckBanks: { A: snap.deckABankNames, B: snap.deckBBankNames },
       activeBank: { A: snap.activeBankA as BankIndex, B: snap.activeBankB as BankIndex },
+      setShaderType: noop,
+      toggleBrowseMode: noop,
+      clearDeck: noop,
+    };
+    const keymap: Partial<KeymapContext> = {
       controls: [],
       learn: null,
       setLearn: noop,
       setControlAssignment: noop,
-      setShaderType: noop,
-      toggleBrowseMode: noop,
-      clearDeck: noop,
       bindAssignment: noop,
+    };
+    const used = {
+      dispatch,
+      decks: decks as DecksContext,
+      keymap: keymap as KeymapContext,
     } satisfies Partial<LiveContextValue>;
     return used as unknown as LiveContextValue;
   }, [snap, post]);

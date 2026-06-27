@@ -10,13 +10,11 @@ import {
   type Deck,
 } from "@/midi/preset";
 import { driveContinuousSlot, fireMomentarySlot, macroMapFor } from "@/ui/macros/macros";
-import type { useDeckState } from "@/ui/hooks/useDeckState";
-
-type DeckHandle = ReturnType<typeof useDeckState>;
+import type { DeckActions } from "@/ui/hooks/useDeckState";
 
 export function useAssignmentDispatch(
   engine: Engine,
-  deck: DeckHandle,
+  deck: DeckActions,
   selectedTypeRef: MutableRefObject<string>,
   typesRef: MutableRefObject<string[]>,
   setSelectedType: Dispatch<SetStateAction<string>>,

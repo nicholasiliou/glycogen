@@ -66,15 +66,15 @@ export function HeaderBar({
   onControllerToggle: () => void;
 }) {
   const engine = useEngine();
-  const live = useLive();
-  const { types, selectedType, deckA, deckB, deckBanks, activeBank, crossfade, shaderType } = live;
-  const { browseMode, shaders, toggleBrowseMode } = live;
+  const { decks, dispatch } = useLive();
+  const { types, selectedType, deckA, deckB, deckBanks, activeBank, crossfade, shaderType } = decks;
+  const { browseMode, shaders } = decks;
 
   const shaderMode = browseMode === "shader";
   const list = shaderMode ? shaders : types;
   const current = shaderMode ? shaderType : selectedType;
   const idx = Math.max(0, list.indexOf(current));
-  const step = (d: number) => live.driveAssignment("browse", { value: 0, relative: true, delta: d });
+  const step = (d: number) => dispatch.driveAssignment("browse", { value: 0, relative: true, delta: d });
   const both = !!deckA && !!deckB;
   const xfadePos = both ? crossfade : deckA ? 0 : deckB ? 1 : 0.5;
 

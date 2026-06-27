@@ -8,7 +8,7 @@ import { activeRing, dragWith, SlotFrame, useSlot } from "./shared";
 export function Crossfader({ width = 240 }: { width?: number }) {
   const live = useLive();
   const slot = useSlot("crossfade");
-  const v = live.crossfade;
+  const v = live.decks.crossfade;
   const trackRef = useRef<HTMLDivElement>(null);
   const CAP = 18;
   const travel = width - 8 - CAP;

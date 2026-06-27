@@ -10,6 +10,40 @@ import type { BankIndex, Deck } from "@/midi/preset";
 
 export type DeckState = { banks: [string | null, string | null, string | null]; active: BankIndex };
 
+/**
+ * The deck operations the dispatch layer ({@link useAssignmentDispatch}) needs. Declaring this
+ * seam explicitly — rather than passing the whole `useDeckState` return — keeps dispatch from
+ * reaching into deck internals, so a rename inside the hook can't silently break dispatch.
+ */
+export interface DeckActions {
+  managedId: (deck: Deck) => string | null;
+  decksRef: React.MutableRefObject<{ A: DeckState; B: DeckState }>;
+  browseModeRef: React.MutableRefObject<"plugin" | "shader">;
+  setCrossfade: (x: number) => void;
+  toggleBrowseMode: () => void;
+  loadBank: (deck: Deck, index: BankIndex, selectedType: string) => void;
+  selectBank: (deck: Deck, index: BankIndex, selectedType: string) => void;
+  clearDeck: (deck: Deck) => void;
+  browseStep: (dir: number, list: string[], setSelectedType: React.Dispatch<React.SetStateAction<string>>) => void;
+  browseTo: (u: number, list: string[], setSelectedType: React.Dispatch<React.SetStateAction<string>>) => void;
+  shaderStep: (dir: number) => void;
+  shaderTo: (u: number) => void;
+}
+
+/**
+ * The deck state {@link useLiveChannel} reads (via refs) to build a remote snapshot. Same intent
+ * as {@link DeckActions}: name the read seam so the BroadcastChannel layer doesn't depend on the
+ * deck hook's private ref layout.
+ */
+export interface DeckReadout {
+  decksRef: React.MutableRefObject<{ A: DeckState; B: DeckState }>;
+  crossfadeRef: React.MutableRefObject<number>;
+  browseModeRef: React.MutableRefObject<"plugin" | "shader">;
+  shaderTypeRef: React.MutableRefObject<string>;
+  shaders: string[];
+  managedId: (deck: Deck) => string | null;
+}
+
 function clamp01(x: number) {
   return x < 0 ? 0 : x > 1 ? 1 : x;
 }
