@@ -27,7 +27,8 @@ export function Stage() {
     canvas.style.position = "absolute";
     canvas.style.pointerEvents = "none";
     canvas.style.boxShadow = "0 0 80px rgba(0,0,0,0.6)";
-    host.style.maskImage = "url(/masks/mask.svg)";
+    // Always use 16x9 mask for the live viewer display
+    host.style.maskImage = "url(/masks/16x9/1.svg)";
     host.style.maskSize = "100% 100%";
     host.style.maskPosition = "0 0";
     host.style.maskRepeat = "no-repeat";
@@ -61,7 +62,15 @@ export function Stage() {
   const cropH = ratioWH > canvasWH ? dispW / ratioWH : dispH;
   const cropX = ox + (dispW - cropW) / 2;
   const cropY = oy + (dispH - cropH) / 2;
-  const maskUrl = ex.maskEnabled ? masksFor(ex.ratioId)[ex.maskVariant]?.url : undefined;
+
+  let maskUrl: string | undefined;
+  if (ex.maskEnabled) {
+    const variant = masksFor(ex.ratioId)[ex.maskVariant];
+    if (variant) {
+      // If it's a folder path, use the first numbered mask for preview
+      maskUrl = variant.url.endsWith(".svg") ? variant.url : `${variant.url}/1.svg`;
+    }
+  }
 
   return (
     <div ref={hostRef} className="relative h-full w-full touch-none overflow-visible bg-black">

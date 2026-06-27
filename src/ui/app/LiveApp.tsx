@@ -67,7 +67,7 @@ function AudioGate() {
   if (phase === "gone" || started) return null;
 
   return (
-    <div className="pointer-events-auto absolute inset-0 z-20" style={{ maskImage: "url(/masks/mask.svg)", maskSize: "100% 100%", maskPosition: "0 0", maskRepeat: "no-repeat" }}>
+    <div className="pointer-events-auto absolute inset-0 z-20" style={{ maskImage: "url(/masks/16x9/1.svg)", maskSize: "100% 100%", maskPosition: "0 0", maskRepeat: "no-repeat" }}>
       {Array.from({ length: SLAT_COUNT }, (_, i) => (
         <div
           key={i}

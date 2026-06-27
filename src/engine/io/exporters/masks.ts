@@ -1,34 +1,45 @@
 import type { AspectRatioId } from "./aspectRatios";
 
 /**
- * Mask registry: each aspect ratio maps to one or more SVG mask files served from /masks. A mask
- * is an alpha cut-out — its white area is the visible region; everything else becomes transparent
- * (PNG) or black (video). The frontend exposes a simple on/off toggle (and, when more than one
- * variant exists, picks an index); the export bakes the chosen mask into the frame.
+ * Mask registry: each aspect ratio maps to a folder in /masks/{aspectRatio}/. Masks are numbered
+ * (1.svg, 2.svg, etc.) and stored with a count of how many exist. A mask is an alpha cut-out —
+ * its white area is the visible region; everything else becomes transparent (PNG) or black (video).
  *
- * To add a variant, drop an SVG in public/masks and list its URL here. The first entry in each
- * list is the default. `custom` reuses the 1:1 set as a sensible fallback.
+ * The frontend exposes a simple on/off toggle; when enabled, a random mask from the aspect
+ * ratio's folder is selected at export time. To add a variant, drop a numbered SVG in the
+ * appropriate folder (e.g., public/masks/16x9/2.svg) and update MASK_COUNTS below.
  */
 export interface MaskVariant {
   id: string;
   label: string;
-  /** URL of the SVG mask, served statically (white = keep, transparent/black = cut). */
+  /** URL of the SVG mask folder, served statically. Random selection happens at export time. */
   url: string;
 }
 
-const SQUARE_MASKS: MaskVariant[] = [
-  { id: "default", label: "Rounded frame", url: "/masks/mask.svg" },
-];
-
-export const MASKS: Record<AspectRatioId, MaskVariant[]> = {
-  "16:9": [{ id: "default", label: "Rounded frame", url: "/masks/mask.svg" }],
-  "9:16": SQUARE_MASKS,
-  "1:1": SQUARE_MASKS,
-  "4:5": SQUARE_MASKS,
-  custom: SQUARE_MASKS,
+/** Number of masks available in each folder. Update when adding new masks. */
+export const MASK_COUNTS: Record<AspectRatioId, number> = {
+  "16:9": 1,
+  "9:16": 1,
+  "1:1": 1,
+  "4:5": 1,
+  custom: 1,
 };
 
-/** All mask variants offered for an aspect ratio (may be empty if none are registered). */
+export const MASK_FOLDERS: Record<AspectRatioId, string> = {
+  "16:9": "/masks/16x9",
+  "9:16": "/masks/9x16",
+  "1:1": "/masks/1x1",
+  "4:5": "/masks/4x5",
+  custom: "/masks/1x1",
+};
+
+/**
+ * Get mask variants for an aspect ratio. Since masks are now folder-based,
+ * we create a single variant that represents the random selection feature.
+ */
 export function masksFor(ratio: AspectRatioId): MaskVariant[] {
-  return MASKS[ratio] ?? [];
+  const folder = MASK_FOLDERS[ratio];
+  if (!folder) return [];
+  // Return a single variant representing the folder (random selection happens at export time)
+  return [{ id: "folder", label: "Random frame", url: folder }];
 }

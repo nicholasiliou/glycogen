@@ -1,5 +1,6 @@
 import type { AspectRatio } from "./aspectRatios";
 import type { MaskVariant } from "./masks";
+import { MASK_COUNTS } from "./masks";
 
 /**
  * Turns the engine's rendered frame into an export-ready canvas at a chosen aspect ratio, with an
@@ -20,12 +21,33 @@ export interface ExportFrameOptions {
 /** Load an SVG mask as an HTMLImageElement, sized later when drawn. */
 export function loadMaskImage(variant: MaskVariant): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
+    const maskUrl = variant.url;
+    // If the URL points to a folder, pick a random numbered mask from it
+    const url = maskUrl.endsWith(".svg") ? maskUrl : pickRandomMaskFromFolder(maskUrl);
+
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error(`Failed to load mask: ${variant.url}`));
-    img.src = variant.url;
+    img.onerror = () => reject(new Error(`Failed to load mask: ${url}`));
+    img.src = url;
   });
+}
+
+/** Pick a random numbered mask from a folder using the static count. */
+function pickRandomMaskFromFolder(folderPath: string): string {
+  // Extract aspect ratio from folder path (e.g., "/masks/16x9" -> "16:9")
+  const parts = folderPath.split("/");
+  const folderName = parts[parts.length - 1];
+  const ratioMap: Record<string, "16:9" | "9:16" | "1x1" | "4x5"> = {
+    "16x9": "16:9",
+    "9x16": "9:16",
+    "1x1": "1:1",
+    "4x5": "4:5",
+  };
+  const ratio = ratioMap[folderName] || "1:1";
+  const count = MASK_COUNTS[ratio];
+  const index = Math.floor(Math.random() * count) + 1;
+  return `${folderPath}/${index}.svg`;
 }
 
 /** Cover-fit source rect (sx,sy,sw,sh) for drawing `src` into a target of (tw,th). */
