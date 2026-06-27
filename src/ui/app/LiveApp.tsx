@@ -120,7 +120,7 @@ function LiveShell() {
         <TextModePopup />
         <AudioGate />
         {controllerOpen && (
-          <div className="absolute inset-0 z-50 bg-black/90" style={{ maskImage: "url(/masks/mask.svg)", maskSize: "100% 100%", maskPosition: "0 0", maskRepeat: "no-repeat" }}>
+          <div className="absolute inset-0 z-50 bg-black/90">
             <MidiSettingsDialog />
           </div>
         )}

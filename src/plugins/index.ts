@@ -20,6 +20,14 @@ import { glyphScatterLayerType } from "./glyph/GlyphScatterLayer";
 import { cloudLayerType } from "./cloud/VolumetricCloudLayer";
 import { fisheyeLayerType, asciiLayerType } from "./shaders/EffectLayers";
 import { colorLookupLayerType } from "./shaders/ColorLookupLayer";
+import {
+  bayerLayerType,
+  pixelateLayerType,
+  pixelSortLayerType,
+  venetianBlindsLayerType,
+  deepGlowLayerType,
+  pixelStretchLayerType,
+} from "./shaders/MoreEffectLayers";
 import { contourFieldLayerType } from "./contourefield/contourefield";
 import { trackerLayerType } from "./tracker/TrackerLayer";
 
@@ -55,6 +63,12 @@ export function registerBuiltins(registry: Registry): void {
   registry.register(fisheyeLayerType);
   registry.register(asciiLayerType);
   registry.register(colorLookupLayerType);
+  registry.register(bayerLayerType);
+  registry.register(pixelateLayerType);
+  registry.register(pixelSortLayerType);
+  registry.register(venetianBlindsLayerType);
+  registry.register(deepGlowLayerType);
+  registry.register(pixelStretchLayerType);
   registry.register(trackerLayerType);
 }
 
@@ -84,4 +98,10 @@ export {
   colorLookupLayerType,
   contourFieldLayerType,
   trackerLayerType,
+  bayerLayerType,
+  pixelateLayerType,
+  pixelSortLayerType,
+  venetianBlindsLayerType,
+  deepGlowLayerType,
+  pixelStretchLayerType,
 };
