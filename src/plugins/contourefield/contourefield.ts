@@ -73,9 +73,12 @@ class ContourFieldRenderer implements LayerRenderer {
   private rows = 0;
   private grid = new Float32Array(0);
   private mask = new Float32Array(0);
+  private maskSoft = new Float32Array(0); // blurred mask: soft falloff into the pattern
+  private maskTmp = new Float32Array(0);
   private maskKey = "";
   private maskActive = false;
   private textMode: TextMode = "off";
+  private fieldKey = ""; // skip re-sampling when nothing affecting the field changed
 
   resize(w: number, h: number): void {
     this.canvas.width = Math.max(1, Math.round(w));
@@ -94,13 +97,73 @@ class ContourFieldRenderer implements LayerRenderer {
   }
 
   /**
+   * Blur the hard glyph mask into a soft falloff that reaches *past* the letters, so the
+   * text bends the surrounding contours instead of stamping a dense plateau on the
+   * glyphs themselves. Separable box blur, `passes` iterations of radius `r` — cheap and
+   * good enough; three passes approximate a gaussian.
+   */
+  private blurMask(radius: number): void {
+    const { cols, rows } = this;
+    const n = cols * rows;
+    if (this.maskSoft.length !== n) this.maskSoft = new Float32Array(n);
+    if (this.maskTmp.length !== n) this.maskTmp = new Float32Array(n);
+    this.maskSoft.set(this.mask);
+    const r = Math.max(1, Math.round(radius));
+    const passes = 3;
+    const src = this.maskSoft;
+    const tmp = this.maskTmp;
+    const inv = 1 / (r * 2 + 1);
+
+    // record the source peak so we can restore it after blurring. A normalised box blur
+    // collapses thin glyph strokes almost to nothing (a 2-cell line spread over ~2r+1
+    // cells loses most of its height); re-normalising to the original peak keeps the
+    // soft falloff while preserving how *strongly* the text lifts the field.
+    let peakBefore = 0;
+    for (let i = 0; i < n; i++) if (src[i] > peakBefore) peakBefore = src[i];
+
+    for (let p = 0; p < passes; p++) {
+      // horizontal
+      for (let y = 0; y < rows; y++) {
+        const row = y * cols;
+        let acc = 0;
+        for (let k = -r; k <= r; k++) acc += src[row + Math.max(0, Math.min(cols - 1, k))];
+        for (let x = 0; x < cols; x++) {
+          tmp[row + x] = acc * inv;
+          const xout = Math.max(0, x - r);
+          const xin = Math.min(cols - 1, x + r + 1);
+          acc += src[row + xin] - src[row + xout];
+        }
+      }
+      // vertical
+      for (let x = 0; x < cols; x++) {
+        let acc = 0;
+        for (let k = -r; k <= r; k++) acc += tmp[Math.max(0, Math.min(rows - 1, k)) * cols + x];
+        for (let y = 0; y < rows; y++) {
+          src[y * cols + x] = acc * inv;
+          const yout = Math.max(0, y - r) * cols;
+          const yin = Math.min(rows - 1, y + r + 1) * cols;
+          acc += tmp[yin + x] - tmp[yout + x];
+        }
+      }
+    }
+
+    // restore peak: rescale so the strongest blurred cell matches the original mask peak
+    let peakAfter = 0;
+    for (let i = 0; i < n; i++) if (src[i] > peakAfter) peakAfter = src[i];
+    if (peakAfter > 1e-6) {
+      const g = peakBefore / peakAfter;
+      for (let i = 0; i < n; i++) src[i] *= g;
+    }
+  }
+
+  /**
    * Sample the 3D fBm field into the grid.
    *  zEvo  – evolution depth (animates the surface morphing in place)
    *  zWarp – separate depth for the warp field (animates the swirl independently)
    */
   private sampleField(
     scale: number, octaves: number, seed: number,
-    zEvo: number, warp: number, zWarp: number,
+    zEvo: number, warp: number, zWarp: number, textPush: number,
   ): void {
     const { cols, rows } = this;
     const n = cols * rows;
@@ -108,6 +171,7 @@ class ContourFieldRenderer implements LayerRenderer {
     const g = this.grid;
     const fx = scale / cols;
     const fy = scale / rows;
+    const soft = this.maskSoft;
     let i = 0;
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
@@ -123,59 +187,119 @@ class ContourFieldRenderer implements LayerRenderer {
           sy += wy * warp;
         }
         let val = fbm3(sx, sy, zEvo, seed, octaves);
-        if (this.maskActive) val += this.mask[i] * 0.6;
+        // gentle, soft-edged elevation bump: contours flow *around* the text and crowd
+        // slightly near it, rather than a hard plateau on the glyphs.
+        if (this.maskActive) val += soft[i] * textPush;
         g[i++] = val;
       }
     }
   }
 
-  private static lerp(a: number, b: number, level: number): number {
-    const d = b - a;
-    if (Math.abs(d) < 1e-6) return 0.5;
-    return (level - a) / d;
-  }
-
-  private marchLevel(level: number, sx: number, sy: number): void {
-    const { cols, rows, grid, ctx } = this;
-    const L = ContourFieldRenderer.lerp;
+  /**
+   * Single-pass marching squares for *all* levels at once.
+   *
+   * The old version walked the whole grid once per contour level (levels × cols × rows).
+   * Here we walk the grid a single time, and for each cell only touch the levels that
+   * actually cross it — derived from the cell's min/max corner values. Segments go into
+   * one of two Path2D objects (normal vs. emphasised "index" lines) so the whole draw is
+   * two stroke() calls instead of `levels` of them. No per-cell closures: the crossing
+   * geometry is computed inline, which keeps the hot loop allocation-free.
+   */
+  private marchAll(
+    levels: number, emphasizeEvery: number,
+    sx: number, sy: number,
+    pathNormal: Path2D, pathEmph: Path2D,
+  ): void {
+    const { cols, rows, grid } = this;
+    const denom = levels + 1;
     for (let y = 0; y < rows - 1; y++) {
+      const r0 = y * cols;
+      const r1 = r0 + cols;
       for (let x = 0; x < cols - 1; x++) {
-        const tl = grid[y * cols + x];
-        const tr = grid[y * cols + x + 1];
-        const br = grid[(y + 1) * cols + x + 1];
-        const bl = grid[(y + 1) * cols + x];
-        let code = 0;
-        if (tl > level) code |= 8;
-        if (tr > level) code |= 4;
-        if (br > level) code |= 2;
-        if (bl > level) code |= 1;
-        if (code === 0 || code === 15) continue;
+        const tl = grid[r0 + x];
+        const tr = grid[r0 + x + 1];
+        const br = grid[r1 + x + 1];
+        const bl = grid[r1 + x];
 
-        const top = () => [(x + L(tl, tr, level)) * sx, y * sy] as const;
-        const right = () => [(x + 1) * sx, (y + L(tr, br, level)) * sy] as const;
-        const bottom = () => [(x + L(bl, br, level)) * sx, (y + 1) * sy] as const;
-        const left = () => [x * sx, (y + L(tl, bl, level)) * sy] as const;
+        // which levels cross this cell? only those strictly between min and max corner.
+        let lo = tl, hi = tl;
+        if (tr < lo) lo = tr; else if (tr > hi) hi = tr;
+        if (br < lo) lo = br; else if (br > hi) hi = br;
+        if (bl < lo) lo = bl; else if (bl > hi) hi = bl;
+        // level k sits at k/denom; find the k-range inside (lo,hi]
+        let kStart = Math.floor(lo * denom) + 1;
+        let kEnd = Math.floor(hi * denom);
+        if (kStart < 1) kStart = 1;
+        if (kEnd > levels) kEnd = levels;
+        if (kStart > kEnd) continue; // no contour through this cell — the common case
 
-        const seg = (a: readonly [number, number], b: readonly [number, number]) => {
-          ctx.moveTo(a[0], a[1]);
-          ctx.lineTo(b[0], b[1]);
-        };
+        const xL = x * sx;
+        const xR = (x + 1) * sx;
+        const yT = y * sy;
+        const yB = (y + 1) * sy;
 
-        switch (code) {
-          case 1: case 14: seg(left(), bottom()); break;
-          case 2: case 13: seg(bottom(), right()); break;
-          case 3: case 12: seg(left(), right()); break;
-          case 4: case 11: seg(top(), right()); break;
-          case 6: case 9:  seg(top(), bottom()); break;
-          case 7: case 8:  seg(top(), left()); break;
-          case 5: case 10: {
-            const center = (tl + tr + br + bl) * 0.25;
-            if ((code === 5) === (center > level)) {
-              seg(top(), left()); seg(bottom(), right());
-            } else {
-              seg(top(), right()); seg(bottom(), left());
+        for (let k = kStart; k <= kEnd; k++) {
+          const level = k / denom;
+          let code = 0;
+          if (tl > level) code |= 8;
+          if (tr > level) code |= 4;
+          if (br > level) code |= 2;
+          if (bl > level) code |= 1;
+          if (code === 0 || code === 15) continue;
+
+          const p = (emphasizeEvery > 0 && k % emphasizeEvery === 0) ? pathEmph : pathNormal;
+
+          // crossing points, computed only when this code path needs them
+          // top:    between tl..tr at yT
+          // right:  between tr..br at xR
+          // bottom: between bl..br at yB
+          // left:   between tl..bl at xL
+          switch (code) {
+            case 1: case 14: { // left → bottom
+              const ay = yT + (level - tl) / (bl - tl || 1e-6) * (yB - yT);
+              const bx = xL + (level - bl) / (br - bl || 1e-6) * (xR - xL);
+              p.moveTo(xL, ay); p.lineTo(bx, yB); break;
             }
-            break;
+            case 2: case 13: { // bottom → right
+              const ax = xL + (level - bl) / (br - bl || 1e-6) * (xR - xL);
+              const by = yT + (level - tr) / (br - tr || 1e-6) * (yB - yT);
+              p.moveTo(ax, yB); p.lineTo(xR, by); break;
+            }
+            case 3: case 12: { // left → right
+              const ay = yT + (level - tl) / (bl - tl || 1e-6) * (yB - yT);
+              const by = yT + (level - tr) / (br - tr || 1e-6) * (yB - yT);
+              p.moveTo(xL, ay); p.lineTo(xR, by); break;
+            }
+            case 4: case 11: { // top → right
+              const ax = xL + (level - tl) / (tr - tl || 1e-6) * (xR - xL);
+              const by = yT + (level - tr) / (br - tr || 1e-6) * (yB - yT);
+              p.moveTo(ax, yT); p.lineTo(xR, by); break;
+            }
+            case 6: case 9: { // top → bottom
+              const ax = xL + (level - tl) / (tr - tl || 1e-6) * (xR - xL);
+              const bx = xL + (level - bl) / (br - bl || 1e-6) * (xR - xL);
+              p.moveTo(ax, yT); p.lineTo(bx, yB); break;
+            }
+            case 7: case 8: { // top → left
+              const ax = xL + (level - tl) / (tr - tl || 1e-6) * (xR - xL);
+              const ay = yT + (level - tl) / (bl - tl || 1e-6) * (yB - yT);
+              p.moveTo(ax, yT); p.lineTo(xL, ay); break;
+            }
+            case 5: case 10: { // saddle — two segments
+              const center = (tl + tr + br + bl) * 0.25;
+              const tX = xL + (level - tl) / (tr - tl || 1e-6) * (xR - xL); // top
+              const bX = xL + (level - bl) / (br - bl || 1e-6) * (xR - xL); // bottom
+              const lY = yT + (level - tl) / (bl - tl || 1e-6) * (yB - yT); // left
+              const rY = yT + (level - tr) / (br - tr || 1e-6) * (yB - yT); // right
+              if ((code === 5) === (center > level)) {
+                p.moveTo(tX, yT); p.lineTo(xL, lY);
+                p.moveTo(bX, yB); p.lineTo(xR, rY);
+              } else {
+                p.moveTo(tX, yT); p.lineTo(xR, rY);
+                p.moveTo(bX, yB); p.lineTo(xL, lY);
+              }
+              break;
+            }
           }
         }
       }
@@ -205,15 +329,21 @@ class ContourFieldRenderer implements LayerRenderer {
     const zWarp = frame.frame * swirlSpeed * 0.01;
 
     // ── text-field influence (same wiring as the sim layers) ──
+    // textPush: how strongly text lifts the field (small → contours bend, don't pile up)
+    // textRange: blur radius in grid cells → how far the influence feathers past the glyphs
+    const textPush = num(pr.textPush, 0.35);
+    const textRange = Math.max(1, num(pr.textRange, 3));
     const textSrc = frame.textField ?? frame.below;
     const mode = resolveTextMode(textSettingOf(textSrc?.props?.textInfluence), !!textSrc?.field);
     const field = mode !== "off" ? textSrc?.field : undefined;
     this.textMode = mode;
     if (field) {
-      const key = `${textSrc?.key ?? ""}|${cols}x${rows}`;
+      const key = `${textSrc?.key ?? ""}|${cols}x${rows}|${textRange}`;
       if (this.mask.length !== cols * rows) this.mask = new Float32Array(cols * rows);
       if (key !== this.maskKey) {
         fieldToMask(field, cols, rows, this.mask);
+        // modest, resolution-aware feather (kept small so strokes don't dissolve)
+        this.blurMask(textRange * (cols / 600 + 0.4));
         this.maskKey = key;
       }
       this.maskActive = true;
@@ -222,7 +352,17 @@ class ContourFieldRenderer implements LayerRenderer {
       this.maskKey = "";
     }
 
-    this.sampleField(scale, octaves, seed, zEvo, warp, zWarp);
+    // Only re-sample the noise field when something that affects it actually changed.
+    // When the user is tweaking *other* layers, or sitting on a static (non-animated)
+    // frame, this skips the whole fbm3 pass — the single biggest editor-lag win.
+    const animated = evolveSpeed !== 0 || swirlSpeed !== 0;
+    const fieldKey = animated
+      ? "anim" // animated frames always differ, force resample
+      : `${seed}|${scale}|${octaves}|${warp}|${textPush}|${this.maskKey}|${cols}x${rows}`;
+    if (animated || fieldKey !== this.fieldKey) {
+      this.sampleField(scale, octaves, seed, zEvo, warp, zWarp, textPush);
+      this.fieldKey = fieldKey;
+    }
 
     // ── draw ──
     const w = this.canvas.width;
@@ -247,13 +387,16 @@ class ContourFieldRenderer implements LayerRenderer {
     ctx.lineJoin = "round";
     ctx.strokeStyle = `rgba(${lr},${lg},${lb},${la / 255})`;
 
-    for (let k = 1; k <= levels; k++) {
-      const level = k / (levels + 1);
-      const emphasised = emphasizeEvery > 0 && k % emphasizeEvery === 0;
-      ctx.lineWidth = emphasised ? lineWidth * emphasisMul : lineWidth;
-      ctx.beginPath();
-      this.marchLevel(level, sx, sy);
-      ctx.stroke();
+    // accumulate every contour into two paths (thin + emphasised), then stroke twice.
+    const pathNormal = new Path2D();
+    const pathEmph = new Path2D();
+    this.marchAll(levels, emphasizeEvery, sx, sy, pathNormal, pathEmph);
+
+    ctx.lineWidth = lineWidth;
+    ctx.stroke(pathNormal);
+    if (emphasizeEvery > 0) {
+      ctx.lineWidth = lineWidth * emphasisMul;
+      ctx.stroke(pathEmph);
     }
 
     return this.canvas;
@@ -261,7 +404,7 @@ class ContourFieldRenderer implements LayerRenderer {
 
   dispose(): void {
     this.canvas.width = this.canvas.height = 0;
-    this.grid = this.mask = new Float32Array(0);
+    this.grid = this.mask = this.maskSoft = this.maskTmp = new Float32Array(0);
   }
 }
 
@@ -286,6 +429,8 @@ export const contourFieldLayerType: LayerTypeDefinition = {
     { key: "emphasisMul", name: "Index Line Weight", type: "number", default: 2.2, group: "Lines", meta: { min: 1, max: 5, step: 0.1 } },
     { key: "background", name: "Background", type: "color", default: [0, 0, 0, 0], group: "Look" },
     { key: "resolution", name: "Resolution (perf)", type: "percent", default: 0.22, group: "Look", animatable: false, meta: { min: 0.05, max: 0.5, step: 0.01 } },
+    { key: "textPush", name: "Text Push", type: "number", default: 0.35, group: "Text", meta: { min: 0, max: 1.5, step: 0.01 } },
+    { key: "textRange", name: "Text Falloff", type: "number", default: 3, group: "Text", meta: { min: 1, max: 12, step: 0.5 } },
   ],
   createRenderer: () => new ContourFieldRenderer(),
 };
