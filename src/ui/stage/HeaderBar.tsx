@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import { Gamepad } from "lucide-react";
 import { useEngine } from "@/ui/engine/EngineProvider";
-import { Button } from "@/ui/components/ui/button";
+import { Button } from "@/ui/components/button";
 import { cn } from "@/ui/lib/cn";
-import { useLive } from "@/ui/live/app/LiveProvider";
-import { PluginPreview } from "@/ui/live/stage/PluginPreview";
-import { ExportPanel } from "@/ui/live/export/ExportPanel";
+import { useLive } from "@/ui/app/LiveProvider";
+import { PluginPreview } from "@/ui/stage/PluginPreview";
+import { ExportPanel } from "@/ui/export/ExportPanel";
 
 function MiniDial({ index, count }: { index: number; count: number }) {
   const S = 34;

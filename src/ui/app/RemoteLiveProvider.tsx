@@ -5,8 +5,8 @@
  * Controller surface actually reads are populated — the rest are inert stubs.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { LiveContext, type LiveContextValue } from "@/ui/live/app/LiveProvider";
-import { openLiveChannel, type LiveMessage, type LiveSnapshot } from "@/ui/live/channel/liveChannel";
+import { LiveContext, type LiveContextValue } from "@/ui/app/LiveProvider";
+import { openLiveChannel, type LiveMessage, type LiveSnapshot } from "@/ui/channel/liveChannel";
 import { bankAssignment, type BankIndex } from "@/midi/preset";
 
 const EMPTY_SNAPSHOT: LiveSnapshot = {

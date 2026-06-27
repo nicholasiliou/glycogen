@@ -8,7 +8,7 @@ import { useContext, useState } from "react";
 import { cn } from "@/ui/lib/cn";
 import type { ControlAssignment } from "@/midi/preset";
 import type { ControlKind } from "@/midi/types";
-import { useLive } from "@/ui/live/app/LiveProvider";
+import { useLive } from "@/ui/app/LiveProvider";
 
 export type ControllerMode = "play" | "map";
 /**

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import * as React from "react";
 import type { ControlAssignment } from "@/midi/preset";
-import { clamp01 } from "@/ui/live/macros/macros";
+import { clamp01 } from "@/ui/macros/macros";
 import { activeRing, dragWith, SlotFrame, useSlot } from "./shared";
 
 export function Knob({ assignment, label, size = 32 }: { assignment: ControlAssignment; label: string; size?: number }) {

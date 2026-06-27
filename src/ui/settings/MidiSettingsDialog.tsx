@@ -1,8 +1,8 @@
 import { useRef } from "react";
-import { Button } from "@/ui/components/ui/button";
-import { REMOTE_HASH } from "@/ui/live/channel/liveChannel";
-import { Controller } from "@/ui/live/controller/Controller";
-import { useLive } from "@/ui/live/app/LiveProvider";
+import { Button } from "@/ui/components/button";
+import { REMOTE_HASH } from "@/ui/channel/liveChannel";
+import { Controller } from "@/ui/controller/Controller";
+import { useLive } from "@/ui/app/LiveProvider";
 
 export function MidiSettingsDialog() {
   const live = useLive();

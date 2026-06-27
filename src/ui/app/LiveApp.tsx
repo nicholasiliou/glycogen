@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useEngine } from "@/ui/engine/EngineProvider";
-import { LiveProvider, useLive } from "@/ui/live/app/LiveProvider";
-import { HeaderBar } from "@/ui/live/stage/HeaderBar";
-import { Stage } from "@/ui/live/stage/Stage";
-import { MidiSettingsDialog } from "@/ui/live/settings/MidiSettingsDialog";
-import { ExportProvider } from "@/ui/live/export/ExportContext";
+import { LiveProvider, useLive } from "@/ui/app/LiveProvider";
+import { HeaderBar } from "@/ui/stage/HeaderBar";
+import { Stage } from "@/ui/stage/Stage";
+import { MidiSettingsDialog } from "@/ui/settings/MidiSettingsDialog";
+import { ExportProvider } from "@/ui/export/ExportContext";
 import { Power } from "lucide-react";
 import type { TextSetting } from "@/plugins/_shared/textField";
 

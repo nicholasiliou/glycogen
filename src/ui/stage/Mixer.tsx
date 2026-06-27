@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 import { useEngine, useRevision } from "@/ui/engine/EngineProvider";
-import { Button } from "@/ui/components/ui/button";
-import { Slider } from "@/ui/components/ui/slider";
+import { Button } from "@/ui/components/button";
+import { Slider } from "@/ui/components/slider";
 import { FAMILY_META, instrumentSpec } from "@/audio/instruments/registry";
-import { useLive } from "@/ui/live/app/LiveProvider";
+import { useLive } from "@/ui/app/LiveProvider";
 
 export function Mixer() {
   const engine = useEngine();

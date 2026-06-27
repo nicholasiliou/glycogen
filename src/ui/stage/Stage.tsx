@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useEngine, useRevision } from "@/ui/engine/EngineProvider";
-import { useExportSettings } from "@/ui/live/export/ExportContext";
+import { useExportSettings } from "@/ui/export/ExportContext";
 import { masksFor } from "@/engine";
 
 export function Stage() {

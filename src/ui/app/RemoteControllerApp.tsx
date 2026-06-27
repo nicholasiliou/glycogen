@@ -4,8 +4,8 @@
  * {@link RemoteLiveProvider} — so a phone/tablet/second monitor becomes your control surface when
  * you don't have a MIDI controller.
  */
-import { Controller } from "@/ui/live/controller/Controller";
-import { RemoteLiveProvider } from "@/ui/live/app/RemoteLiveProvider";
+import { Controller } from "@/ui/controller/Controller";
+import { RemoteLiveProvider } from "@/ui/app/RemoteLiveProvider";
 
 export function RemoteControllerApp() {
   return (
