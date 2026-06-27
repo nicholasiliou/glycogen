@@ -20,6 +20,7 @@ import { glyphScatterLayerType } from "./glyph/GlyphScatterLayer";
 import { cloudLayerType } from "./cloud/VolumetricCloudLayer";
 import { fisheyeLayerType, asciiLayerType } from "./shaders/EffectLayers";
 import { colorLookupLayerType } from "./shaders/ColorLookupLayer";
+import { contourFieldLayerType } from "./contourefield/contourefield";
 
 /** Registers the built-in layer types. `registry.register(...)` is the whole contract. */
 export function registerBuiltins(registry: Registry): void {
@@ -38,6 +39,7 @@ export function registerBuiltins(registry: Registry): void {
   registry.register(cloudLayerType);
   //registry.register(wireLayerType);
   registry.register(glyphScatterLayerType);
+  registry.register(contourFieldLayerType)
   // 3D
   registry.register(shapeLayerType);
   //registry.register(modelLayerType);
@@ -78,4 +80,5 @@ export {
   fisheyeLayerType,
   asciiLayerType,
   colorLookupLayerType,
+  contourFieldLayerType,
 };
