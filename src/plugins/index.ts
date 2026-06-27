@@ -21,6 +21,7 @@ import { cloudLayerType } from "./cloud/VolumetricCloudLayer";
 import { fisheyeLayerType, asciiLayerType } from "./shaders/EffectLayers";
 import { colorLookupLayerType } from "./shaders/ColorLookupLayer";
 import { contourFieldLayerType } from "./contourefield/contourefield";
+import { glitchEffectLayerType } from "./shaders/GlitchEffect";
 
 /** Registers the built-in layer types. `registry.register(...)` is the whole contract. */
 export function registerBuiltins(registry: Registry): void {
@@ -54,6 +55,7 @@ export function registerBuiltins(registry: Registry): void {
   registry.register(fisheyeLayerType);
   registry.register(asciiLayerType);
   registry.register(colorLookupLayerType);
+  registry.register(glitchEffectLayerType)
 }
 
 export {
@@ -81,4 +83,5 @@ export {
   asciiLayerType,
   colorLookupLayerType,
   contourFieldLayerType,
+  glitchEffectLayerType,
 };
