@@ -29,10 +29,6 @@ function MiniDial({ index, count }: { index: number; count: number }) {
   );
 }
 
-/**
- * Minimal per-side bank readout: the side letter, the active bank's plugin name, and three dots
- * for the storage banks — filled when a bank holds a plugin, ringed + bright for the active one.
- */
 function DeckSlot({ deck, layerId, banks, active }: {
   deck: "A" | "B";
   layerId: string | null;
@@ -41,31 +37,24 @@ function DeckSlot({ deck, layerId, banks, active }: {
 }) {
   const engine = useEngine();
   const nameOf = (id: string | null) => (id ? engine.getLayer(id)?.name ?? "—" : null);
-  const name = nameOf(layerId) ?? "empty";
-  const dots = (
-    <div className="flex items-center gap-1">
-      {banks.map((bank, i) => {
-        const filled = !!bank;
-        const isActive = i === active;
-        return (
-          <span
-            key={i}
-            title={`Bank ${deck}${i + 1}${bank ? ` · ${nameOf(bank)}` : " · empty"}${isActive ? " (active)" : ""}`}
-            className={cn(
-              "h-2 w-2 rounded-full border",
-              isActive ? "border-accent" : "border-transparent",
-              filled ? (isActive ? "bg-accent" : "bg-ink/50") : "bg-edge",
-            )}
-          />
-        );
-      })}
-    </div>
-  );
+  const name = nameOf(layerId) ?? "";
+
   return (
     <div className="flex min-w-0 items-center gap-1.5">
-      <span className={cn("text-[10px] font-semibold", layerId ? "text-ink" : "text-ink-dim")}>{deck}</span>
-      <span className="max-w-[120px] truncate text-[11px] text-ink" title="Active bank (MIDI-controlled)">{name}</span>
-      {dots}
+      <span className="max-w-30 truncate text-[11px] text-ink" title="Active bank (MIDI-controlled)">{name}</span>
+      <div className="flex items-center gap-1">
+        {banks.map((bank, i) => (
+          <span
+            key={i}
+            title={`Bank ${deck}${i + 1}${bank ? ` · ${nameOf(bank)}` : ""}${i === active ? " (active)" : ""}`}
+            className={cn(
+              "h-2 w-2 rounded-full border",
+              i === active ? "border-accent" : "border-transparent",
+              bank ? (i === active ? "bg-accent" : "bg-ink/50") : "bg-edge",
+            )}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -90,8 +79,6 @@ export function HeaderBar({
   const step = (d: number) => live.driveAssignment("browse", { value: 0, relative: true, delta: d });
   const both = !!deckA && !!deckB;
   const xfadePos = both ? crossfade : deckA ? 0 : deckB ? 1 : 0.5;
-
-  const label = useMemo(() => engine.registry.get(selectedType)?.label ?? selectedType, [engine, selectedType]);
 
   return (
     <div className="flex h-14 shrink-0 items-center gap-3 px-3 text-ink">
