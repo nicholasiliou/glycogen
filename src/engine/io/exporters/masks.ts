@@ -17,11 +17,11 @@ export interface MaskVariant {
 }
 
 const SQUARE_MASKS: MaskVariant[] = [
-  { id: "default", label: "Rounded frame", url: "/mask.svg" },
+  { id: "default", label: "Rounded frame", url: "/masks/mask.svg" },
 ];
 
 export const MASKS: Record<AspectRatioId, MaskVariant[]> = {
-  "16:9": [{ id: "default", label: "Rounded frame", url: "/mask.svg" }],
+  "16:9": [{ id: "default", label: "Rounded frame", url: "/masks/mask.svg" }],
   "9:16": SQUARE_MASKS,
   "1:1": SQUARE_MASKS,
   "4:5": SQUARE_MASKS,

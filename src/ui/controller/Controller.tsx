@@ -116,6 +116,10 @@ function MixerPanel() {
 
 export function Controller({ allowMap = true }: { allowMap?: boolean }) {
   useRaf();
+  // "map" is the intentional default and the setter is deliberately not used — the mode is
+  // driven externally via allowMap (false when no MIDI controller is connected, which forces
+  // "play" so the on-screen widgets are interactive). When a controller IS connected the
+  // overlay stays in map mode so hardware controls can be bound without accidental clicks.
   const [mode] = useState<ControllerMode>("map");
   const effective: ControllerMode = allowMap ? mode : "play";
 

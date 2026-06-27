@@ -67,7 +67,7 @@ function AudioGate() {
   if (phase === "gone" || started) return null;
 
   return (
-    <div className="pointer-events-auto absolute inset-0 z-20" style={{ maskImage: "url(/mask.svg)", maskSize: "100% 100%", maskPosition: "0 0", maskRepeat: "no-repeat" }}>
+    <div className="pointer-events-auto absolute inset-0 z-20" style={{ maskImage: "url(/masks/mask.svg)", maskSize: "100% 100%", maskPosition: "0 0", maskRepeat: "no-repeat" }}>
       {Array.from({ length: SLAT_COUNT }, (_, i) => (
         <div
           key={i}
@@ -120,7 +120,7 @@ function LiveShell() {
         <TextModePopup />
         <AudioGate />
         {controllerOpen && (
-          <div className="absolute inset-0 z-50 bg-black/90" style={{ maskImage: "url(/mask.svg)", maskSize: "100% 100%", maskPosition: "0 0", maskRepeat: "no-repeat" }}>
+          <div className="absolute inset-0 z-50 bg-black/90" style={{ maskImage: "url(/masks/mask.svg)", maskSize: "100% 100%", maskPosition: "0 0", maskRepeat: "no-repeat" }}>
             <MidiSettingsDialog />
           </div>
         )}

@@ -154,6 +154,9 @@ export const MACRO_MAPS: Record<string, MacroMap> = {
   text: {
     amount: { key: "fontSize", curve: "growth" },
     evolveX: { key: "tracking", curve: "linear" },
+    toneX: { key: "fontFamily", curve: "linear" },
+    toneY: { key: "textPreset", curve: "linear" },
+    trigger: { key: "textPreset", action: "cycle" },
     toggle: { key: "textInfluence" },
   },
   glyphScatter: {

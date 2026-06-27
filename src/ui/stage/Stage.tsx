@@ -27,7 +27,7 @@ export function Stage() {
     canvas.style.position = "absolute";
     canvas.style.pointerEvents = "none";
     canvas.style.boxShadow = "0 0 80px rgba(0,0,0,0.6)";
-    host.style.maskImage = "url(/mask.svg)";
+    host.style.maskImage = "url(/masks/mask.svg)";
     host.style.maskSize = "100% 100%";
     host.style.maskPosition = "0 0";
     host.style.maskRepeat = "no-repeat";

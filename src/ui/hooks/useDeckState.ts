@@ -4,6 +4,7 @@
  * the browse / shader selection state. Pure state management — no MIDI, no audio.
  */
 import React, { useCallback, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import type { Engine } from "@/engine";
 import type { BankIndex, Deck } from "@/midi/preset";
 
@@ -172,11 +173,14 @@ export function useDeckState(engine: Engine) {
   );
 
   const toggleBrowseMode = useCallback(() => {
-    setBrowseMode((m) => {
-      const next = m === "plugin" ? "shader" : "plugin";
-      browseModeRef.current = next;
-      return next;
-    });
+    // Browse mode is the only momentary action backed by React state rather than an engine
+    // mutation. The ref is the source of truth for the browse encoder (read synchronously in
+    // driveAssignment); the state drives the UI. flushSync renders synchronously so the surface
+    // updates immediately even though the call originates from a raw Web MIDI callback (outside
+    // React's event system) — matching the engine-revision re-render the other buttons get.
+    const next = browseModeRef.current === "plugin" ? "shader" : "plugin";
+    browseModeRef.current = next;
+    flushSync(() => setBrowseMode(next));
   }, []);
 
   return {

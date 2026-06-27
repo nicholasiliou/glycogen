@@ -33,6 +33,18 @@ export function useMidiRouter({
     setLearnState(a);
   }, []);
 
+  // The dispatch callbacks (drive/fire/bind) are recreated on most renders because they close
+  // over the deck state object. Holding them in refs lets the MIDI subscription below mount ONCE
+  // and always call the latest version — otherwise the effect tears down and re-subscribes on
+  // every render, and a hardware message arriving mid-churn can land on a torn-down listener (the
+  // "button lights up but nothing happens" symptom for state-toggling actions like browseMode).
+  const driveRef = useRef(driveAssignment);
+  const fireRef = useRef(fireAssignment);
+  const bindRef = useRef(bindAssignment);
+  driveRef.current = driveAssignment;
+  fireRef.current = fireAssignment;
+  bindRef.current = bindAssignment;
+
   useEffect(() => {
     const offs = [
       midi.on("discover", () => setMidiRev((r) => r + 1)),
@@ -41,33 +53,36 @@ export function useMidiRouter({
       midi.on("control", (e) => {
         const ctl = e.control;
         if (learnRef.current) {
-          bindAssignment(ctl.id, learnRef.current.a, learnRef.current.preferKind);
+          bindRef.current(ctl.id, learnRef.current.a, learnRef.current.preferKind);
           setLearn(null);
           return;
         }
         const m = activePresetRef.current?.controls[ctl.id];
         if (!m || m.disabled) return;
         if (isMomentaryAssignment(m.assignment)) {
-          // CC-typed-as-button: fire on value-rising edge.
-          // Note presses are handled by the trigger event below.
-          if (e.kind === "cc" && ctl.value > 0) fireAssignment(m.assignment);
+          // A CC used as a momentary assignment fires here on the value-rising edge, BUT only
+          // when the control has NOT been overridden as kind="button". An overridden button
+          // generates a "trigger" event (handled below) so firing here too would double-fire
+          // and cancel toggling actions (e.g. browseMode flips twice, back to the original).
+          // Notes are never "cc" kind so they always go through the trigger path exclusively.
+          if (e.kind === "cc" && ctl.subtype !== "button" && ctl.value > 0) fireRef.current(m.assignment);
           return;
         }
-        driveAssignment(m.assignment, { value: ctl.value, delta: ctl.delta, relative: ctl.relative });
+        driveRef.current(m.assignment, { value: ctl.value, delta: ctl.delta, relative: ctl.relative });
       }),
       midi.on("trigger", (c) => {
         if (learnRef.current) {
-          bindAssignment(c.id, learnRef.current.a, learnRef.current.preferKind);
+          bindRef.current(c.id, learnRef.current.a, learnRef.current.preferKind);
           setLearn(null);
           return;
         }
         const m = activePresetRef.current?.controls[c.id];
         if (!m || m.disabled) return;
-        if (isMomentaryAssignment(m.assignment)) fireAssignment(m.assignment);
+        if (isMomentaryAssignment(m.assignment)) fireRef.current(m.assignment);
       }),
     ];
     return () => offs.forEach((o) => o());
-  }, [midi, activePresetRef, driveAssignment, fireAssignment, bindAssignment, setLearn, setMidiRev]);
+  }, [midi, activePresetRef, setLearn, setMidiRev]);
 
   return { learn, setLearn };
 }

@@ -18,6 +18,10 @@ import { ControlLearner, type LearnResult } from "./ControlLearner";
  */
 export class MidiManager {
   private access?: WMAccess;
+  /** In-flight enable() promise, so concurrent calls share one requestMIDIAccess instead of each
+   * acquiring a *separate* access object (which would bind onmidimessage twice → every physical
+   * message fires twice). This bites under React StrictMode's mount→unmount→mount double-invoke. */
+  private enabling?: Promise<void>;
   private learner = new ControlLearner();
   private listeners: { [K in keyof MidiManagerEvents]: Set<(v: MidiManagerEvents[K]) => void> } = {
     status: new Set(),
@@ -77,21 +81,33 @@ export class MidiManager {
   }
 
   /** Request access (needs a secure context; Chrome/Edge support it best). */
-  async enable(): Promise<void> {
-    if (this.access) return;
+  enable(): Promise<void> {
+    if (this.access) return Promise.resolve();
+    // Coalesce concurrent calls: a second enable() while the first is still awaiting
+    // requestMIDIAccess must NOT start its own request. Two requests yield two *distinct* access
+    // objects for the same physical port, and binding onmidimessage on both makes every message
+    // fire twice — which silently no-ops toggle actions (browseMode flips twice → back to start).
+    // This is exactly what React StrictMode's mount→unmount→mount double-invoke triggers.
+    if (this.enabling) return this.enabling;
     if (!this.supported) {
       this.setStatus("unsupported");
-      return;
+      return Promise.resolve();
     }
-    try {
-      const req = (navigator as unknown as { requestMIDIAccess: RequestMIDIAccess }).requestMIDIAccess;
-      this.access = await req.call(navigator, { sysex: false });
-      this.access.onstatechange = () => this.bindInputs();
-      this.bindInputs();
-      this.setStatus("ready");
-    } catch {
-      this.setStatus("denied");
-    }
+    this.enabling = (async () => {
+      try {
+        const req = (navigator as unknown as { requestMIDIAccess: RequestMIDIAccess }).requestMIDIAccess;
+        const access = await req.call(navigator, { sysex: false });
+        this.access = access;
+        access.onstatechange = () => this.bindInputs();
+        this.bindInputs();
+        this.setStatus("ready");
+      } catch {
+        this.setStatus("denied");
+      } finally {
+        this.enabling = undefined;
+      }
+    })();
+    return this.enabling;
   }
 
   private bindInputs(): void {

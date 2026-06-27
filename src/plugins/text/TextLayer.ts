@@ -3,13 +3,45 @@ import type { LayerRenderer, RenderFrame } from "../../engine/render/types";
 import type { PropertyValue } from "../../engine/core/types";
 import { sampleGrid } from "../_shared/textField";
 
-// Register and load Maratype programmatically so canvas ctx.font picks it up
-// without depending on CSS @font-face timing.
-const maratypeReady: Promise<void> = (() => {
-  if (document.fonts.check("400 1em Maratype")) return Promise.resolve();
-  const face = new FontFace("Maratype", "url('/Maratype.otf') format('opentype')", { weight: "400" });
-  return face.load().then((loaded) => { document.fonts.add(loaded); }).catch(() => {});
-})();
+export const AVAILABLE_FONTS = ["Maratype", "NuCore", "Sekgen", "UESC"] as const;
+
+export const TEXT_PRESETS = [
+  "Marathon",
+  "Runner",
+  "Tau Ceti IV",
+  "UESC Marathon",
+  "New Cascadia",
+  "Cryo Archive",
+  "Perimeter",
+  "Dire Marsh",
+  "Outpost",
+  "CyberAcme",
+  "NuCaloric",
+  "Traxus",
+  "MIDA",
+  "Arachne",
+  "Sekiguchi Genetics",
+  "Contract",
+  "Exfil",
+  "Shell",
+  "Colony",
+  "Colony Ship",
+  "Tau Ceti IV",
+] as const;
+
+// Load every custom font programmatically and block on all of them so canvas ctx.font can pick
+// any of the four — not just the first one touched. Each loads from /fonts/<Name>.otf and is
+// registered under its own family name (the same string the schema's Font select stores).
+// No-ops where the Font Loading API is absent (e.g. jsdom under tests).
+const fontsReady: Promise<void> =
+  typeof FontFace === "undefined" || typeof document === "undefined" || !document.fonts
+    ? Promise.resolve()
+    : Promise.all(
+        AVAILABLE_FONTS.map((name) => {
+          const face = new FontFace(name, `url('/fonts/${name}.otf') format('opentype')`, { weight: "400" });
+          return face.load().then((loaded) => { document.fonts.add(loaded); }).catch(() => {});
+        }),
+      ).then(() => {});
 
 function rgba(v: unknown, fallback = "rgba(255,255,255,1)"): string {
   if (!Array.isArray(v)) return fallback;
@@ -27,7 +59,7 @@ class TextRenderer implements LayerRenderer {
   private fontReady = false;
 
   constructor() {
-    maratypeReady.then(() => { this.fontReady = true; this.gridCache = null; });
+    fontsReady.then(() => { this.fontReady = true; this.gridCache = null; });
   }
 
   resize(w: number, h: number): void {
@@ -42,10 +74,11 @@ class TextRenderer implements LayerRenderer {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    const text = String(frame.props.text ?? "");
+    const preset = String(frame.props.textPreset ?? "custom");
+    const text = preset !== "custom" ? preset : String(frame.props.text ?? "");
     const size = Number(frame.props.fontSize) || 120;
     const weight = frame.props.bold ? "700" : "400";
-    const family = String(frame.props.fontFamily || "Maratype");
+    const family = String(frame.props.fontFamily);
     ctx.fillStyle = rgba(frame.props.color);
     ctx.font = `${weight} ${size}px ${family}`;
     ctx.textAlign = "center";
@@ -61,9 +94,12 @@ class TextRenderer implements LayerRenderer {
   }
 
   fieldSource(props: Record<string, PropertyValue>): (x: number, y: number, z: number) => number {
+    const resolvedProps = { ...props };
+    const preset = String(props.textPreset ?? "custom");
+    if (preset !== "custom") resolvedProps.text = preset;
     const key = this.sourceKey(props, 0);
     if (!this.gridCache || this.gridCache.key !== key) {
-      const grid = rasterTextGrid(props, this.lastW, this.lastH);
+      const grid = rasterTextGrid(resolvedProps, this.lastW, this.lastH);
       this.gridCache = grid ? { key, ...grid } : null;
     }
     const cache = this.gridCache;
@@ -73,7 +109,9 @@ class TextRenderer implements LayerRenderer {
   }
 
   sourceKey(props: Record<string, PropertyValue>, _time: number): string {
-    return [props.text, props.fontSize, props.tracking, props.bold, props.fontFamily, this.lastW, this.lastH].join("|");
+    const preset = String(props.textPreset ?? "custom");
+    const text = preset !== "custom" ? preset : props.text;
+    return [text, props.fontSize, props.tracking, props.bold, props.fontFamily, this.lastW, this.lastH].join("|");
   }
 
   dispose(): void {
@@ -105,7 +143,7 @@ function rasterTextGrid(
   if (!text) return { data, gw, gh };
   const size = (Number(props.fontSize) || 120) * scale;
   const weight = props.bold ? "700" : "400";
-  const family = String(props.fontFamily || "Maratype");
+  const family = String(props.fontFamily);
   ctx.fillStyle = "#fff";
   ctx.font = `${weight} ${size}px ${family}`;
   ctx.textAlign = "center";
@@ -129,7 +167,10 @@ export const textLayerType: LayerTypeDefinition = {
   description: "A text block.",
   defaultSize: (comp) => [comp.width, comp.height],
   schema: [
+    { key: "textPreset", name: "Content", type: "select", default: "custom", group: "Text", animatable: false, meta: { options: [
+      { label: "Custom", value: "custom" }, ...TEXT_PRESETS.map((t) => ({ label: t, value: t })) ] } },
     { key: "text", name: "Text", type: "string", default: "Marathon", group: "Text" },
+    { key: "fontFamily", name: "Font", type: "select", default: "Maratype", group: "Text", animatable: false, meta: { options: AVAILABLE_FONTS.map((f) => ({ label: f, value: f })) } },
     { key: "fontSize", name: "Font Size", type: "number", default: 160, group: "Text", meta: { min: 4, max: 2000, step: 1 } },
     { key: "tracking", name: "Tracking", type: "number", default: 0, group: "Text", meta: { min: -50, max: 200, step: 1 } },
     { key: "bold", name: "Bold", type: "boolean", default: false, group: "Text" },
@@ -137,6 +178,6 @@ export const textLayerType: LayerTypeDefinition = {
     { key: "textInfluence", name: "Text Influence", type: "select", default: "attract", group: "Interaction", animatable: false, meta: { options: [
       { label: "Off", value: "off" }, { label: "Fill", value: "fill" }, { label: "Attract", value: "attract" } ] } },
   ],
-  defaultData: () => ({ fontFamily: "Maratype" }),
+  defaultData: () => ({}),
   createRenderer: () => new TextRenderer(),
 };
