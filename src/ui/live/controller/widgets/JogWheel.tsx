@@ -12,7 +12,7 @@ export function JogWheel({ assignment, label, size = 360 }: { assignment: Contro
 
   useEffect(() => {
     if (slot.liveValue !== undefined) {
-      setSpin((s) => s + slot.liveValue * 360);
+      setSpin((s) => s + slot.liveValue! * 360);
     }
   }, [slot.liveValue]);
 
@@ -44,7 +44,7 @@ export function JogWheel({ assignment, label, size = 360 }: { assignment: Contro
       >
         {/* outer rim – image sequence (5 frames, ~3° per frame) */}
         {(() => {
-          const frameIndex = Math.floor((spin % 360 / 5)) % 5;
+          const frameIndex = ((Math.floor(spin / 5) % 5) + 5) % 5;
           return Array.from({ length: 5 }, (_, i) => (
             <img
               key={i}

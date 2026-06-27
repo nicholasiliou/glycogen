@@ -3,11 +3,10 @@ import { Gamepad } from "lucide-react";
 import { useEngine } from "@/ui/engine/EngineProvider";
 import { Button } from "@/ui/components/ui/button";
 import { cn } from "@/ui/lib/cn";
-import { useLive } from "./LiveProvider";
-import { PluginPreview } from "./PluginPreview";
-import { ExportPanel } from "./ExportPanel";
+import { useLive } from "@/ui/live/app/LiveProvider";
+import { PluginPreview } from "@/ui/live/stage/PluginPreview";
+import { ExportPanel } from "@/ui/live/export/ExportPanel";
 
-/** A tiny monochrome dial that mirrors the browse position across all plugin types. */
 function MiniDial({ index, count }: { index: number; count: number }) {
   const S = 34;
   const c = S / 2;
@@ -75,15 +74,12 @@ export function HeaderBar({
   const list = shaderMode ? shaders : types;
   const current = shaderMode ? shaderType : selectedType;
   const idx = Math.max(0, list.indexOf(current));
-  // Drive browse through the shared routing so the header, the surface and MIDI all agree.
   const step = (d: number) => live.driveAssignment("browse", { value: 0, relative: true, delta: d });
   const both = !!deckA && !!deckB;
   const xfadePos = both ? crossfade : deckA ? 0 : deckB ? 1 : 0.5;
 
   return (
     <div className="flex h-14 shrink-0 items-center gap-3 px-3 text-ink">
-
-      {/* browse: mini dial + preview + load to a deck */}
       <div className="flex items-center gap-1.5" onWheel={(e) => { e.preventDefault(); step(e.deltaY > 0 ? 1 : -1); }}>
         <MiniDial index={idx} count={list.length} />
       </div>
@@ -98,7 +94,6 @@ export function HeaderBar({
 
       <div className="flex-1" />
 
-      {/* decks + crossfade indicator */}
       <div className="flex items-center gap-2">
         <DeckSlot deck="A" layerId={deckA} banks={deckBanks.A} active={activeBank.A} />
         <div className="relative h-1 w-20 rounded-full bg-edge" title="A / B crossfade">
@@ -110,7 +105,6 @@ export function HeaderBar({
         <DeckSlot deck="B" layerId={deckB} banks={deckBanks.B} active={activeBank.B} />
       </div>
 
-      {/* export + controller toggle */}
       <ExportPanel />
       <Button
         size="icon-sm"

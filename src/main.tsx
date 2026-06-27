@@ -4,9 +4,9 @@ import "./index.css";
 import { Engine, Exporter, serializeProject } from "@/engine";
 import { registerBuiltins } from "@/plugins";
 import { EngineProvider } from "@/ui/engine/EngineProvider";
-import { LiveApp } from "@/ui/live/LiveApp";
-import { isRemoteWindow } from "@/ui/live/liveChannel";
-import { RemoteControllerApp } from "@/ui/live/RemoteControllerApp";
+import { LiveApp } from "@/ui/live/app/LiveApp";
+import { isRemoteWindow } from "@/ui/live/channel/liveChannel";
+import { RemoteControllerApp } from "@/ui/live/app/RemoteControllerApp";
 
 // Popup "digital controller" window: no engine here — it relays to the host over BroadcastChannel.
 if (isRemoteWindow()) {

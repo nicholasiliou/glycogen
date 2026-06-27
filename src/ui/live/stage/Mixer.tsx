@@ -4,9 +4,8 @@ import { useEngine, useRevision } from "@/ui/engine/EngineProvider";
 import { Button } from "@/ui/components/ui/button";
 import { Slider } from "@/ui/components/ui/slider";
 import { FAMILY_META, instrumentSpec } from "@/audio/instruments/registry";
-import { useLive } from "./LiveProvider";
+import { useLive } from "@/ui/live/app/LiveProvider";
 
-/** Per-voice level + mute for the instruments currently on the stage. Audio stays understated. */
 export function Mixer() {
   const engine = useEngine();
   useRevision();

@@ -23,7 +23,7 @@ export function SmoothKnob({
   label: string;
   size?: number;
 }) {
-  const slot = useSlot(assignment);
+  const slot = useSlot(assignment, "encoder");
   // Accumulated rotation (degrees) — driven by drag and by hardware encoder ticks.
   const [spin, setSpin] = useState(0);
   const lastSeq = useRef<number | undefined>(undefined);

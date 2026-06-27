@@ -7,7 +7,8 @@ import * as React from "react";
 import { useContext, useState } from "react";
 import { cn } from "@/ui/lib/cn";
 import type { ControlAssignment } from "@/midi/preset";
-import { useLive } from "../../LiveProvider";
+import type { ControlKind } from "@/midi/types";
+import { useLive } from "@/ui/live/app/LiveProvider";
 
 export type ControllerMode = "play" | "map";
 /**
@@ -47,7 +48,7 @@ export interface SlotState {
 }
 
 /** Everything a widget needs about its assignment: the bound control, its live activity, actions. */
-export function useSlot(a: ControlAssignment): SlotState {
+export function useSlot(a: ControlAssignment, preferKind?: ControlKind): SlotState {
   const live = useLive();
   const ctl = live.controls.find((c) => c.assignment === a && !c.disabled);
   const snap = ctl?.live;
@@ -60,7 +61,7 @@ export function useSlot(a: ControlAssignment): SlotState {
     pressed: !!snap?.pressed,
     active: !!snap && performance.now() - snap.lastSeen < 300,
     learning: live.learn === a,
-    arm: () => live.setLearn(live.learn === a ? null : a),
+    arm: () => live.setLearn(live.learn === a ? null : a, preferKind),
     unbind: () => ctl && live.setControlAssignment(ctl.id, "none"),
     drive: (input) => live.driveAssignment(a, input),
     fire: () => live.fireAssignment(a),

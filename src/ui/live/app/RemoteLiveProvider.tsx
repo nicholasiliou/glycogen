@@ -2,12 +2,11 @@
  * Provides a `useLive()` value for the popup "digital controller" window, which has no engine of
  * its own. Every action is relayed to the host window over the BroadcastChannel; display state
  * (plugin/shader names, crossfade, browse mode) is mirrored back. Only the fields the on-screen
- * Controller surface actually reads are populated — the rest are inert stubs (the remote never
- * touches the engine/audio/preset machinery), so we cast the shim to the full context shape.
+ * Controller surface actually reads are populated — the rest are inert stubs.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { LiveContext, type LiveContextValue } from "./LiveProvider";
-import { openLiveChannel, type LiveMessage, type LiveSnapshot } from "./liveChannel";
+import { LiveContext, type LiveContextValue } from "@/ui/live/app/LiveProvider";
+import { openLiveChannel, type LiveMessage, type LiveSnapshot } from "@/ui/live/channel/liveChannel";
 import { bankAssignment, type BankIndex } from "@/midi/preset";
 
 const EMPTY_SNAPSHOT: LiveSnapshot = {
@@ -36,7 +35,7 @@ export function RemoteLiveProvider({ children }: { children: React.ReactNode }) 
     ch.onmessage = (e: MessageEvent<LiveMessage>) => {
       if (e.data.kind === "state") setSnap(e.data.snapshot);
     };
-    ch.postMessage({ kind: "hello" }); // ask the host for the current state
+    ch.postMessage({ kind: "hello" });
     return () => {
       ch.close();
       chRef.current = null;
@@ -48,14 +47,12 @@ export function RemoteLiveProvider({ children }: { children: React.ReactNode }) 
   const value = useMemo(() => {
     const noop = () => {};
     const used = {
-      // routed to the host:
       driveAssignment: (a, input) => post({ kind: "drive", a, input }),
       fireAssignment: (a) => post({ kind: "fire", a }),
       setSelectedType: (t: string) => post({ kind: "selectType", type: t }),
       setCrossfade: (x: number) => post({ kind: "drive", a: "crossfade", input: { value: x } }),
       loadBank: (d, i) => post({ kind: "fire", a: bankAssignment(d, i) }),
       selectBank: (d, i) => post({ kind: "fire", a: bankAssignment(d, i) }),
-      // mirrored display state:
       types: snap.types,
       selectedType: snap.selectedType,
       crossfade: snap.crossfade,
@@ -66,7 +63,6 @@ export function RemoteLiveProvider({ children }: { children: React.ReactNode }) 
       deckB: null,
       deckBanks: { A: snap.deckABankNames, B: snap.deckBBankNames },
       activeBank: { A: snap.activeBankA as BankIndex, B: snap.activeBankB as BankIndex },
-      // inert on the remote:
       controls: [],
       learn: null,
       setLearn: noop,

@@ -126,6 +126,8 @@ export const ASSIGNMENT_GROUPS: AssignmentGroup[] = [
     label: "Stage",
     options: [
       { value: "browse", label: "Browse" },
+      { value: "loadA", label: "Load A" },
+      { value: "loadB", label: "Load B" },
       { value: "clearA", label: "Clear A (active bank)" },
       { value: "clearB", label: "Clear B (active bank)" },
       { value: "crossfade", label: "Crossfade A/B" },
@@ -155,19 +157,6 @@ export function assignmentDeck(a: ControlAssignment): Deck | null {
 }
 export function assignmentSlot(a: ControlAssignment): Slot | null {
   return a[1] === ":" ? (a.slice(2) as Slot) : null;
-}
-
-/**
- * Placeholder slots driven by the on-screen SmoothKnob (endless encoder) widget — kept in sync
- * with the layout in Controller.tsx. A control bound to one of these is an encoder: it should be
- * registered relative so the engine accumulates its steps rather than reading an absolute sweep.
- */
-export const SMOOTHKNOB_ASSIGNMENTS = new Set<ControlAssignment>([
-  "placeholder6", "placeholder7", "placeholder8",
-  "placeholder16", "placeholder17", "placeholder18",
-]);
-export function isSmoothKnobAssignment(a: ControlAssignment): boolean {
-  return SMOOTHKNOB_ASSIGNMENTS.has(a);
 }
 
 /** Global assignments that fire once on press rather than sweeping a value. */
@@ -350,11 +339,8 @@ export function sanitizePreset(raw: unknown): MidiPreset | null {
   for (const [id, v] of Object.entries(rawControls)) {
     if (!v || typeof v !== "object") continue;
     const c = v as Record<string, unknown>;
-    let kind = CONTROL_KINDS.includes(c.kind as ControlKind) ? (c.kind as ControlKind) : "knob";
+    const kind = CONTROL_KINDS.includes(c.kind as ControlKind) ? (c.kind as ControlKind) : "knob";
     const assignment = isAssignment(c.assignment) ? c.assignment : "none";
-    // A control on an on-screen SmoothKnob is an endless encoder — fix any saved preset where it
-    // was typed as an absolute knob/fader so it accumulates relative steps in the engine.
-    if (isSmoothKnobAssignment(assignment)) kind = "encoder";
     controls[id] = {
       controlId: id,
       name: typeof c.name === "string" ? c.name : id,
@@ -399,34 +385,46 @@ function isAssignment(v: unknown): v is ControlAssignment {
 // ── auto-assign: a sensible starting layout from the detected control kinds ──────────────────
 
 /**
- * Best-effort default layout so a freshly captured controller does something musical without
- * hand-wiring: faders → amount (A, B) then crossfade; encoders/jogs → browse then evolve;
- * knobs → tone; buttons → load then trigger/toggle. Stable order; the user edits inline after.
+ * Best-effort default layout for a two-deck DJ controller (e.g. Numark MixTrack):
+ *   faders  → channel amounts + crossfade (left-to-right order on the hardware)
+ *   jogs    → evolveX per deck (jog wheels = main performance control)
+ *   encoders → browse first, then evolveY per deck
+ *   knobs   → toneX/Y per deck (EQ section)
+ *   buttons → load, banks, trigger/toggle, browse-mode
+ * Stable input order; the user edits inline after.
  */
 export function autoAssign(controls: EffectiveControl[]): Record<string, ControlAssignment> {
   const enabled = controls.filter((c) => !c.disabled);
-  const take = (pred: (c: EffectiveControl) => boolean) => enabled.filter(pred);
-  const faders = take((c) => c.kind === "fader");
-  const rotaries = take((c) => c.kind === "encoder" || c.kind === "jog");
-  const knobs = take((c) => c.kind === "knob");
-  const buttons = take((c) => c.kind === "button");
+  const faders   = enabled.filter((c) => c.kind === "fader");
+  const jogs     = enabled.filter((c) => c.kind === "jog");
+  const encoders = enabled.filter((c) => c.kind === "encoder");
+  const knobs    = enabled.filter((c) => c.kind === "knob");
+  const buttons  = enabled.filter((c) => c.kind === "button");
 
   const out: Record<string, ControlAssignment> = {};
   const assign = (list: EffectiveControl[], plan: ControlAssignment[]) =>
     list.forEach((c, i) => plan[i] && (out[c.id] = plan[i]));
 
-  // faders: two amounts then a crossfade (a MixTrack has 2 channel faders + 1 crossfader)
-  assign(faders, faders.length >= 3 ? ["A:amount", "B:amount", "crossfade"] : ["A:amount", "B:amount"]);
-  assign(rotaries, ["browse", "A:evolveX", "A:evolveY", "B:evolveX", "B:evolveY"]);
+  // Channel faders → deck amounts; crossfader is last (the widest fader on most controllers).
+  assign(faders, ["A:amount", "B:amount", "crossfade"]);
+
+  // Jog wheels → evolveX (the primary generative parameter per deck).
+  assign(jogs, ["A:evolveX", "B:evolveX"]);
+
+  // Browse encoder comes first; remaining encoders fill evolveY.
+  assign(encoders, ["browse", "A:evolveY", "B:evolveY"]);
+
+  // EQ knobs → tone (treble/bass → toneX, mid → toneY).
   assign(knobs, ["A:toneX", "A:toneY", "B:toneX", "B:toneY"]);
-  // Buttons also cover the stage actions the on-screen surface exposes (load each side + the six
-  // storage banks + browse-mode), so a captured controller can drive them too — one keymap.
+
+  // Buttons: load decks, banks, reseed/toggle, browse-mode toggle.
   assign(buttons, [
-    "clearA", "clearB", "browseMode",
+    "loadA", "loadB", "clearA", "clearB", "browseMode",
     bankAssignment("A", 0), bankAssignment("A", 1), bankAssignment("A", 2),
     bankAssignment("B", 0), bankAssignment("B", 1), bankAssignment("B", 2),
     "A:trigger", "A:toggle", "B:trigger", "B:toggle",
   ]);
+
   return out;
 }
 

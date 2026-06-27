@@ -1,8 +1,8 @@
 // ── horizontal crossfader (reads/writes the live crossfade directly) ─────────────────────────
 import { useRef } from "react";
 import * as React from "react";
-import { clamp01 } from "../../macros";
-import { useLive } from "../../LiveProvider";
+import { clamp01 } from "@/ui/live/macros/macros";
+import { useLive } from "@/ui/live/app/LiveProvider";
 import { activeRing, dragWith, SlotFrame, useSlot } from "./shared";
 
 export function Crossfader({ width = 240 }: { width?: number }) {

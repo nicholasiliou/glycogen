@@ -4,8 +4,8 @@
  * {@link RemoteLiveProvider} — so a phone/tablet/second monitor becomes your control surface when
  * you don't have a MIDI controller.
  */
-import { Controller } from "./controller/Controller";
-import { RemoteLiveProvider } from "./RemoteLiveProvider";
+import { Controller } from "@/ui/live/controller/Controller";
+import { RemoteLiveProvider } from "@/ui/live/app/RemoteLiveProvider";
 
 export function RemoteControllerApp() {
   return (
@@ -15,7 +15,6 @@ export function RemoteControllerApp() {
           Marathon · Remote Controller
         </div>
         <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto p-6">
-          {/* Remote is a play surface only — no MIDI here to map. */}
           <Controller allowMap={false} />
         </div>
       </div>

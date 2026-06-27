@@ -1,12 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useEngine, useRevision } from "@/ui/engine/EngineProvider";
-import { useExportSettings } from "./ExportContext";
+import { useExportSettings } from "@/ui/live/export/ExportContext";
 import { masksFor } from "@/engine";
 
-/**
- * The live stage: mounts the engine canvas, fit + centered, with no editor chrome. Pointer
- * input is forwarded into the engine (so plugins that read the cursor stay interactive).
- */
 export function Stage() {
   const engine = useEngine();
   useRevision();
@@ -24,7 +20,6 @@ export function Stage() {
     return () => ro.disconnect();
   }, []);
 
-  // Mount the shared engine canvas + forward input.
   useEffect(() => {
     const host = hostRef.current;
     const canvas = engine.canvas;
@@ -60,8 +55,6 @@ export function Stage() {
     canvas.style.height = `${dispH}px`;
   }, [engine, ox, oy, dispW, dispH]);
 
-  // Export-framing preview: the centered crop rect of the chosen aspect ratio inscribed in the
-  // displayed canvas (matches the exporter's cover-crop), with the export mask shown when enabled.
   const ratioWH = ex.ratio.width / ex.ratio.height;
   const canvasWH = dispW / dispH;
   const cropW = ratioWH > canvasWH ? dispW : dispH * ratioWH;
@@ -72,7 +65,6 @@ export function Stage() {
 
   return (
     <div ref={hostRef} className="relative h-full w-full touch-none overflow-visible bg-black">
-      {/* dim the area outside the export crop */}
       <div
         className="pointer-events-none absolute z-5 border border-white/40"
         style={{
@@ -83,7 +75,6 @@ export function Stage() {
           boxShadow: "0 0 0 9999px rgba(0,0,0,0.45)",
         }}
       />
-      {/* export mask overlay (on top of the shadow, not affecting it) */}
       {maskUrl && (
         <div
           className="pointer-events-none absolute z-4"
