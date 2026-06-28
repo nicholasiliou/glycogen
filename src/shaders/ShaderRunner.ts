@@ -1,9 +1,3 @@
-/**
- * Minimal WebGL fragment-shader runner for effect layers. Compiles one fragment
- * shader, draws a fullscreen quad sampling the backdrop (and optional extra textures),
- * and exposes its canvas as the result. Reused by every shader effect; falls back to a
- * passthrough when WebGL is unavailable so the editor never hard-fails.
- */
 const VERT = `
 attribute vec2 aPos;
 varying vec2 vUv;
@@ -97,7 +91,6 @@ export class ShaderRunner {
     return this.uniformLoc.get(name) ?? null;
   }
 
-  /** Provide/refresh an auxiliary texture (e.g. a glyph atlas). Uploaded on next render. */
   setTexture(name: string, source: TexImageSource): void {
     const e = this.extraTex.get(name);
     if (e) {
@@ -117,7 +110,6 @@ export class ShaderRunner {
   render(backdrop: TexImageSource, uniforms: Record<string, number | number[]>): HTMLCanvasElement {
     const gl = this.gl;
     if (!gl || !this.program) {
-      // passthrough fallback
       return backdrop as HTMLCanvasElement;
     }
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);

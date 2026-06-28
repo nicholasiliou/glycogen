@@ -1,5 +1,5 @@
-import type { LayerTypeDefinition } from "../../engine/plugins/Registry";
-import type { LayerRenderer, RenderFrame } from "../../engine/render/types";
+import type { LayerTypeDefinition } from "../engine/plugins/Registry";
+import type { LayerRenderer, RenderFrame } from "../engine/render/types";
 import { ShaderRunner } from "./ShaderRunner";
 
 function num(v: unknown, f: number): number {
@@ -10,7 +10,6 @@ function rgb01(v: unknown, f: [number, number, number]): [number, number, number
   return [(v[0] ?? 0) / 255, (v[1] ?? 0) / 255, (v[2] ?? 0) / 255];
 }
 
-// Snaps each pixel to the nearest of up to 6 palette colours (a colour LUT / posterise).
 const FRAG = `
 precision highp float;
 varying vec2 vUv;
@@ -33,9 +32,7 @@ void main() {
 
 class ColorLookupRenderer implements LayerRenderer {
   private runner = new ShaderRunner(FRAG);
-  resize(w: number, h: number): void {
-    this.runner.resize(w, h);
-  }
+  resize(w: number, h: number): void { this.runner.resize(w, h); }
   render(frame: RenderFrame): HTMLCanvasElement | null {
     const bd = frame.backdrop;
     if (!bd) return null;
@@ -53,12 +50,9 @@ class ColorLookupRenderer implements LayerRenderer {
       uMix: Math.max(0, Math.min(1, num(p.amount, 1))),
     });
   }
-  dispose(): void {
-    this.runner.dispose();
-  }
+  dispose(): void { this.runner.dispose(); }
 }
 
-// Defaults derive from the plant's EGA palette (+ near-black & near-white).
 export const colorLookupLayerType: LayerTypeDefinition = {
   type: "fx.colorLookup",
   label: "Color Lookup",

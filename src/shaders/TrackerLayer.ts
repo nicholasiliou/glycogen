@@ -1,5 +1,5 @@
-import type { LayerTypeDefinition } from "../../engine/plugins/Registry";
-import type { LayerRenderer, RenderFrame } from "../../engine/render/types";
+import type { LayerTypeDefinition } from "../engine/plugins/Registry";
+import type { LayerRenderer, RenderFrame } from "../engine/render/types";
 
 function num(v: unknown, f: number): number {
   return typeof v === "number" ? v : f;
@@ -12,25 +12,19 @@ function str(v: unknown, f: string): string {
 }
 
 interface TrackedRegion {
-  cx: number; // normalised 0..1
+  cx: number;
   cy: number;
   w: number;
   h: number;
   score: number;
 }
 
-// Sample the backdrop at a low resolution grid, compute per-cell "activity"
-// (luminance × alpha) and return the top-N distinct cells.
 function findRegions(
   bd: HTMLCanvasElement,
   count: number,
   gridCols: number,
   gridRows: number,
 ): TrackedRegion[] {
-  const w = bd.width;
-  const h = bd.height;
-
-  // Draw into a tiny offscreen canvas so getImageData is cheap.
   const oc = document.createElement("canvas");
   oc.width = gridCols;
   oc.height = gridRows;
@@ -38,7 +32,6 @@ function findRegions(
   oc2d.drawImage(bd, 0, 0, gridCols, gridRows);
   const pixels = oc2d.getImageData(0, 0, gridCols, gridRows).data;
 
-  // Score each cell by luminance * (alpha/255).
   const scores: { col: number; row: number; score: number }[] = [];
   for (let row = 0; row < gridRows; row++) {
     for (let col = 0; col < gridCols; col++) {
@@ -53,7 +46,6 @@ function findRegions(
   }
   scores.sort((a, b) => b.score - a.score);
 
-  // Pick top cells with a minimum spacing so they don't cluster.
   const minSep = Math.max(2, Math.floor(Math.min(gridCols, gridRows) / (count + 1)));
   const picked: typeof scores = [];
   for (const cell of scores) {
@@ -64,8 +56,6 @@ function findRegions(
     if (!tooClose) picked.push(cell);
   }
 
-  // Always ensure at least `count` regions even if scores are all zero
-  // (just spread across the top row).
   if (picked.length === 0) {
     for (let i = 0; i < count; i++) {
       picked.push({ col: Math.floor((i * gridCols) / count), row: 0, score: 0 });
@@ -81,13 +71,11 @@ function findRegions(
   return picked.map((p) => ({
     cx: (p.col + 0.5) / gridCols,
     cy: (p.row + 0.5) / gridRows,
-    w: cellW * 3, // box is ~3 cells wide
+    w: cellW * 3,
     h: cellH * 3,
     score: p.score,
   }));
 }
-
-// ── Direction helpers ─────────────────────────────────────────────────────────
 
 const DIRECTIONS: Record<string, [number, number]> = {
   "up":         [ 0, -1],
@@ -98,7 +86,7 @@ const DIRECTIONS: Record<string, [number, number]> = {
   "up-right":   [ 1, -1],
   "down-left":  [-1,  1],
   "down-right": [ 1,  1],
-  "outward":    [ 0,  0], // special: away from canvas centre
+  "outward":    [ 0,  0],
 };
 
 function dirVector(name: string, cx: number, cy: number): [number, number] {
@@ -113,13 +101,9 @@ function dirVector(name: string, cx: number, cy: number): [number, number] {
   return [d[0] / len, d[1] / len];
 }
 
-// ── Renderer ──────────────────────────────────────────────────────────────────
-
 class TrackerRenderer implements LayerRenderer {
   private canvas = document.createElement("canvas");
   private ctx = this.canvas.getContext("2d")!;
-
-  // Tracked regions with light smoothing so boxes don't teleport.
   private regions: TrackedRegion[] = [];
 
   render(frame: RenderFrame): HTMLCanvasElement | null {
@@ -136,7 +120,7 @@ class TrackerRenderer implements LayerRenderer {
     const p = frame.props;
     const count = Math.max(1, Math.min(5, Math.round(num(p.count, 1))));
     const grid = Math.max(8, Math.min(64, Math.round(num(p.grid, 24))));
-    const lineLen = num(p.lineLength, 0.6); // 0..1 of canvas diagonal
+    const lineLen = num(p.lineLength, 0.6);
     const direction = str(p.direction, "outward");
     const boxColor = arr(p.boxColor, [192, 252, 4, 255]);
     const lineColor = arr(p.lineColor, [192, 252, 4, 180]);
@@ -144,9 +128,8 @@ class TrackerRenderer implements LayerRenderer {
     const lineThick = num(p.lineThickness, 1);
     const smoothing = Math.max(0, Math.min(0.99, num(p.smoothing, 0.7)));
     const showBackdrop = p.showBackdrop !== false;
-    const dashLen = num(p.dashLength, 0); // 0 = solid
+    const dashLen = num(p.dashLength, 0);
 
-    // Sample backdrop every N frames to save compute (default: every frame).
     const sampleEvery = Math.max(1, Math.round(num(p.sampleRate, 1)));
     const frameIdx = frame.frame;
 
@@ -157,7 +140,6 @@ class TrackerRenderer implements LayerRenderer {
       targets = this.regions.length >= count ? this.regions : findRegions(bd, count, grid, grid);
     }
 
-    // Smooth existing regions toward new targets.
     if (this.regions.length !== targets.length) {
       this.regions = targets;
     } else {
@@ -185,7 +167,6 @@ class TrackerRenderer implements LayerRenderer {
       const bw = r.w * w;
       const bh = r.h * h;
 
-      // Bounding box.
       ctx.save();
       ctx.strokeStyle = strokeBox;
       ctx.lineWidth = boxThick;
@@ -193,7 +174,6 @@ class TrackerRenderer implements LayerRenderer {
       ctx.strokeRect(bx, by, bw, bh);
       ctx.restore();
 
-      // Directional line from centre of box to edge of canvas.
       const [dx, dy] = dirVector(direction, r.cx, r.cy);
       const startX = r.cx * w;
       const startY = r.cy * h;
@@ -219,8 +199,6 @@ class TrackerRenderer implements LayerRenderer {
     this.regions = [];
   }
 }
-
-// ── Definition ────────────────────────────────────────────────────────────────
 
 export const trackerLayerType: LayerTypeDefinition = {
   type: "fx.tracker",
