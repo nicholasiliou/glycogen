@@ -20,8 +20,9 @@ import { glyphScatterLayerType } from "./glyph/GlyphScatterLayer";
 import { cloudLayerType } from "./cloud/VolumetricCloudLayer";
 import { fisheyeLayerType, asciiLayerType } from "./shaders/EffectLayers";
 import { colorLookupLayerType } from "./shaders/ColorLookupLayer";
-import { contourFieldLayerType } from "./contourefield/contourefield";
+import { contourFieldLayerType } from "./contourefield/contourefieldLayer";
 import { glitchEffectLayerType } from "./shaders/GlitchEffect";
+import { modelFileLayerType } from "./modelObjLoader/modelFileLayer";
 
 /** Registers the built-in layer types. `registry.register(...)` is the whole contract. */
 export function registerBuiltins(registry: Registry): void {
@@ -44,6 +45,7 @@ export function registerBuiltins(registry: Registry): void {
   // 3D
   registry.register(shapeLayerType);
   //registry.register(modelLayerType);
+  registry.register(modelFileLayerType);
   registry.register(landscapeLayerType);
   //registry.register(slicerLayerType);
   // Simulation
@@ -70,7 +72,7 @@ export {
   noiseLayerType,
   slicerLayerType,
   shapeLayerType,
-  modelLayerType,
+  //modelLayerType,
   landscapeLayerType,
   gameOfLifeLayerType,
   reactionDiffusionLayerType,
@@ -84,4 +86,5 @@ export {
   colorLookupLayerType,
   contourFieldLayerType,
   glitchEffectLayerType,
+  modelFileLayerType,
 };
