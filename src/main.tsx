@@ -1,47 +1,11 @@
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "./index.css";
-import { Engine, Exporter, serializeProject } from "@/engine";
-import { registerBuiltins } from "@/plugins";
-import { EngineProvider } from "@/ui/engine/EngineProvider";
 import { LiveApp } from "@/ui/app/LiveApp";
-import { isRemoteWindow } from "@/ui/channel/liveChannel";
 import { RemoteControllerApp } from "@/ui/app/RemoteControllerApp";
+import { isRemoteWindow } from "@/controls/remoteChannel";
+import "./index.css";
 
-// Popup "digital controller" window: no engine here — it relays to the host over BroadcastChannel.
-if (isRemoteWindow()) {
-  createRoot(document.getElementById("root")!).render(
-    <StrictMode>
-      <RemoteControllerApp />
-    </StrictMode>,
-  );
-} else {
-  document.fonts.ready.then(bootEditor);
-}
-
-function bootEditor() {
-const engine = new Engine();
-registerBuiltins(engine.registry);
-
-engine.mount({
-  offscreenContainer: document.getElementById("offscreen-host")!,
-  pixelRatio: window.devicePixelRatio || 1,
+document.fonts.ready.then(() => {
+  // The pop-out controller window boots at `#controller`: just the surface, relaying to the host.
+  const App = isRemoteWindow() ? RemoteControllerApp : LiveApp;
+  createRoot(document.getElementById("root")!).render(<App />);
 });
-
-// Dev convenience: poke the engine from the console (e.g. `marathon.engine`, exports).
-if (import.meta.env.DEV) {
-  (window as any).marathon = {
-    engine,
-    exporter: new Exporter(engine),
-    serialize: () => serializeProject(engine.project),
-  };
-}
-
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <EngineProvider engine={engine}>
-      <LiveApp />
-    </EngineProvider>
-  </StrictMode>,
-);
-}

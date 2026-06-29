@@ -1,20 +1,26 @@
-// ── jog wheel (angular drag → relative delta for an Evolve slot) ──────────────────────────────
+// ── jog wheel (angular drag → relative delta) ─────────────────────────────────────────────────
 import { useEffect, useRef, useState } from "react";
 import * as React from "react";
-import type { ControlAssignment } from "@/midi/preset";
+import { slotId } from "@/controls/types";
 import { activeRing, dragWith, SlotFrame, useSlot } from "./shared";
 
-export function JogWheel({ assignment, label, size = 360 }: { assignment: ControlAssignment; label: string; size?: number }) {
-  const slot = useSlot(assignment);
+export function JogWheel({ slot, label, size = 360 }: { slot: number; label?: string; size?: number }) {
+  const s = useSlot(slotId("jog", slot));
   const ref = useRef<HTMLDivElement>(null);
   const last = useRef(0);
   const [spin, setSpin] = useState(0);
 
+  // Spin the wheel when the slot is driven from hardware MIDI (not just on-screen drag). Each new
+  // bus message bumps liveSeq; we fold its signed delta into the visible rotation so the animation
+  // matches a physical jog. While the user is dragging on-screen, the drag handler owns the spin
+  // (it calls setSpin directly), so we skip those self-induced bus bumps to avoid double-counting.
+  const dragging = useRef(false);
+  const lastSeq = useRef(s.liveSeq);
   useEffect(() => {
-    if (slot.liveValue !== undefined) {
-      setSpin((s) => s + slot.liveValue! * 360);
-    }
-  }, [slot.liveValue]);
+    if (s.liveSeq === lastSeq.current) return;
+    lastSeq.current = s.liveSeq;
+    if (!dragging.current && s.liveDelta) setSpin((p) => p + s.liveDelta * 30);
+  }, [s.liveSeq, s.liveDelta]);
 
   const onDown = (e: React.PointerEvent) => {
     e.preventDefault();
@@ -23,24 +29,29 @@ export function JogWheel({ assignment, label, size = 360 }: { assignment: Contro
     const cx = r.left + r.width / 2;
     const cy = r.top + r.height / 2;
     last.current = Math.atan2(e.clientY - cy, e.clientX - cx);
-    dragWith((ev) => {
-      const ang = Math.atan2(ev.clientY - cy, ev.clientX - cx);
-      let d = ang - last.current;
-      if (d > Math.PI) d -= 2 * Math.PI;
-      if (d < -Math.PI) d += 2 * Math.PI;
-      last.current = ang;
-      setSpin((s) => s + (d * 180) / Math.PI);
-      slot.drive({ value: 0, relative: true, delta: d * 6 });
-    });
+    dragging.current = true;
+    dragWith(
+      (ev) => {
+        const ang = Math.atan2(ev.clientY - cy, ev.clientX - cx);
+        let d = ang - last.current;
+        if (d > Math.PI) d -= 2 * Math.PI;
+        if (d < -Math.PI) d += 2 * Math.PI;
+        last.current = ang;
+        setSpin((p) => p + (d * 180) / Math.PI);
+        s.drive({ relative: true, delta: d * 6 });
+      },
+      () => { dragging.current = false; lastSeq.current = s.liveSeq; },
+    );
   };
 
   return (
-    <SlotFrame slot={slot} label={label}>
+    <SlotFrame label={s.label ?? label} active={s.active} armed={s.armed}>
       <div
         ref={ref}
         onPointerDown={onDown}
+        onContextMenu={(e) => { e.preventDefault(); s.arm(); }}
         className="relative touch-none cursor-grab active:cursor-grabbing rounded-full"
-        style={{ width: size, height: size, ...activeRing(slot.active) }}
+        style={{ width: size, height: size, ...activeRing(s.active) }}
       >
         {/* outer rim – image sequence (5 frames, ~3° per frame) */}
         {(() => {

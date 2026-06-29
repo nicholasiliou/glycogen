@@ -1,10 +1,5 @@
-import type { LayerTypeDefinition } from "../engine/plugins/Registry";
-import type { LayerRenderer, RenderFrame } from "../engine/render/types";
+import { Plugin, type Frame } from "@/plugins/Plugin";
 import { ShaderRunner } from "./ShaderRunner";
-
-function num(v: unknown, f: number): number {
-  return typeof v === "number" ? v : f;
-}
 
 const FRAG = `
 precision highp float;
@@ -18,32 +13,31 @@ void main() {
   gl_FragColor = texture2D(uTex, uv);
 }`;
 
-class PixelateRenderer implements LayerRenderer {
+/**
+ * Reference effect port. Reads the layers below via `frame.input` (was `frame.backdrop`) and
+ * post-processes them with the unchanged {@link ShaderRunner}. Its one parameter is a bound knob.
+ */
+export class PixelateLayer extends Plugin {
+  size = this.knob(0, { min: 1, max: 64, step: 1, default: 8 });
+
   private runner = new ShaderRunner(FRAG);
-  resize(w: number, h: number): void { this.runner.resize(w, h); }
-  render(frame: RenderFrame): HTMLCanvasElement | null {
-    const bd = frame.backdrop;
+
+  resize(w: number, h: number): void {
+    this.runner.resize(w, h);
+  }
+
+  render(f: Frame): HTMLCanvasElement | null {
+    const bd = f.input;
     if (!bd) return null;
     if (!this.runner.available) return bd;
-    this.runner.resize(frame.width, frame.height);
-    const p = frame.props;
+    this.runner.resize(f.width, f.height);
     return this.runner.render(bd, {
-      uResolution: [frame.width, frame.height],
-      uSize: Math.max(1, num(p.size, 8)),
+      uResolution: [f.width, f.height],
+      uSize: Math.max(1, this.size.value),
     });
   }
-  dispose(): void { this.runner.dispose(); }
-}
 
-export const pixelateLayerType: LayerTypeDefinition = {
-  type: "fx.pixelate",
-  label: "Pixelate",
-  category: "Effects",
-  icon: "LayoutGrid",
-  kind: "effect",
-  description: "Reduces resolution to large square pixels.",
-  schema: [
-    { key: "size", name: "Pixel Size", type: "number", default: 8, group: "Pixelate", meta: { min: 1, max: 128, step: 1 } },
-  ],
-  createRenderer: () => new PixelateRenderer(),
-};
+  dispose(): void {
+    this.runner.dispose();
+  }
+}

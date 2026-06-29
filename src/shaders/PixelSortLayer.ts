@@ -1,27 +1,20 @@
-import type { LayerTypeDefinition } from "../engine/plugins/Registry";
-import type { LayerRenderer, RenderFrame } from "../engine/render/types";
+import { Plugin, type Frame } from "@/plugins/Plugin";
 
-function num(v: unknown, f: number): number {
-  return typeof v === "number" ? v : f;
-}
+/** CPU pixel sort — brightens runs above a threshold and sorts them by luminance. */
+export class PixelSortLayer extends Plugin {
+  threshold = this.knob(0, { min: 0, max: 1, default: 0.25 });
+  horizontal = this.pad(4);
+  reverse = this.pad(5);
 
-class PixelSortRenderer implements LayerRenderer {
-  private canvas = document.createElement("canvas");
   private ctx = this.canvas.getContext("2d")!;
 
-  resize(w: number, h: number): void {
-    this.canvas.width = w;
-    this.canvas.height = h;
-  }
-
-  render(frame: RenderFrame): HTMLCanvasElement | null {
-    const bd = frame.backdrop;
+  render(f: Frame): HTMLCanvasElement | null {
+    const bd = f.input;
     if (!bd) return null;
-    const { width: w, height: h } = frame;
-    const p = frame.props;
-    const threshold = num(p.threshold, 0.25);
-    const horizontal = p.direction === "horizontal";
-    const reverse = !!p.reverse;
+    const w = f.width, h = f.height;
+    const threshold = this.threshold.value;
+    const horizontal = this.horizontal.on;
+    const reverse = this.reverse.on;
 
     this.canvas.width = w;
     this.canvas.height = h;
@@ -29,8 +22,7 @@ class PixelSortRenderer implements LayerRenderer {
     const img = this.ctx.getImageData(0, 0, w, h);
     const d = img.data;
 
-    const lum = (r: number, g: number, b: number) =>
-      (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    const lum = (r: number, g: number, b: number) => (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
     if (horizontal) {
       for (let y = 0; y < h; y++) {
@@ -84,24 +76,4 @@ class PixelSortRenderer implements LayerRenderer {
     this.ctx.putImageData(img, 0, 0);
     return this.canvas;
   }
-
-  dispose(): void {}
 }
-
-export const pixelSortLayerType: LayerTypeDefinition = {
-  type: "fx.pixelSort",
-  label: "Pixel Sort",
-  category: "Effects",
-  icon: "AlignVerticalDistributeCenter",
-  kind: "effect",
-  description: "Sorts pixels within bright spans along rows or columns.",
-  schema: [
-    { key: "threshold", name: "Threshold", type: "number", default: 0.25, group: "Pixel Sort", meta: { min: 0, max: 1, step: 0.01 } },
-    {
-      key: "direction", name: "Direction", type: "select", default: "vertical", group: "Pixel Sort",
-      meta: { options: [{ value: "vertical", label: "Vertical" }, { value: "horizontal", label: "Horizontal" }] },
-    },
-    { key: "reverse", name: "Reverse", type: "boolean", default: false, group: "Pixel Sort" },
-  ],
-  createRenderer: () => new PixelSortRenderer(),
-};

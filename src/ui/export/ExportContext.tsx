@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
-import { resolveAspectRatio, type AspectRatio, type AspectRatioId, type ExportSettings } from "@/engine";
+import { resolveAspectRatio, type AspectRatio, type AspectRatioId, type ExportSettings } from "@/runtime/export";
 
 /**
  * Shared export selection so the panel (which edits it) and the Stage (which previews it as a

@@ -1,14 +1,5 @@
-import type { LayerTypeDefinition } from "../engine/plugins/Registry";
-import type { LayerRenderer, RenderFrame } from "../engine/render/types";
+import { Plugin, type Frame } from "@/plugins/Plugin";
 import { ShaderRunner } from "./ShaderRunner";
-
-function num(v: unknown, f: number): number {
-  return typeof v === "number" ? v : f;
-}
-function rgb01(v: unknown, f: [number, number, number]): [number, number, number] {
-  if (!Array.isArray(v)) return f;
-  return [(v[0] ?? 0) / 255, (v[1] ?? 0) / 255, (v[2] ?? 0) / 255];
-}
 
 const FRAG = `
 precision highp float;
@@ -55,43 +46,32 @@ function buildAsciiAtlas(): HTMLCanvasElement {
   return canvas;
 }
 
-class AsciiRenderer implements LayerRenderer {
+export class AsciiLayer extends Plugin {
+  cell = this.knob(0, { min: 4, max: 40, step: 1, default: 12 });
+  colored = this.pad(4);
+
   private runner = new ShaderRunner(FRAG, ["uGlyph"]);
   private atlasSet = false;
+
   resize(w: number, h: number): void { this.runner.resize(w, h); }
-  render(frame: RenderFrame): HTMLCanvasElement | null {
-    const bd = frame.backdrop;
+
+  render(f: Frame): HTMLCanvasElement | null {
+    const bd = f.input;
     if (!bd) return null;
     if (!this.runner.available) return bd;
     if (!this.atlasSet) {
       this.runner.setTexture("uGlyph", buildAsciiAtlas());
       this.atlasSet = true;
     }
-    this.runner.resize(frame.width, frame.height);
-    const p = frame.props;
-    const col = rgb01(p.color, [0.75, 1, 0.02]);
+    this.runner.resize(f.width, f.height);
     return this.runner.render(bd, {
-      uResolution: [frame.width, frame.height],
-      uCell: Math.max(4, num(p.cell, 12)),
+      uResolution: [f.width, f.height],
+      uCell: Math.max(4, this.cell.value),
       uCount: ASCII_CHARS.length,
-      uColored: p.colored ? 1 : 0,
-      uColor: col,
+      uColored: this.colored.on ? 1 : 0,
+      uColor: [0.75, 1, 0.02],
     });
   }
+
   dispose(): void { this.runner.dispose(); }
 }
-
-export const asciiLayerType: LayerTypeDefinition = {
-  type: "fx.ascii",
-  label: "ASCII",
-  category: "Effects",
-  icon: "Hash",
-  kind: "effect",
-  description: "Renders the layers below as ASCII glyphs by luminance.",
-  schema: [
-    { key: "cell", name: "Cell Size", type: "number", default: 12, group: "ASCII", meta: { min: 4, max: 64, step: 1 } },
-    { key: "colored", name: "Use Source Color", type: "boolean", default: false, group: "ASCII" },
-    { key: "color", name: "Ink Color", type: "color", default: [192, 252, 4, 255], group: "ASCII" },
-  ],
-  createRenderer: () => new AsciiRenderer(),
-};

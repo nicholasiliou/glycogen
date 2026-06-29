@@ -1,10 +1,5 @@
-import type { LayerTypeDefinition } from "../engine/plugins/Registry";
-import type { LayerRenderer, RenderFrame } from "../engine/render/types";
+import { Plugin, type Frame } from "@/plugins/Plugin";
 import { ShaderRunner } from "./ShaderRunner";
-
-function num(v: unknown, f: number): number {
-  return typeof v === "number" ? v : f;
-}
 
 const FRAG = `
 precision highp float;
@@ -31,39 +26,27 @@ void main() {
   gl_FragColor = texture2D(uTex, sampleUv);
 }`;
 
-class PixelStretchRenderer implements LayerRenderer {
+export class PixelStretchLayer extends Plugin {
+  threshold = this.knob(0, { min: 0, max: 1, default: 0.5 });
+  amount = this.knob(1, { min: 0, max: 1, default: 0.1 });
+  horizontal = this.pad(4);
+
   private runner = new ShaderRunner(FRAG);
+
   resize(w: number, h: number): void { this.runner.resize(w, h); }
-  render(frame: RenderFrame): HTMLCanvasElement | null {
-    const bd = frame.backdrop;
+
+  render(f: Frame): HTMLCanvasElement | null {
+    const bd = f.input;
     if (!bd) return null;
     if (!this.runner.available) return bd;
-    this.runner.resize(frame.width, frame.height);
-    const p = frame.props;
+    this.runner.resize(f.width, f.height);
     return this.runner.render(bd, {
-      uResolution: [frame.width, frame.height],
-      uThreshold: num(p.threshold, 0.5),
-      uAmount: num(p.amount, 0.1),
-      uHorizontal: p.direction === "horizontal" ? 1 : 0,
+      uResolution: [f.width, f.height],
+      uThreshold: this.threshold.value,
+      uAmount: this.amount.value,
+      uHorizontal: this.horizontal.on ? 1 : 0,
     });
   }
+
   dispose(): void { this.runner.dispose(); }
 }
-
-export const pixelStretchLayerType: LayerTypeDefinition = {
-  type: "fx.pixelStretch",
-  label: "Pixel Stretch",
-  category: "Effects",
-  icon: "StretchHorizontal",
-  kind: "effect",
-  description: "Smears bright pixels along an axis, creating a streak/glitch effect.",
-  schema: [
-    { key: "threshold", name: "Threshold", type: "number", default: 0.5, group: "Pixel Stretch", meta: { min: 0, max: 1, step: 0.01 } },
-    { key: "amount", name: "Amount", type: "number", default: 0.1, group: "Pixel Stretch", meta: { min: 0, max: 1, step: 0.01 } },
-    {
-      key: "direction", name: "Direction", type: "select", default: "vertical", group: "Pixel Stretch",
-      meta: { options: [{ value: "vertical", label: "Vertical" }, { value: "horizontal", label: "Horizontal" }] },
-    },
-  ],
-  createRenderer: () => new PixelStretchRenderer(),
-};

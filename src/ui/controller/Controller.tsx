@@ -1,22 +1,21 @@
-/**
- * The "Claude DJ" surface: a skeuomorphic, MixTrack-style layout of the live editor's MIDI keymap.
- * Two decks (A / B) flank a central mixer. Every element is a real assignment — drag/press it to
- * play the visuals, or switch the surface to map mode to bind hardware controls to it.
- */
-import { useEffect, useState } from "react";
-import type { Deck } from "@/midi/preset";
+//A skeuomorphic, MixTrack-style layout of the live control surface.
+// Identical layout to before — only the wiring changed: each widget now drives an abstract
+// ControlBus slot (assigned here), instead of a learned MIDI assignment.
+
+import { useContext, useEffect, useState } from "react";
 import {
+  BankControlContext,
   BrowsePanel,
   Circle,
-  ControllerModeContext,
   Crossfader,
   Fader,
+  GlobalPad,
   JogWheel,
   Knob,
   Pad,
   SmoothKnob,
-  type ControllerMode,
-} from "./widgets"; // Knob is used in MixerPanel
+} from "./widgets";
+import { BANK_COUNT, type DeckName } from "@/runtime/Stage";
 
 /** ~30fps tick so live meters / "just moved" glows animate while the surface is mounted. */
 function useRaf(): void {
@@ -40,33 +39,54 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return <span className="select-none text-[8px] font-semibold uppercase tracking-[0.18em] text-ink-dim/70">{children}</span>;
 }
 
-function DeckPanel({ deck }: { deck: Deck }) {
-  const A = deck === "A";
+/**
+ * The top row of every deck is global, not plugin-bindable: Del + Bank 1/2/3 for this deck. A bank
+ * button selects its bank if loaded, else loads the browsed plugin into it; Del clears the active
+ * bank. (The pad slots they replace — pad:0..3 — are reserved away from plugins in the factory.)
+ */
+function DeckBankRow({ deck }: { deck: DeckName }) {
+  const bank = useContext(BankControlContext);
+  const s = bank?.state(deck) ?? { loaded: [], active: -1 };
+  return (
+    <>
+      <GlobalPad label="Del" onPress={() => bank?.clear(deck)} loaded={!!s.loaded[s.active]} />
+      {Array.from({ length: BANK_COUNT }, (_, i) => (
+        <GlobalPad
+          key={i}
+          label={`Bank ${i + 1}`}
+          active={s.active === i && !!s.loaded[i]}
+          loaded={!!s.loaded[i]}
+          onPress={() => bank?.select(deck, i)}
+        />
+      ))}
+    </>
+  );
+}
 
+/** A deck. `pad`/`enc`/`jog` are the slot indices for this deck so the two decks don't collide. */
+function DeckPanel({ deck, pad, enc, jog }: { deck: DeckName; pad: number; enc: number; jog: number }) {
   const stack = (
     <div className="flex flex-col items-center gap-6">
     <div className="grid grid-cols-4 gap-3">
-      <Pad assignment={A ? "clearA" : "clearB"} label="Del" />
-      <Pad assignment={A ? "bankA1" : "bankB1"} label="1" />
-      <Pad assignment={A ? "bankA2" : "bankB2"} label="2" />
-      <Pad assignment={A ? "bankA3" : "bankB3"} label="3" />
+      {/* top row: global bank/del controls (not plugin slots) */}
+      <DeckBankRow deck={deck} />
 
-      <Pad assignment={A ? "placeholder5" : "placeholder15"} label="" />
-      <SmoothKnob assignment={A ? "placeholder6" : "placeholder16"} label="" />
-      <SmoothKnob assignment={A ? "placeholder7" : "placeholder17"} label="" />
-      <SmoothKnob assignment={A ? "placeholder8" : "placeholder18"} label="" />
+      <Pad slot={pad + 4}/>
+      <SmoothKnob slot={enc + 0}/>
+      <SmoothKnob slot={enc + 1}/>
+      <SmoothKnob slot={enc + 2}/>
 
-      <Pad assignment={A ? "placeholder9" : "placeholder19"} label="" />
-      <Pad assignment={A ? "placeholder10" : "placeholder20"} label="" />
-      <Pad assignment={A ? "placeholder11" : "placeholder21"} label="" />
-      <Pad assignment={A ? "placeholder12" : "placeholder22"} label="" />
+      <Pad slot={pad + 5}/>
+      <Pad slot={pad + 6}/>
+      <Pad slot={pad + 7}/>
+      <Pad slot={pad + 8}/>
     </div>
-      <JogWheel assignment={`${deck}:evolveX`} label="Evolve" />
+      <JogWheel slot={jog}/>
       <div className="flex items-center gap-3">
-        <Pad assignment={`${deck}:trigger`} label="Reseed" />
-        <Pad assignment={`${deck}:toggle`} label="Toggle" />
-        <Pad assignment={A ? "placeholder23" : "placeholder24"} label="" />
-        <Pad assignment={A ? "placeholder1" : "placeholder29"} label="" />
+        <Pad slot={pad + 9}/>
+        <Pad slot={pad + 10}/>
+        <Pad slot={pad + 11}/>
+        <Pad slot={pad + 12}/>
       </div>
     </div>
   );
@@ -78,60 +98,59 @@ function DeckPanel({ deck }: { deck: Deck }) {
   );
 }
 
-function MixerPanel() {
+function MixerPanel({ browse }: { browse?: BrowseProps }) {
   return (
     <div className="flex flex-col items-center gap-8 px-8 py-6">
 
 
 <div className="grid grid-cols-3 gap-4 gap-x-0 items-top">
-  <Knob assignment="A:evolveY" label="Evolve Y" />
-  <Knob assignment="placeholder25" label="" />
-  <Knob assignment="B:evolveY" label="Evolve Y" />
+  <Knob slot={0}/>
+  <Knob slot={1}/>
+  <Knob slot={2}/>
 
-  <Knob assignment="A:toneX" label="Tone X" />
-  <Knob assignment="placeholder26" label="" />
-  <Knob assignment="B:toneX" label="Tone X" />
+  <Knob slot={3}/>
+  <Knob slot={4}/>
+  <Knob slot={5}/>
 
-  <Knob assignment="A:toneY" label="Tone Y" />
-  <BrowsePanel />
-  <Knob assignment="B:toneY" label="Tone Y" />
+  <Knob slot={6}/>
+  <BrowsePanel label={browse?.label} onStep={browse?.onStep} />
+  <Knob slot={7}/>
 
-  <Circle assignment="placeholder27" label="" />
+  <Circle slot={0}/>
   <div></div>
-  <Circle assignment="placeholder28" label="" />
-  <Pad assignment="loadA" label="Load A" />
-  <Pad assignment="browseMode" label="Browser Toggle" className="h-9 w-16" />
-  <Pad assignment="loadB" label="Load B" />
-  <Fader assignment="A:amount" label="Amount A" />
-  <Fader assignment="placeholder31" label="" />
-  <Fader assignment="B:amount" label="Amount B" />
+  <Circle slot={1}/>
+  <Pad slot={26}/>
+  <Pad slot={27}/>
+  <Pad slot={28}/>
+  <Fader slot={0}/>
+  <Fader slot={1}/>
+  <Fader slot={2}/>
   </div>
       <div className="flex flex-col items-center gap-2">
         <SectionLabel>Crossfade</SectionLabel>
-        <Crossfader />
+        <Crossfader/>
       </div>
     </div>
   );
 }
 
-export function Controller({ allowMap = true }: { allowMap?: boolean }) {
+export interface BrowseProps {
+  label?: string;
+  onStep?: (delta: number) => void;
+}
+
+export function Controller({ browse }: { browse?: BrowseProps }) {
   useRaf();
-  // "map" is the intentional default and the setter is deliberately not used — the mode is
-  // driven externally via allowMap (false when no MIDI controller is connected, which forces
-  // "play" so the on-screen widgets are interactive). When a controller IS connected the
-  // overlay stays in map mode so hardware controls can be bound without accidental clicks.
-  const [mode] = useState<ControllerMode>("map");
-  const effective: ControllerMode = allowMap ? mode : "play";
 
   return (
-    <ControllerModeContext.Provider value={effective}>
-      <div className="overflow-hidden relative flex h-full w-full flex-col items-center justify-center">
-        <div className="flex items-stretch gap-4 p-4">
-          <DeckPanel deck="A" />
-          <MixerPanel />
-          <DeckPanel deck="B" />
-        </div>
+    // Intrinsic size (no h-full/w-full): the surface sizes to its content so FitBox can scale it
+    // uniformly to fit the masked overlay without distorting the components.
+    <div className="relative flex flex-col items-center justify-center">
+      <div className="flex items-stretch gap-4 p-4">
+        <DeckPanel deck="A" pad={0} enc={0} jog={0}/>
+        <MixerPanel browse={browse}/>
+        <DeckPanel deck="B" pad={13} enc={3} jog={1}/>
       </div>
-    </ControllerModeContext.Provider>
+    </div>
   );
 }

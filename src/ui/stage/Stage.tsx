@@ -1,81 +1,67 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useEngine, useRevision } from "@/ui/engine/EngineProvider";
+import { useLayoutEffect, useRef, useState } from "react";
+import { useLive } from "@/ui/app/LiveProvider";
 import { useExportSettings } from "@/ui/export/ExportContext";
-import { masksFor } from "@/engine";
+import { masksFor } from "@/runtime/export";
 
+/**
+ * The stage viewport. Mounts the runtime {@link Stage}'s canvas into a 16:9-masked host and overlays
+ * the export framing guide — the chosen aspect-ratio crop, dimmed letterbox, and a live mask preview
+ * — so the operator always sees exactly what an export will capture. Same look as before, now backed
+ * by the plugin-stack runtime instead of the engine compositor.
+ */
 export function Stage() {
-  const engine = useEngine();
-  useRevision();
+  const { stage } = useLive();
   const ex = useExportSettings();
-  const comp = engine.comp;
   const hostRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
 
   useLayoutEffect(() => {
-    const el = hostRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setSize({ w: el.clientWidth, h: el.clientHeight }));
-    ro.observe(el);
-    setSize({ w: el.clientWidth, h: el.clientHeight });
-    return () => ro.disconnect();
-  }, []);
-
-  useEffect(() => {
     const host = hostRef.current;
-    const canvas = engine.canvas;
-    if (!host || !canvas) return;
+    if (!host) return;
+    const canvas = stage.canvas;
     canvas.style.position = "absolute";
+    canvas.style.inset = "0";
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
     canvas.style.pointerEvents = "none";
     canvas.style.boxShadow = "0 0 80px rgba(0,0,0,0.6)";
-    // Always use 16x9 mask for the live viewer display
     host.style.maskImage = "url(/masks/16x9/1.svg)";
     host.style.maskSize = "100% 100%";
     host.style.maskPosition = "0 0";
     host.style.maskRepeat = "no-repeat";
     host.appendChild(canvas);
-    engine.input.attach(host);
-    return () => {
-      if (canvas.parentElement === host) host.removeChild(canvas);
-      engine.input.detach();
+
+    const resize = () => {
+      stage.resize(host.clientWidth, host.clientHeight);
+      setSize({ w: host.clientWidth, h: host.clientHeight });
     };
-  }, [engine]);
+    const ro = new ResizeObserver(resize);
+    ro.observe(host);
+    resize();
+    return () => {
+      ro.disconnect();
+      if (canvas.parentElement === host) host.removeChild(canvas);
+    };
+  }, [stage]);
 
-  const margin = 0;
-  const z = Math.max(0.02, Math.max((size.w - margin) / comp.width, (size.h - margin) / comp.height));
-  const dispW = comp.width * z;
-  const dispH = comp.height * z;
-  const ox = (size.w - dispW) / 2;
-  const oy = (size.h - dispH) / 2;
-
-  useEffect(() => {
-    const canvas = engine.canvas;
-    if (!canvas) return;
-    canvas.style.left = `${ox}px`;
-    canvas.style.top = `${oy}px`;
-    canvas.style.width = `${dispW}px`;
-    canvas.style.height = `${dispH}px`;
-  }, [engine, ox, oy, dispW, dispH]);
-
+  // Export crop, computed over the full viewport (the canvas fills the host).
   const ratioWH = ex.ratio.width / ex.ratio.height;
-  const canvasWH = dispW / dispH;
-  const cropW = ratioWH > canvasWH ? dispW : dispH * ratioWH;
-  const cropH = ratioWH > canvasWH ? dispW / ratioWH : dispH;
-  const cropX = ox + (dispW - cropW) / 2;
-  const cropY = oy + (dispH - cropH) / 2;
+  const canvasWH = size.w / size.h;
+  const cropW = ratioWH > canvasWH ? size.w : size.h * ratioWH;
+  const cropH = ratioWH > canvasWH ? size.w / ratioWH : size.h;
+  const cropX = (size.w - cropW) / 2;
+  const cropY = (size.h - cropH) / 2;
 
   let maskUrl: string | undefined;
   if (ex.maskEnabled) {
     const variant = masksFor(ex.ratioId)[ex.maskVariant];
-    if (variant) {
-      // If it's a folder path, use the first numbered mask for preview
-      maskUrl = variant.url.endsWith(".svg") ? variant.url : `${variant.url}/1.svg`;
-    }
+    if (variant) maskUrl = variant.url.endsWith(".svg") ? variant.url : `${variant.url}/1.svg`;
   }
 
   return (
     <div ref={hostRef} className="relative h-full w-full touch-none overflow-visible bg-black">
       <div
-        className="pointer-events-none absolute z-5 border border-white/40"
+        className="pointer-events-none absolute z-5"
         style={{
           left: cropX,
           top: cropY,

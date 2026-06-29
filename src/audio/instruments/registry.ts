@@ -30,7 +30,7 @@ export interface InstrumentSpec {
  */
 export const INSTRUMENTS: Record<string, InstrumentSpec> = {
   // ── implemented (phase 1) ──
-  life: { family: "drums", blurb: "Drum machine — population drives the groove", create: createLifeDrums },
+  gameOfLife: { family: "drums", blurb: "Drum machine — population drives the groove", create: createLifeDrums },
   physarum: { family: "pad", blurb: "Ambient drone — slow organic wash", create: createPhysarumPad },
   harmonograph: { family: "lead", blurb: "Harmonic lead — frequencies become intervals", create: createHarmonographLead },
   boids: { family: "arp", blurb: "Flock arp — flock speed sets the note rate", create: createBoidsArp },
@@ -39,7 +39,7 @@ export const INSTRUMENTS: Record<string, InstrumentSpec> = {
   landscape: { family: "pad", blurb: "Wide evolving pad — terrain as chords", create: createLandscapePad },
   shape: { family: "chime", blurb: "FM bell + saw lead — each shape sounds different", create: createShapeChime },
   glyphScatter: { family: "stab", blurb: "Mallet grid — the glyph field plays marimba", create: createGlyphMallet },
-  cloud: { family: "pad", blurb: "Airy noise wash — drifting cloud pad", create: createCloudPad },
+  volumetricCloud: { family: "pad", blurb: "Airy noise wash — drifting cloud pad", create: createCloudPad },
   // ── planned (renders now, sound coming) ──
   reactionDiffusion: { family: "texture", blurb: "FM texture — bubbling chemistry" },
   slicer: { family: "stab", blurb: "Rhythmic chord stutter" },

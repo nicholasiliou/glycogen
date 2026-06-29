@@ -1,13 +1,5 @@
-import type { LayerTypeDefinition } from "../engine/plugins/Registry";
-import type { LayerRenderer, RenderFrame } from "../engine/render/types";
+import { Plugin, type Frame } from "@/plugins/Plugin";
 import { ShaderRunner } from "./ShaderRunner";
-
-function num(v: unknown, f: number): number {
-  return typeof v === "number" ? v : f;
-}
-function vec2n(v: unknown, fx: number, fy: number): [number, number] {
-  return Array.isArray(v) ? [(v[0] as number) ?? fx, (v[1] as number) ?? fy] : [fx, fy];
-}
 
 const FRAG = `
 precision highp float;
@@ -30,37 +22,26 @@ void main() {
   gl_FragColor = texture2D(uTex, uv);
 }`;
 
-class FisheyeRenderer implements LayerRenderer {
+export class FisheyeLayer extends Plugin {
+  strength = this.knob(0, { min: -2, max: 2, default: 0.6 });
+  zoom = this.knob(1, { min: 0.2, max: 3, default: 1 });
+
   private runner = new ShaderRunner(FRAG);
+
   resize(w: number, h: number): void { this.runner.resize(w, h); }
-  render(frame: RenderFrame): HTMLCanvasElement | null {
-    const bd = frame.backdrop;
+
+  render(f: Frame): HTMLCanvasElement | null {
+    const bd = f.input;
     if (!bd) return null;
     if (!this.runner.available) return bd;
-    this.runner.resize(frame.width, frame.height);
-    const p = frame.props;
-    const c = vec2n(p.center, 0.5, 0.5);
+    this.runner.resize(f.width, f.height);
     return this.runner.render(bd, {
-      uStrength: num(p.strength, 0.6),
-      uZoom: num(p.zoom, 1),
-      uAspect: frame.width / frame.height,
-      uCenter: [c[0], c[1]],
+      uStrength: this.strength.value,
+      uZoom: this.zoom.value,
+      uAspect: f.width / f.height,
+      uCenter: [0.5, 0.5],
     });
   }
+
   dispose(): void { this.runner.dispose(); }
 }
-
-export const fisheyeLayerType: LayerTypeDefinition = {
-  type: "fx.fisheye",
-  label: "Fisheye",
-  category: "Effects",
-  icon: "Aperture",
-  kind: "effect",
-  description: "Lens/barrel distortion of the layers below.",
-  schema: [
-    { key: "strength", name: "Strength", type: "number", default: 0.6, group: "Fisheye", meta: { min: -1, max: 2, step: 0.01 } },
-    { key: "zoom", name: "Zoom", type: "number", default: 1, group: "Fisheye", meta: { min: 0.4, max: 2.5, step: 0.01 } },
-    { key: "center", name: "Center (0-1)", type: "point", default: [0.5, 0.5], group: "Fisheye", meta: { step: 0.01 } },
-  ],
-  createRenderer: () => new FisheyeRenderer(),
-};

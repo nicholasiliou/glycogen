@@ -1,10 +1,5 @@
-import type { LayerTypeDefinition } from "../engine/plugins/Registry";
-import type { LayerRenderer, RenderFrame } from "../engine/render/types";
+import { Plugin, type Frame } from "@/plugins/Plugin";
 import { ShaderRunner } from "./ShaderRunner";
-
-function num(v: unknown, f: number): number {
-  return typeof v === "number" ? v : f;
-}
 
 const FRAG = `
 precision highp float;
@@ -53,36 +48,27 @@ void main() {
   }
 }`;
 
-class BayerRenderer implements LayerRenderer {
+export class BayerLayer extends Plugin {
+  levels = this.knob(0, { min: 2, max: 8, step: 1, default: 4 });
+  scale = this.knob(1, { min: 1, max: 8, step: 1, default: 1 });
+  colored = this.pad(4);
+
   private runner = new ShaderRunner(FRAG);
+
   resize(w: number, h: number): void { this.runner.resize(w, h); }
-  render(frame: RenderFrame): HTMLCanvasElement | null {
-    const bd = frame.backdrop;
+
+  render(f: Frame): HTMLCanvasElement | null {
+    const bd = f.input;
     if (!bd) return null;
     if (!this.runner.available) return bd;
-    this.runner.resize(frame.width, frame.height);
-    const p = frame.props;
+    this.runner.resize(f.width, f.height);
     return this.runner.render(bd, {
-      uResolution: [frame.width, frame.height],
-      uLevels: num(p.levels, 4),
-      uScale: Math.max(1, num(p.scale, 1)),
-      uColored: p.colored ? 1 : 0,
+      uResolution: [f.width, f.height],
+      uLevels: this.levels.value,
+      uScale: Math.max(1, this.scale.value),
+      uColored: this.colored.on ? 1 : 0,
     });
   }
+
   dispose(): void { this.runner.dispose(); }
 }
-
-export const bayerLayerType: LayerTypeDefinition = {
-  type: "fx.bayer",
-  label: "Bayer Dither",
-  category: "Effects",
-  icon: "Grid2x2",
-  kind: "effect",
-  description: "Ordered 4×4 Bayer matrix dithering.",
-  schema: [
-    { key: "levels", name: "Levels", type: "number", default: 4, group: "Bayer", meta: { min: 2, max: 16, step: 1 } },
-    { key: "scale", name: "Matrix Scale", type: "number", default: 1, group: "Bayer", meta: { min: 1, max: 8, step: 1 } },
-    { key: "colored", name: "Color Mode", type: "boolean", default: false, group: "Bayer" },
-  ],
-  createRenderer: () => new BayerRenderer(),
-};

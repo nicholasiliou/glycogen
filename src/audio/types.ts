@@ -1,4 +1,5 @@
-import type { PropertyValue } from "@/engine";
+/** A single visual-param value, fed to instruments (formerly the engine's PropertyValue). */
+export type PropertyValue = number | number[] | boolean | string;
 
 /** Instrument family — pinned per plugin type so a plugin's sound never changes character. */
 export type InstrumentFamily =

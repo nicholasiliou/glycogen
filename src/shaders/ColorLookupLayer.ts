@@ -1,14 +1,5 @@
-import type { LayerTypeDefinition } from "../engine/plugins/Registry";
-import type { LayerRenderer, RenderFrame } from "../engine/render/types";
+import { Plugin, type Frame } from "@/plugins/Plugin";
 import { ShaderRunner } from "./ShaderRunner";
-
-function num(v: unknown, f: number): number {
-  return typeof v === "number" ? v : f;
-}
-function rgb01(v: unknown, f: [number, number, number]): [number, number, number] {
-  if (!Array.isArray(v)) return f;
-  return [(v[0] ?? 0) / 255, (v[1] ?? 0) / 255, (v[2] ?? 0) / 255];
-}
 
 const FRAG = `
 precision highp float;
@@ -30,45 +21,35 @@ void main() {
   gl_FragColor = vec4(mix(c, best, uMix), src.a);
 }`;
 
-class ColorLookupRenderer implements LayerRenderer {
+/** Palette (constant — colour pickers have no control-kind in the new model). */
+const PALETTE = {
+  uC0: [0.75, 0.99, 0.02],
+  uC1: [0.92, 0.01, 0.49],
+  uC2: [0.21, 0.0, 0.98],
+  uC3: [1.0, 0.33, 0.0],
+  uC4: [0.04, 0.04, 0.05],
+  uC5: [0.94, 0.94, 0.94],
+};
+
+export class ColorLookupLayer extends Plugin {
+  count = this.knob(0, { min: 1, max: 6, step: 1, default: 6 });
+  amount = this.knob(1, { min: 0, max: 1, default: 1 });
+
   private runner = new ShaderRunner(FRAG);
+
   resize(w: number, h: number): void { this.runner.resize(w, h); }
-  render(frame: RenderFrame): HTMLCanvasElement | null {
-    const bd = frame.backdrop;
+
+  render(f: Frame): HTMLCanvasElement | null {
+    const bd = f.input;
     if (!bd) return null;
     if (!this.runner.available) return bd;
-    this.runner.resize(frame.width, frame.height);
-    const p = frame.props;
+    this.runner.resize(f.width, f.height);
     return this.runner.render(bd, {
-      uC0: rgb01(p.color0, [0.75, 0.99, 0.02]),
-      uC1: rgb01(p.color1, [0.92, 0.01, 0.49]),
-      uC2: rgb01(p.color2, [0.21, 0.0, 0.98]),
-      uC3: rgb01(p.color3, [1.0, 0.33, 0.0]),
-      uC4: rgb01(p.color4, [0.04, 0.04, 0.05]),
-      uC5: rgb01(p.color5, [0.94, 0.94, 0.94]),
-      uCount: Math.max(1, Math.min(6, Math.round(num(p.count, 6)))),
-      uMix: Math.max(0, Math.min(1, num(p.amount, 1))),
+      ...PALETTE,
+      uCount: Math.max(1, Math.min(6, Math.round(this.count.value))),
+      uMix: Math.max(0, Math.min(1, this.amount.value)),
     });
   }
+
   dispose(): void { this.runner.dispose(); }
 }
-
-export const colorLookupLayerType: LayerTypeDefinition = {
-  type: "fx.colorLookup",
-  label: "Color Lookup",
-  category: "Effects",
-  icon: "Palette",
-  kind: "effect",
-  description: "Forces every colour below to the nearest colour in a defined palette (EGA by default).",
-  schema: [
-    { key: "count", name: "Palette Size", type: "number", default: 4, group: "Palette", meta: { min: 1, max: 6, step: 1 } },
-    { key: "amount", name: "Amount", type: "percent", default: 1, group: "Palette", meta: { min: 0, max: 1, step: 0.01 } },
-    { key: "color0", name: "Color 1", type: "color", default: [192, 252, 4, 255], group: "Palette" },
-    { key: "color1", name: "Color 2", type: "color", default: [234, 2, 126, 255], group: "Palette" },
-    { key: "color2", name: "Color 3", type: "color", default: [54, 1, 251, 255], group: "Palette" },
-    { key: "color3", name: "Color 4", type: "color", default: [255, 85, 0, 255], group: "Palette" },
-    { key: "color4", name: "Color 5", type: "color", default: [10, 10, 12, 255], group: "Palette" },
-    { key: "color5", name: "Color 6", type: "color", default: [240, 240, 240, 255], group: "Palette" },
-  ],
-  createRenderer: () => new ColorLookupRenderer(),
-};

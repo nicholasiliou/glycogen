@@ -1,7 +1,6 @@
 import * as Tone from "tone";
-import type { PropertyValue } from "@/engine";
 import type { AudioEngine } from "../AudioEngine";
-import type { Instrument, SonicParams } from "../types";
+import type { Instrument, PropertyValue, SonicParams } from "../types";
 import { Voice, num, norm, lerp } from "./util";
 
 // ───────────────────────── shape -> metallic FM bell + saw lead ─────────────────────────

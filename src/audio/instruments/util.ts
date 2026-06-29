@@ -1,6 +1,6 @@
 import * as Tone from "tone";
-import type { PropertyValue } from "@/engine";
 import type { AudioEngine } from "../AudioEngine";
+import type { PropertyValue } from "../types";
 import type { SonicParams } from "../types";
 
 /** Read a numeric prop with a fallback (props can be any PropertyValue). */

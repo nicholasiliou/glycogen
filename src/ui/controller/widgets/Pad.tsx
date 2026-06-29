@@ -1,39 +1,33 @@
-// ── pad / button ─────────────────────────────────────────────────────────────────────────────
+// ── pad (button slot: press = fire) ──────────────────────────────────────────────────────────
 import { useState } from "react";
 import * as React from "react";
+import { slotId } from "@/controls/types";
 import { cn } from "@/ui/lib/cn";
-import type { ControlAssignment } from "@/midi/preset";
 import { SlotFrame, useSlot } from "./shared";
 
-export function Pad({
-  assignment,
-  label,
-  className,
-}: {
-  assignment: ControlAssignment;
-  label: string;
-  className?: string;
-}) {
-  const slot = useSlot(assignment);
+export function Pad({ slot, label, className }: { slot: number; label?: string; className?: string }) {
+  const s = useSlot(slotId("pad", slot));
   const [flash, setFlash] = useState(false);
-  const lit = slot.pressed || flash;
+  const lit = s.pressed || flash;
 
   const onDown = (e: React.PointerEvent) => {
     e.preventDefault();
-    slot.fire();
+    s.drive({ pressed: true });
     setFlash(true);
     window.setTimeout(() => setFlash(false), 140);
   };
+  const onUp = () => s.drive({ pressed: false });
 
   return (
-    <SlotFrame slot={slot} label={label}>
+    <SlotFrame label={s.label ?? label} active={s.active} armed={s.armed}>
       <div
         onPointerDown={onDown}
+        onPointerUp={onUp}
+        onPointerLeave={onUp}
+        onContextMenu={(e) => { e.preventDefault(); s.arm(); }}
         className={cn("flex h-8 w-16 touch-none cursor-pointer items-center justify-center rounded", className)}
         style={{
-          background: lit
-            ? "linear-gradient(#1c2a00, #0e1500)"
-            : "linear-gradient(#303236, #1a1b1d 60%, #131416)",
+          background: lit ? "linear-gradient(#1c2a00, #0e1500)" : "linear-gradient(#303236, #1a1b1d 60%, #131416)",
           border: lit ? "1px solid var(--color-accent)" : "1px solid #050505",
           boxShadow: lit
             ? "inset 0 0 8px rgba(192,252,4,.5), 0 0 8px -1px var(--color-accent)"

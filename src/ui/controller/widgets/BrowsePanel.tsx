@@ -1,28 +1,16 @@
-// ── browse selector (rotary encoder with detents) ────────────────────────────────────────────
-import { useEffect, useRef, useState } from "react";
+// ── browse selector (rotary with detents → steps a selection) ─────────────────────────────────
+import { useRef, useState } from "react";
 import * as React from "react";
-import { useLive } from "@/ui/app/LiveProvider";
-import { activeRing, dragWith, SlotFrame, useSlot } from "./shared";
+import { dragWith, SlotFrame } from "./shared";
 
-export function BrowsePanel() {
-  const { decks, dispatch } = useLive();
-  const slot = useSlot("browse");
-  const shaderMode = decks.browseMode === "shader";
-  const label = shaderMode ? decks.shaderType : decks.selectedType;
-  const list = shaderMode ? decks.shaders : decks.types;
-  const currentIndex = list.indexOf(label);
-
-  // Normalized rotation: each detent is ~26.67 degrees (360 / 13.5 avg slots)
-  // Map selection index to continuous rotation for smooth visual feedback
-  const rotationAngle = (currentIndex / Math.max(1, list.length - 1)) * 360;
-
+/**
+ * App-level rotary browser. Not a control slot — it steps an external selection (e.g. which plugin
+ * is queued to load) via `onStep`, with mechanical detents every ~30°.
+ */
+export function BrowsePanel({ label, onStep }: { label?: string; onStep?: (delta: number) => void }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [spin, setSpin] = useState(rotationAngle);
+  const [spin, setSpin] = useState(0);
   const lastAngle = useRef(0);
-
-  const step = (d: number) => {
-    dispatch.driveAssignment("browse", { value: 0, relative: true, delta: d });
-  };
 
   const onDown = (e: React.PointerEvent) => {
     e.preventDefault();
@@ -44,29 +32,25 @@ export function BrowsePanel() {
       setSpin((s) => s + degrees);
       accumulated += degrees;
 
-      // Detent every ~30 degrees (12 positions)
       const detent = Math.round(accumulated / 30);
       if (detent !== 0) {
-        step(detent);
+        onStep?.(detent);
         accumulated = 0;
       }
     });
   };
 
-  // Sync rotation when selection changes externally
-  useEffect(() => {
-    setSpin(rotationAngle);
-  }, [rotationAngle]);
-
   return (
-    <SlotFrame slot={slot} label={shaderMode ? "Browse · Shader" : "Browse · Plugin"}>
+    // Blank SlotFrame label; the browse label is rendered below with a fixed width so a long plugin
+    // name wraps inside the wheel's footprint instead of widening this grid cell and shifting the
+    // whole mixer layout.
+    <SlotFrame label=" ">
       <div
         ref={ref}
         onPointerDown={onDown}
         className="relative touch-none cursor-grab active:cursor-grabbing rounded-full"
-        style={{ width: 80, height: 80, ...activeRing(slot.active) }}
+        style={{ width: 80, height: 80 }}
       >
-        {/* outer knurled ring */}
         <div
           className="absolute inset-0 rounded-full"
           style={{
@@ -75,19 +59,20 @@ export function BrowsePanel() {
             boxShadow: "inset 0 1px 1px rgba(255,255,255,.18), inset 0 -3px 5px rgba(0,0,0,.55), 0 1px 2px rgba(0,0,0,.6)",
           }}
         />
-
-        {/* rotating indicator with detents */}
         <div className="absolute inset-0" style={{ transform: `rotate(${spin}deg)` }}>
-          {/* primary indicator (top) */}
           <div className="absolute left-1/2 top-[10%] h-[8%] w-0.5 -translate-x-1/2 rounded-full bg-accent shadow-lg shadow-accent/50" />
         </div>
-
-        {/* center spindle */}
         <div
           className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full"
           style={{ background: "radial-gradient(circle at 40% 35%, #6a6a6d, #161618)", zIndex: 10 }}
         />
       </div>
+      <span
+        className="w-20 select-none text-center text-[8px] font-semibold uppercase leading-tight tracking-[0.12em] text-ink-dim wrap-break-word"
+        title={label}
+      >
+        {label ?? "Browse"}
+      </span>
     </SlotFrame>
   );
 }

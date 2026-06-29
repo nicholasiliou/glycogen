@@ -1,10 +1,5 @@
-import type { LayerTypeDefinition } from "../engine/plugins/Registry";
-import type { LayerRenderer, RenderFrame } from "../engine/render/types";
+import { Plugin, type Frame } from "@/plugins/Plugin";
 import { ShaderRunner } from "./ShaderRunner";
-
-function num(v: unknown, f: number): number {
-  return typeof v === "number" ? v : f;
-}
 
 const BLUR_FRAG = `
 precision highp float;
@@ -19,7 +14,6 @@ void main() {
   vec4 acc = vec4(0.0);
   float wsum = 0.0;
   float sigma = uRadius / 3.0;
-  int steps = int(uRadius);
   for (int i = -32; i <= 32; i++) {
     float fi = float(i);
     if (fi < -uRadius || fi > uRadius) continue;
@@ -50,49 +44,63 @@ void main() {
   gl_FragColor = clamp(src + glow * uMix, 0.0, 1.0);
 }`;
 
-class DeepGlowRenderer implements LayerRenderer {
+export class DeepGlowLayer extends Plugin {
+  radius0 = this.knob(0, { min: 1, max: 16, step: 1, default: 4 });
+  radius1 = this.knob(1, { min: 1, max: 32, step: 1, default: 12 });
+  radius2 = this.knob(2, { min: 1, max: 64, step: 1, default: 32 });
+  str0 = this.knob(3, { min: 0, max: 1, default: 0.5 });
+  str1 = this.knob(4, { min: 0, max: 1, default: 0.3 });
+  str2 = this.knob(5, { min: 0, max: 1, default: 0.2 });
+  mix = this.knob(6, { min: 0, max: 1, default: 0.8 });
+
   private blurH = new ShaderRunner(BLUR_FRAG);
   private blurV = new ShaderRunner(BLUR_FRAG);
   private compose = new ShaderRunner(COMPOSE_FRAG, ["uBlur0", "uBlur1", "uBlur2"]);
+  // ShaderRunner returns its single reused canvas, so each blur tier must be snapshotted into its
+  // own canvas before the next tier overwrites it — otherwise all three glow textures alias the
+  // last pass and the multi-radius glow collapses to one. (This was the "broken" look.)
+  private tiers = [document.createElement("canvas"), document.createElement("canvas"), document.createElement("canvas")];
+  private tierCtx = this.tiers.map((c) => c.getContext("2d")!);
 
   resize(w: number, h: number): void {
     this.blurH.resize(w, h);
     this.blurV.resize(w, h);
     this.compose.resize(w, h);
+    for (const c of this.tiers) { c.width = Math.max(1, w); c.height = Math.max(1, h); }
   }
 
-  private blurPass(src: HTMLCanvasElement, radius: number, w: number, h: number): HTMLCanvasElement {
+  private blurInto(tier: number, src: HTMLCanvasElement, radius: number, w: number, h: number): HTMLCanvasElement {
     const h1 = this.blurH.render(src, { uDir: [1, 0], uResolution: [w, h], uRadius: radius });
-    if (!h1) return src;
-    return this.blurV.render(h1, { uDir: [0, 1], uResolution: [w, h], uRadius: radius }) ?? src;
+    const v = this.blurV.render(h1, { uDir: [0, 1], uResolution: [w, h], uRadius: radius });
+    const dst = this.tiers[tier], ctx = this.tierCtx[tier];
+    if (dst.width !== w || dst.height !== h) { dst.width = w; dst.height = h; }
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(v, 0, 0);
+    return dst;
   }
 
-  render(frame: RenderFrame): HTMLCanvasElement | null {
-    const bd = frame.backdrop;
+  render(f: Frame): HTMLCanvasElement | null {
+    const bd = f.input;
     if (!bd) return null;
     if (!this.blurH.available) return bd;
-    const { width: w, height: h } = frame;
+    const w = f.width, h = f.height;
     this.blurH.resize(w, h);
     this.blurV.resize(w, h);
     this.compose.resize(w, h);
-    const p = frame.props;
-    const r0 = Math.max(1, num(p.radius0, 4));
-    const r1 = Math.max(1, num(p.radius1, 12));
-    const r2 = Math.max(1, num(p.radius2, 32));
 
-    const b0 = this.blurPass(bd, r0, w, h);
-    const b1 = this.blurPass(bd, r1, w, h);
-    const b2 = this.blurPass(bd, r2, w, h);
+    const b0 = this.blurInto(0, bd, Math.max(1, this.radius0.value), w, h);
+    const b1 = this.blurInto(1, bd, Math.max(1, this.radius1.value), w, h);
+    const b2 = this.blurInto(2, bd, Math.max(1, this.radius2.value), w, h);
 
     this.compose.setTexture("uBlur0", b0);
     this.compose.setTexture("uBlur1", b1);
     this.compose.setTexture("uBlur2", b2);
 
     return this.compose.render(bd, {
-      uStr0: num(p.str0, 0.5),
-      uStr1: num(p.str1, 0.3),
-      uStr2: num(p.str2, 0.2),
-      uMix: num(p.mix, 0.8),
+      uStr0: this.str0.value,
+      uStr1: this.str1.value,
+      uStr2: this.str2.value,
+      uMix: this.mix.value,
     });
   }
 
@@ -100,24 +108,6 @@ class DeepGlowRenderer implements LayerRenderer {
     this.blurH.dispose();
     this.blurV.dispose();
     this.compose.dispose();
+    for (const c of this.tiers) { c.width = c.height = 0; }
   }
 }
-
-export const deepGlowLayerType: LayerTypeDefinition = {
-  type: "fx.deepGlow",
-  label: "Deep Glow",
-  category: "Effects",
-  icon: "Sparkles",
-  kind: "effect",
-  description: "Triple-layered bloom: near, mid, and far Gaussian blur passes.",
-  schema: [
-    { key: "radius0", name: "Near Radius", type: "number", default: 4, group: "Deep Glow", meta: { min: 1, max: 32, step: 1 } },
-    { key: "radius1", name: "Mid Radius", type: "number", default: 12, group: "Deep Glow", meta: { min: 1, max: 64, step: 1 } },
-    { key: "radius2", name: "Far Radius", type: "number", default: 32, group: "Deep Glow", meta: { min: 1, max: 96, step: 1 } },
-    { key: "str0", name: "Near Strength", type: "number", default: 0.5, group: "Deep Glow", meta: { min: 0, max: 2, step: 0.01 } },
-    { key: "str1", name: "Mid Strength", type: "number", default: 0.3, group: "Deep Glow", meta: { min: 0, max: 2, step: 0.01 } },
-    { key: "str2", name: "Far Strength", type: "number", default: 0.2, group: "Deep Glow", meta: { min: 0, max: 2, step: 0.01 } },
-    { key: "mix", name: "Glow Mix", type: "number", default: 0.8, group: "Deep Glow", meta: { min: 0, max: 3, step: 0.01 } },
-  ],
-  createRenderer: () => new DeepGlowRenderer(),
-};

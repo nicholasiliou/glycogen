@@ -1,37 +1,36 @@
-// ── knob ───────────────────────────────────────────────────────────────────────────────────
+// ── knob (potentiometer: absolute 0..1) ──────────────────────────────────────────────────────
 import { useEffect, useState } from "react";
 import * as React from "react";
-import type { ControlAssignment } from "@/midi/preset";
-import { clamp01 } from "@/ui/macros/macros";
+import { clamp01, slotId } from "@/controls/types";
 import { activeRing, dragWith, SlotFrame, useSlot } from "./shared";
 
-export function Knob({ assignment, label, size = 32 }: { assignment: ControlAssignment; label: string; size?: number }) {
-  const slot = useSlot(assignment);
+export function Knob({ slot, label, size = 32 }: { slot: number; label?: string; size?: number }) {
+  const s = useSlot(slotId("knob", slot));
   const [local, setLocal] = useState(0.5);
-  // Keep local in sync with incoming MIDI value so position persists when hardware goes quiet
+  // Follow incoming (MIDI) value so the position persists when hardware goes quiet.
   useEffect(() => {
-    if (slot.liveValue !== undefined) setLocal(slot.liveValue);
-  }, [slot.liveValue]);
-  const v = local;
-  const angle = -135 + v * 270;
+    setLocal(s.liveValue);
+  }, [s.liveValue]);
+  const angle = -135 + local * 270;
 
   const onDown = (e: React.PointerEvent) => {
     e.preventDefault();
     const startY = e.clientY;
-    const startV = v;
+    const startV = local;
     dragWith((ev) => {
       const nv = clamp01(startV - (ev.clientY - startY) / 180);
       setLocal(nv);
-      slot.drive({ value: nv });
+      s.drive({ value: nv });
     });
   };
 
   return (
-    <SlotFrame slot={slot} label={label}>
+    <SlotFrame label={s.label ?? label} active={s.active} armed={s.armed}>
       <div
         onPointerDown={onDown}
+        onContextMenu={(e) => { e.preventDefault(); s.arm(); }}
         className="relative touch-none cursor-ns-resize rounded-full"
-        style={{ width: size, height: size, ...activeRing(slot.active) }}
+        style={{ width: size, height: size, ...activeRing(s.active) }}
       >
         <div
           className="absolute inset-0 rounded-full"

@@ -1,4 +1,4 @@
-import { normalizeTris } from "../slicer/meshLoader";
+import { normalizeTris } from "../meshLoader";
 
 /** Shared 3D helpers: parametric shape generators + an orthographic wireframe/filled
  * renderer. Geometry is a flat array of triangle vertices (9 numbers per triangle),

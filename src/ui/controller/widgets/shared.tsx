@@ -1,22 +1,46 @@
 /**
- * Shared internals for the skeuomorphic controller widgets — the play/map mode context, the
- * per-widget slot binding, and the chrome (label + hover-to-reveal MIDI binding overlay) that
- * wraps every widget.
+ * Shared internals for the skeuomorphic controller widgets. Every on-screen widget is an abstract
+ * control slot on the {@link ControlBus}. Right-click any widget to arm it for MIDI learn — the
+ * next hardware touch binds to that slot and clears the learn state.
  */
 import * as React from "react";
-import { useContext, useState } from "react";
-import { cn } from "@/ui/lib/cn";
-import type { ControlAssignment } from "@/midi/preset";
-import type { ControlKind } from "@/midi/types";
-import { useLive } from "@/ui/app/LiveProvider";
+import { createContext, useContext } from "react";
+import type { ControlBus } from "@/controls/ControlBus";
+import type { DriveInput, SlotId } from "@/controls/types";
 
-export type ControllerMode = "play" | "map";
+export const ControlBusContext = createContext<ControlBus | null>(null);
+
 /**
- * Whether the surface is being *played* or *mapped*. In "play" the controls are directly
- * interactive (no binding overlay covering them); in "map" the hover overlay returns so a
- * physical control can be learned onto a widget. Defaults to play so the surface is usable.
+ * Deck bank state + actions for the top-row Del/Bank buttons. Supplied by the host (LiveProvider)
+ * and by the pop-out window (over the channel), so the controller surface renders the same in both
+ * without depending on the full live context. `loaded[i]` = bank i has a plugin; `active` = current.
  */
-export const ControllerModeContext = React.createContext<ControllerMode>("play");
+export interface BankControl {
+  state: (deck: "A" | "B") => { loaded: boolean[]; active: number };
+  select: (deck: "A" | "B", bank: number) => void;
+  clear: (deck: "A" | "B") => void;
+}
+export const BankControlContext = createContext<BankControl | null>(null);
+
+/** Slot → label (the focused plugin's bound variable name). Updates as focus changes. */
+export const SlotLabelContext = createContext<Partial<Record<SlotId, string>>>({});
+
+/** The slot currently armed for MIDI learn, or null. */
+export const LearnSlotContext = createContext<SlotId | null>(null);
+/** Callback to arm/cancel a slot for learn. */
+export const ArmLearnContext = createContext<(slot: SlotId) => void>(() => {});
+
+export function useBus(): ControlBus {
+  const bus = useContext(ControlBusContext);
+  if (!bus) throw new Error("ControlBusContext is missing — wrap the controller in a provider");
+  return bus;
+}
+
+export function useLearn(slot: SlotId): { armed: boolean; arm: () => void } {
+  const learnSlot = useContext(LearnSlotContext);
+  const armLearn = useContext(ArmLearnContext);
+  return { armed: learnSlot === slot, arm: () => armLearn(slot) };
+}
 
 /** Window-level pointer drag: calls `onMove` until pointer-up, then `onEnd`. */
 export function dragWith(onMove: (e: PointerEvent) => void, onEnd?: () => void): void {
@@ -30,41 +54,44 @@ export function dragWith(onMove: (e: PointerEvent) => void, onEnd?: () => void):
   window.addEventListener("pointerup", up);
 }
 
-export interface SlotState {
-  bound: boolean;
-  name?: string;
-  liveValue?: number;
-  /** Last signed encoder step (only meaningful for relative/encoder controls). */
-  liveDelta?: number;
-  /** Monotonically-bumped counter: increments on every hardware message so widgets can react. */
-  liveSeq?: number;
+/** Everything a widget reads about its slot, plus the actions to drive it. */
+export interface SlotView {
+  /** The focused plugin's variable name bound to this slot, if any (for the on-screen label). */
+  label?: string;
+  /** Last absolute position 0..1 (faders/knobs). */
+  liveValue: number;
+  /** Last signed step (encoders/jog). */
+  liveDelta: number;
+  /** Bumps on every message — lets relative widgets react to each tick. */
+  liveSeq: number;
   pressed: boolean;
+  /** Moved within the last 300ms — drives the accent glow. */
   active: boolean;
-  learning: boolean;
+  /** This slot is currently armed for MIDI learn. */
+  armed: boolean;
+  /** Arm this slot for MIDI learn (right-click handler). */
   arm: () => void;
-  unbind: () => void;
-  drive: (input: { value: number; delta?: number; relative?: boolean }) => void;
+  drive: (input: DriveInput) => void;
   fire: () => void;
 }
 
-/** Everything a widget needs about its assignment: the bound control, its live activity, actions. */
-export function useSlot(a: ControlAssignment, preferKind?: ControlKind): SlotState {
-  const { keymap, dispatch } = useLive();
-  const ctl = keymap.controls.find((c) => c.assignment === a && !c.disabled);
-  const snap = ctl?.live;
+/** Bind a widget to a slot: read its live state + focused label, get actions to drive it. */
+export function useSlot(slot: SlotId): SlotView {
+  const bus = useBus();
+  const labels = useContext(SlotLabelContext);
+  const { armed, arm } = useLearn(slot);
+  const live = bus.get(slot);
   return {
-    bound: !!ctl,
-    name: ctl?.name,
-    liveValue: snap?.value,
-    liveDelta: snap?.delta,
-    liveSeq: snap ? snap.hits : undefined,
-    pressed: !!snap?.pressed,
-    active: !!snap && performance.now() - snap.lastSeen < 300,
-    learning: keymap.learn === a,
-    arm: () => keymap.setLearn(keymap.learn === a ? null : a, preferKind),
-    unbind: () => ctl && keymap.setControlAssignment(ctl.id, "none"),
-    drive: (input) => dispatch.driveAssignment(a, input),
-    fire: () => dispatch.fireAssignment(a),
+    label: labels[slot],
+    liveValue: live.value,
+    liveDelta: live.delta,
+    liveSeq: live.hits,
+    pressed: live.pressed,
+    active: live.lastSeen > 0 && performance.now() - live.lastSeen < 300,
+    armed,
+    arm,
+    drive: (input) => bus.drive(slot, input),
+    fire: () => bus.fire(slot),
   };
 }
 
@@ -73,62 +100,45 @@ export function useSlot(a: ControlAssignment, preferKind?: ControlKind): SlotSta
 function Label({ children, lit }: { children: React.ReactNode; lit?: boolean }) {
   return (
     <span
-      className={cn(
-        "select-none text-[8px] font-semibold uppercase leading-none tracking-[0.12em]",
-        lit ? "text-accent" : "text-ink-dim",
-      )}
+      className={
+        "select-none text-[8px] font-semibold uppercase leading-none tracking-[0.12em] " +
+        (lit ? "text-accent" : "text-ink-dim")
+      }
     >
       {children}
     </span>
   );
 }
 
-/**
- * Wraps a widget with its label. Hover to reveal the MIDI binding overlay — click to arm
- * learning, right-click to clear. Overlay stays visible while a learn is in progress.
- */
-export function SlotFrame({ slot, label, children }: { slot: SlotState; label: string; children: React.ReactNode }) {
-  const [hovered, setHovered] = useState(false);
-  const mode = useContext(ControllerModeContext);
-  // Only cover the control with the bind overlay while mapping — in play mode it stays interactive.
-  const showOverlay = mode === "map" && (hovered || slot.learning);
+/** Wraps a widget with its label (always rendered, matching the original spacing). */
+export function SlotFrame({
+  label,
+  active,
+  armed,
+  children,
+}: {
+  label?: string;
+  active?: boolean;
+  armed?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <div
       className="relative flex flex-col items-center gap-1"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      style={armed ? { filter: "drop-shadow(0 0 6px var(--color-accent))" } : undefined}
     >
-      {children}
-      <Label lit={slot.active}>{label}</Label>
-      {showOverlay && (
-        <button
-          type="button"
-          onClick={slot.arm}
-          onContextMenu={(e) => {
-            e.preventDefault();
-            slot.unbind();
-          }}
-          title={
-            slot.bound
-              ? `Bound to ${slot.name} — click to rebind, right-click to clear`
-              : "Click, then move a control on your device to bind it"
-          }
-          className={cn(
-            "absolute inset-0 z-10 flex items-center justify-center rounded-md border px-1 text-center text-[8px] font-semibold uppercase leading-tight tracking-wide transition-colors",
-            slot.learning
-              ? "animate-pulse border-accent bg-accent/20 text-accent"
-              : slot.bound
-                ? "border-accent/40 bg-black/55 text-ink hover:border-accent"
-                : "border-dashed border-ink-dim/40 bg-black/65 text-ink-dim hover:border-ink-dim hover:text-ink",
-          )}
-        >
-          {slot.learning ? "move a control…" : slot.bound ? slot.name : "bind"}
-        </button>
+      {armed && (
+        <span
+          className="pointer-events-none absolute -inset-1 z-10 animate-pulse rounded-sm border border-accent/70"
+          aria-hidden
+        />
       )}
+      {children}
+      <Label lit={active || armed}>{label ?? (armed ? "LEARN" : " ")}</Label>
     </div>
   );
 }
 
-/** Accent ring shown while the bound hardware control is moving. */
+/** Accent ring shown while the slot is moving. */
 export const activeRing = (active: boolean) =>
   active ? { boxShadow: "0 0 0 2px var(--color-accent), 0 0 10px -1px var(--color-accent)" } : undefined;
