@@ -3,7 +3,7 @@ name: Deploy Vite Page
 on:
   push:
     branches:
-      - main
+      - midi-live
 
 permissions:
   contents: read
