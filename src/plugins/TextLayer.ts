@@ -1,5 +1,6 @@
 import { Plugin, type FieldFn, type Frame } from "./Plugin";
 import { sampleGrid } from "./_shared/textField";
+import { asset } from "@/lib/asset";
 
 export const AVAILABLE_FONTS = ["Maratype", "NuCore", "Sekgen", "UESC"] as const;
 
@@ -16,7 +17,7 @@ const fontsReady: Promise<void> =
     ? Promise.resolve()
     : Promise.all(
         AVAILABLE_FONTS.map((name) => {
-          const face = new FontFace(name, `url('/fonts/${name}.otf') format('opentype')`, { weight: "400" });
+          const face = new FontFace(name, `url('${asset(`/fonts/${name}.otf`)}') format('opentype')`, { weight: "400" });
           return face.load().then((loaded) => { document.fonts.add(loaded); }).catch(() => {});
         }),
       ).then(() => {});

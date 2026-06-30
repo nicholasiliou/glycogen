@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as React from "react";
 import { slotId } from "@/controls/types";
+import { asset } from "@/lib/asset";
 import { activeRing, dragWith, SlotFrame, useSlot } from "./shared";
 
 export function JogWheel({ slot, label, size = 360 }: { slot: number; label?: string; size?: number }) {
@@ -59,7 +60,7 @@ export function JogWheel({ slot, label, size = 360 }: { slot: number; label?: st
           return Array.from({ length: 5 }, (_, i) => (
             <img
               key={i}
-              src={`/animations/rim/${String(i + 1).padStart(4, "0")}.webp`}
+              src={asset(`/animations/rim/${String(i + 1).padStart(4, "0")}.webp`)}
               alt=""
               className="absolute inset-0 rounded-full"
               style={{ width: size, height: size, display: i === frameIndex ? "block" : "none" }}
@@ -69,7 +70,7 @@ export function JogWheel({ slot, label, size = 360 }: { slot: number; label?: st
         })()}
         {/* spindle */}
         <img
-          src="/Spindle.svg"
+          src={asset("/Spindle.svg")}
           alt="spindle"
           className="absolute left-1/2 top-1/2 h-30 w-30 -translate-x-1/2 -translate-y-1/2"
           style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.6))" }}

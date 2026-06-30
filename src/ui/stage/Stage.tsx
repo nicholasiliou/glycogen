@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { useLive } from "@/ui/app/LiveProvider";
 import { useExportSettings } from "@/ui/export/ExportContext";
 import { masksFor } from "@/runtime/export";
+import { asset } from "@/lib/asset";
 
 /**
  * The stage viewport. Mounts the runtime {@link Stage}'s canvas into a 16:9-masked host and overlays
@@ -25,7 +26,7 @@ export function Stage() {
     canvas.style.height = "100%";
     canvas.style.pointerEvents = "none";
     canvas.style.boxShadow = "0 0 80px rgba(0,0,0,0.6)";
-    host.style.maskImage = "url(/masks/16x9/1.svg)";
+    host.style.maskImage = `url(${asset("/masks/16x9/1.svg")})`;
     host.style.maskSize = "100% 100%";
     host.style.maskPosition = "0 0";
     host.style.maskRepeat = "no-repeat";

@@ -25,12 +25,14 @@ export const MASK_COUNTS: Record<AspectRatioId, number> = {
   custom: 1,
 };
 
+import { asset } from "@/lib/asset";
+
 export const MASK_FOLDERS: Record<AspectRatioId, string> = {
-  "16:9": "/masks/16x9",
-  "9:16": "/masks/9x16",
-  "1:1": "/masks/1x1",
-  "4:5": "/masks/4x5",
-  custom: "/masks/1x1",
+  "16:9": asset("/masks/16x9"),
+  "9:16": asset("/masks/9x16"),
+  "1:1": asset("/masks/1x1"),
+  "4:5": asset("/masks/4x5"),
+  custom: asset("/masks/1x1"),
 };
 
 /**

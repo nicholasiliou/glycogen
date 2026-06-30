@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight, Power, Sliders } from "lucide-react";
 import { LiveProvider, useLive } from "@/ui/app/LiveProvider";
 import { ExportProvider } from "@/ui/export/ExportContext";
+import { asset } from "@/lib/asset";
 import { HeaderBar } from "@/ui/stage/HeaderBar";
 import { Stage } from "@/ui/stage/Stage";
 import { ControlsPanel } from "@/ui/controls/ControlsPanel";
@@ -42,7 +43,7 @@ function StartGate() {
   return (
     <div
       className="pointer-events-auto absolute inset-0 z-20"
-      style={{ maskImage: "url(/masks/16x9/1.svg)", maskSize: "100% 100%", maskPosition: "0 0", maskRepeat: "no-repeat" }}
+      style={{ maskImage: `url(${asset("/masks/16x9/1.svg")})`, maskSize: "100% 100%", maskPosition: "0 0", maskRepeat: "no-repeat" }}
     >
       <div className="absolute inset-x-0 top-0 h-1/2 bg-[#0c0c0d]" style={blind("top")} />
       <div className="absolute inset-x-0 bottom-0 h-1/2 bg-[#0c0c0d]" style={blind("bottom")} />
@@ -115,7 +116,7 @@ function LiveShell() {
               style={{
                 aspectRatio: "16 / 9",
                 maxHeight: "100%",
-                maskImage: "url(/masks/16x9/1.svg)",
+                maskImage: `url(${asset("/masks/16x9/1.svg")})`,
                 maskSize: "100% 100%",
                 maskPosition: "0 0",
                 maskRepeat: "no-repeat",
