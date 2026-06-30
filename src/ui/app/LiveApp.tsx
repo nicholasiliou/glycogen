@@ -111,7 +111,7 @@ function LiveShell() {
         {controllerOpen && (
           <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
             <div
-              className="pointer-events-auto relative w-full overflow-hidden"
+              className="pointer-events-auto relative w-full overflow-hidden bg-panel/10 backdrop-blur-xs"
               style={{
                 aspectRatio: "16 / 9",
                 maxHeight: "100%",
@@ -119,8 +119,6 @@ function LiveShell() {
                 maskSize: "100% 100%",
                 maskPosition: "0 0",
                 maskRepeat: "no-repeat",
-                background: "rgba(0,0,0,0.40)",
-                backdropFilter: "blur(2px)",
               }}
             >
               {/* The mask notches the top/bottom edges and rounds the corners, so the dialog content

@@ -1,5 +1,12 @@
 export { Exporter } from "./Exporter";
-export type { StillFormat, ExportProgress, ExportSettings } from "./exporters/types";
+export { VIDEO_QUALITIES, VIDEO_QUALITY_LIST } from "./exporters/types";
+export type {
+  StillFormat,
+  ExportProgress,
+  ExportSettings,
+  VideoQuality,
+  VideoQualityId,
+} from "./exporters/types";
 export {
   ASPECT_RATIO_LIST,
   ASPECT_RATIOS,

@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
-import { resolveAspectRatio, type AspectRatio, type AspectRatioId, type ExportSettings } from "@/runtime/export";
+import { resolveAspectRatio, type AspectRatio, type AspectRatioId, type ExportSettings, type VideoQualityId } from "@/runtime/export";
 
 /**
  * Shared export selection so the panel (which edits it) and the Stage (which previews it as a
@@ -14,6 +14,8 @@ interface ExportContextValue {
   setMaskEnabled: (b: boolean) => void;
   maskVariant: number;
   setMaskVariant: (i: number) => void;
+  videoQuality: VideoQualityId;
+  setVideoQuality: (q: VideoQualityId) => void;
   /** The resolved target dimensions for the current selection. */
   ratio: AspectRatio;
   /** Snapshot of the settings for an export call. */
@@ -27,6 +29,7 @@ export function ExportProvider({ children }: { children: ReactNode }) {
   const [custom, setCustom] = useState({ width: 1080, height: 1080 });
   const [maskEnabled, setMaskEnabled] = useState(true);
   const [maskVariant, setMaskVariant] = useState(0);
+  const [videoQuality, setVideoQuality] = useState<VideoQualityId>("high");
 
   const ratio = useMemo(
     () => resolveAspectRatio(ratioId, custom),
@@ -42,6 +45,8 @@ export function ExportProvider({ children }: { children: ReactNode }) {
     setMaskEnabled,
     maskVariant,
     setMaskVariant,
+    videoQuality,
+    setVideoQuality,
     ratio,
     settings: (videoDurationSec) => ({
       aspectRatio: ratioId,
@@ -49,6 +54,7 @@ export function ExportProvider({ children }: { children: ReactNode }) {
       maskEnabled,
       maskVariant,
       videoDurationSec,
+      videoQuality,
     }),
   };
 

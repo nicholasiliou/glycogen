@@ -94,15 +94,6 @@ export function HeaderBar({
       ) : (
         <div className="flex items-center gap-1.5">
           <PluginPreview info={selected} className="w-52" />
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            onClick={() => load("A")}
-            disabled={!selected}
-            title={selected ? `Add ${selected.label} to deck A` : "No plugin selected"}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
         </div>
       )}
 

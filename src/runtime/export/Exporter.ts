@@ -8,9 +8,6 @@ import type { ExportProgress, ExportSettings, StillFormat } from "./exporters/ty
 
 export type { StillFormat, ExportProgress, ExportSettings } from "./exporters/types";
 
-/** Video export frame rate — the live runtime is uncapped, so we pick a fixed capture rate. */
-const EXPORT_FPS = 60;
-
 /**
  * Lean export pipeline for the live runtime: a still (PNG/JPEG) or a WebM video, each reframed to a
  * chosen aspect ratio with an optional alpha mask baked in. The instrument plays forever: a still
@@ -60,7 +57,7 @@ export class Exporter {
     return exportVideo({
       source: this.canvas,
       frame,
-      fps: EXPORT_FPS,
+      quality: settings.videoQuality,
       durationSec: settings.videoDurationSec ?? 10,
       baseName: "marathon",
       onProgress: opts?.onProgress,

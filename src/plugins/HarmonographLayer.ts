@@ -14,7 +14,6 @@ export class HarmonographLayer extends Plugin {
   cycles = this.knob(6, { min: 1, max: 24, step: 1, default: 12 });
   lineWidth = this.knob(7, { min: 0.5, max: 8, default: 2 });
   phase = this.fader(0, { min: 0, max: 360, default: 0 });
-  glow = this.pad(4);
 
   private ctx = this.canvas.getContext("2d")!;
 
@@ -45,7 +44,6 @@ export class HarmonographLayer extends Plugin {
     ctx.strokeStyle = "rgba(192,252,4,1)";
     ctx.lineWidth = Math.max(0.5, this.lineWidth.value);
     ctx.lineJoin = "round";
-    ctx.globalCompositeOperation = this.glow.on ? "lighter" : "source-over";
     ctx.stroke();
     ctx.globalCompositeOperation = "source-over";
     return this.canvas;

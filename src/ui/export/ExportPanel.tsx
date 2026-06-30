@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Download, Image as ImageIcon, Video } from "lucide-react";
-import { Exporter, ASPECT_RATIO_LIST, masksFor } from "@/runtime/export";
+import { Exporter, ASPECT_RATIO_LIST, masksFor, VIDEO_QUALITIES, VIDEO_QUALITY_LIST } from "@/runtime/export";
 import { useLive } from "@/ui/app/LiveProvider";
 import { Button } from "@/ui/components/button";
 import { Switch } from "@/ui/components/switch";
@@ -114,6 +114,30 @@ export function ExportPanel() {
             <span className="text-ink">{videoSec}s</span>
           </div>
           <Slider min={1} max={15} step={1} value={[videoSec]} onValueChange={([v]) => setVideoSec(v)} />
+        </div>
+
+        {/* video quality */}
+        <div className="space-y-1">
+          <span className="text-ink">Video quality</span>
+          <div className="flex gap-1">
+            {VIDEO_QUALITY_LIST.map((q) => (
+              <button
+                key={q.id}
+                onClick={() => ex.setVideoQuality(q.id)}
+                className={`flex-1 rounded border px-1.5 py-0.5 ${ex.videoQuality === q.id ? "border-ink text-ink" : "border-edge text-ink-dim"}`}
+              >
+                {q.label}
+              </button>
+            ))}
+          </div>
+          <div className="text-ink-dim/60">
+            {(() => {
+              const q = VIDEO_QUALITIES[ex.videoQuality];
+              const w = Math.round(ex.ratio.width * q.scale);
+              const h = Math.round(ex.ratio.height * q.scale);
+              return `${w}×${h} · ${q.fps}fps`;
+            })()}
+          </div>
         </div>
 
         {/* actions */}
