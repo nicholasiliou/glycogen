@@ -209,6 +209,8 @@ export class Stage {
     }
 
     this.ctx.clearRect(0, 0, w, h);
+    this.ctx.fillStyle = "#000";
+    this.ctx.fillRect(0, 0, w, h);
     this.ctx.drawImage(out, 0, 0, w, h);
   }
 }

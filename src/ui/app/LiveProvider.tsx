@@ -146,7 +146,15 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       setSelShader(n);
       applyShader(effects[n]); // previewing a shader applies + focuses it directly
     } else {
-      setSelPlugin((s) => (generators.length ? (s + d + generators.length * 100) % generators.length : 0));
+      if (!generators.length) return;
+      const n = (selPlugin + d + generators.length * 100) % generators.length;
+      setSelPlugin(n);
+      // Previewing a plugin loads it straight into the focused deck's active bank, mirroring
+      // shader mode — no manual load step.
+      const deck: DeckName = focus === "shader" ? "A" : focus;
+      stage.loadBank(deck, stage.decks[deck].active, create(generators[n].id));
+      setFocusState(deck);
+      refresh();
     }
   };
 
