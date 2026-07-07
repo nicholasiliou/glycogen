@@ -69,6 +69,23 @@ export class Param extends BaseParam {
     this.set(this.target + steps * inc);
   }
 
+  /** Step through the quantised values with wraparound (a button cycling a stepped range). */
+  cycleNudge(steps: number): void {
+    if (this.step <= 0) return this.nudge(steps);
+    const count = Math.round((this.max - this.min) / this.step) + 1;
+    const at = Math.round((this.target - this.min) / this.step);
+    const next = ((at + steps) % count + count) % count;
+    this.set(this.min + next * this.step);
+  }
+
+  /** Advance smoothing one frame — call once per frame whether or not anything drove the param. */
+  tick(): void {
+    if (this.smooth > 0 && this.value !== this.target) {
+      this.value += (this.target - this.value) * (1 - this.smooth);
+      if (Math.abs(this.target - this.value) < 1e-4) this.value = this.target;
+    }
+  }
+
   /** Current value as a 0..1 fraction of the range. */
   get norm(): number {
     const span = this.max - this.min;
@@ -84,11 +101,7 @@ export class Param extends BaseParam {
         this.setNorm(live.value);
       }
     }
-    // ease toward target even on idle frames
-    if (this.smooth > 0 && this.value !== this.target) {
-      this.value += (this.target - this.value) * (1 - this.smooth);
-      if (Math.abs(this.target - this.value) < 1e-4) this.value = this.target;
-    }
+    this.tick(); // ease toward target even on idle frames
   }
 
   private quantize(v: number): number {
@@ -141,18 +154,43 @@ export class ButtonParam extends BaseParam {
     return this.firedFrame;
   }
 
-  pull(live: SlotLive): void {
-    this.held = live.pressed;
-    if (this.lastPresses === -1) {
-      this.lastPresses = live.presses; // first pull: adopt baseline without firing
-      return;
-    }
-    const n = live.presses - this.lastPresses;
+  /** Presses queued since the last {@link tick} (from a driver or a direct UI press). */
+  private pending = 0;
+
+  /** Queue presses — applied (and `fired` pulsed) by the next {@link tick}. */
+  press(n = 1): void {
+    this.pending += n;
+  }
+
+  setHeld(h: boolean): void {
+    this.held = h;
+  }
+
+  /** Force the toggle state directly (momentary / absolute adapters). */
+  setOn(v: boolean): void {
+    this.on = v;
+  }
+
+  /** Consume queued presses — call once per frame whether or not anything drove the param. */
+  tick(): void {
+    const n = this.pending;
+    this.pending = 0;
     this.firedFrame = n > 0;
     for (let i = 0; i < n; i++) {
       this.count++;
       this.on = !this.on;
     }
+  }
+
+  pull(live: SlotLive): void {
+    this.held = live.pressed;
+    if (this.lastPresses === -1) {
+      this.lastPresses = live.presses; // first pull: adopt baseline without firing
+      this.tick();
+      return;
+    }
+    this.press(live.presses - this.lastPresses);
     this.lastPresses = live.presses;
+    this.tick();
   }
 }
