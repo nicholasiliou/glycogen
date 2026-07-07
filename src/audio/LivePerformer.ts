@@ -3,7 +3,7 @@ import type { Plugin } from "@/plugins/Plugin";
 import type { Stage } from "@/runtime/Stage";
 import type { AudioEngine } from "./AudioEngine";
 import type { Instrument, PropertyValue, SonicParams } from "./types";
-import { clamp01, norm } from "./instruments/util";
+import { clamp01 } from "./instruments/util";
 import { createInstrument, instrumentSpec } from "./instruments/registry";
 
 /**
@@ -82,7 +82,8 @@ export class LivePerformer {
     const props = paramProps(plugin);
     const sonic: SonicParams = {
       props,
-      energy: computeEnergy(plugin.id, props),
+      // Per-plugin heuristic living on the instrument spec; un-specified voices idle at neutral.
+      energy: spec.energy?.(props) ?? 0.4,
       presence: clamp01(presence),
       time,
     };
@@ -107,33 +108,4 @@ function paramProps(plugin: Plugin): Record<string, PropertyValue> {
 
 function nowSec(): number {
   return (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
-}
-
-/** A rough 0..1 "how active is this visual" used to push instruments harder. Per-type heuristic. */
-function computeEnergy(type: string, props: Record<string, PropertyValue>): number {
-  const n = (k: string, f: number) => (typeof props[k] === "number" ? (props[k] as number) : f);
-  switch (type) {
-    case "gameOfLife":
-      return clamp01(0.6 * norm(n("density", 0.32), 0.01, 0.9) + 0.4 * norm(n("speed", 1), 1, 6));
-    case "physarum":
-      return clamp01(0.5 * norm(n("deposit", 1), 0.1, 5) + 0.5 * norm(n("gain", 0.6), 0.1, 4));
-    case "boids":
-      return clamp01(0.7 * norm(n("maxSpeed", 3.5), 0.2, 20) + 0.3 * norm(n("count", 500), 1, 5000));
-    case "noise":
-      return clamp01(0.5 * norm(Math.abs(n("speed", 0.3)), 0, 4) + 0.5 * norm(n("contrast", 1), 0.1, 6));
-    case "harmonograph":
-      return clamp01(norm(n("cycles", 12), 1, 60));
-    case "plant":
-      return clamp01(0.6 * norm(n("iterations", 4), 1, 6) + 0.4 * norm(Math.abs(n("spinSpeed", 0.06)), 0, 0.5));
-    case "glyphScatter":
-      return clamp01(0.6 * (1 - n("threshold", 0.5)) + 0.4 * norm(Math.abs(n("speed", 0.2)), 0, 3));
-    case "shape":
-      return clamp01(0.5 * norm(Math.abs(n("spin", 24)), 0, 360) + 0.5 * norm(n("resolution", 28), 8, 80));
-    case "landscape":
-      return clamp01(0.6 * norm(n("amplitude", 0.55), 0, 1.2) + 0.4 * norm(Math.abs(n("speed", 0.15)), 0, 3));
-    case "volumetricCloud":
-      return clamp01(0.5 * norm(n("coverage", 0.5), 0.1, 0.9) + 0.3 * norm(n("density", 1.4), 0.2, 4) + 0.2 * norm(Math.abs(n("speed", 0.25)), 0, 3));
-    default:
-      return 0.4;
-  }
 }
