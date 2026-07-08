@@ -1,5 +1,6 @@
 import type { ControlBus } from "@/controls/ControlBus";
-import type { AppAction, Keymap } from "./keymap";
+import { appActions, hardwareBindings, hardwareControls, type AppAction } from "@/db/schema";
+import { defaultKindFor, type MidiControl } from "./types";
 import type { MidiManager } from "./MidiManager";
 
 /** App-level functions the router can invoke (everything that isn't a plugin parameter). */
@@ -9,50 +10,59 @@ export interface MidiActionHandlers {
   /** Run a momentary app action (load / clear / focus / bank / browse-mode). */
   run: (action: Exclude<AppAction, "browse">) => void;
   /** Report each routed control for the "last MIDI action" readout: the physical control's label
-   *  and what it resolved to (a slot id or an app action). Continuous moves report on every tick. */
+   *  and what it resolved to (a widget id or an app action). Continuous moves report on every tick. */
   report?: (control: string, target: string) => void;
 }
 
 /**
- * Wire hardware MIDI onto the {@link ControlBus} and app actions, through the active {@link Keymap}.
- * This is the whole MIDI→runtime path now: a control bound to a slot drives that slot (the focused
- * plugin reacts); a control bound to an app action invokes the matching handler. No assignment
- * strings, no macro table. `getKeymap` is read fresh each message so swapping keymaps is live.
+ * Wire hardware MIDI onto the {@link ControlBus} and app actions, through the binding db. This is
+ * the whole MIDI→runtime path: every message resolves `hardwareBindings` by the control's id — a
+ * control bound to a widget drives that widget's bus slot (the focused plugin reacts); a control
+ * bound to an app action invokes the matching handler. Newly seen controls auto-register a
+ * `hardwareControls` row so they surface in settings without a separate learn step.
  *
  * Returns an unsubscribe.
  */
-export function attachMidiRouter(
-  midi: MidiManager,
-  getKeymap: () => Keymap | null,
-  bus: ControlBus,
-  handlers: MidiActionHandlers,
-): () => void {
+export function attachMidiRouter(midi: MidiManager, bus: ControlBus, handlers: MidiActionHandlers): () => void {
   return midi.on("control", (ev) => {
-    const m = getKeymap()?.controls[ev.control.id];
-    if (!m || m.disabled || !m.binding) return;
     const ctl = ev.control;
-    const b = m.binding;
+    register(ctl);
 
-    if (b.kind === "slot") {
+    const row = hardwareBindings.by("control", ctl.id)[0];
+    if (!row || hardwareControls.get(ctl.id)?.disabled) return;
+
+    if (row.target.type === "widget") {
+      const widgetId = row.target.widgetId;
       if (ctl.continuous) {
-        // The physical crossfader reports its direction inverted relative to the A/B convention.
-        const value = b.slot === "crossfader:0" ? 1 - ctl.value : ctl.value;
-        bus.drive(b.slot, { value, delta: ctl.delta, relative: ctl.relative });
-        handlers.report?.(ctl.label, b.slot);
+        const value = row.invert ? 1 - ctl.value : ctl.value;
+        bus.drive(widgetId, { value, delta: ctl.delta, relative: ctl.relative });
+        handlers.report?.(ctl.label, widgetId);
       } else {
-        bus.drive(b.slot, { pressed: ctl.pressed });
-        if (ctl.pressed) handlers.report?.(ctl.label, b.slot);
+        bus.drive(widgetId, { pressed: ctl.pressed });
+        if (ctl.pressed) handlers.report?.(ctl.label, widgetId);
       }
       return;
     }
 
-    // app action
-    if (b.action === "browse") {
+    const action = row.target.actionId;
+    if (action === "browse") {
       if (ctl.relative && ctl.delta) { handlers.step(Math.sign(ctl.delta)); handlers.report?.(ctl.label, "browse"); }
       else if (!ctl.continuous && ctl.pressed) { handlers.step(1); handlers.report?.(ctl.label, "browse"); }
-    } else if (!ctl.continuous && ctl.pressed) {
-      handlers.run(b.action);
-      handlers.report?.(ctl.label, b.action);
+    } else if (appActions.get(action)?.momentary && !ctl.continuous && ctl.pressed) {
+      handlers.run(action);
+      handlers.report?.(ctl.label, action);
     }
+  });
+}
+
+/** First sighting of a physical control becomes a db row (identity only — no binding). */
+function register(ctl: MidiControl): void {
+  if (hardwareControls.has(ctl.id)) return;
+  hardwareControls.insert({
+    id: ctl.id,
+    name: ctl.label,
+    kind: defaultKindFor(ctl),
+    disabled: false,
+    deviceName: ctl.deviceName,
   });
 }

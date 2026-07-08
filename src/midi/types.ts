@@ -44,6 +44,30 @@ export const KIND_BEHAVIOR: Record<ControlKind, { continuous: boolean; relative:
   button: { continuous: false, relative: false },
 };
 
+export const CONTROL_KINDS: ControlKind[] = ["fader", "knob", "encoder", "jog", "button"];
+
+export interface KindMeta {
+  label: string;
+  /** lucide-react icon name, mapped to a component in the UI layer. */
+  icon: string;
+  hint: string;
+}
+
+export const KIND_META: Record<ControlKind, KindMeta> = {
+  fader: { label: "Fader", icon: "SlidersVertical", hint: "linear, absolute" },
+  knob: { label: "Potentiometer", icon: "Circle", hint: "rotary, absolute" },
+  encoder: { label: "Encoder", icon: "RotateCw", hint: "endless, relative" },
+  jog: { label: "Jogwheel", icon: "Disc3", hint: "platter, relative" },
+  button: { label: "Button", icon: "Square", hint: "momentary press" },
+};
+
+/** Best guess of a kind from what the manager auto-detected — the starting point a user edits. */
+export function defaultKindFor(ctl: Pick<MidiControl, "continuous" | "relative" | "subtype">): ControlKind {
+  if (!ctl.continuous) return "button";
+  if (ctl.relative) return ctl.subtype === "jog" ? "jog" : "encoder";
+  return ctl.subtype === "fader" ? "fader" : "knob";
+}
+
 /** A user override pushed down onto the manager so retyping/renaming takes effect live. */
 export interface ControlOverride {
   name?: string;

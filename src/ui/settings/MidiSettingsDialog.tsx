@@ -5,24 +5,28 @@ import { FitBox } from "@/ui/components/FitBox";
 import { REMOTE_HASH } from "@/controls/remoteChannel";
 import { useLive } from "@/ui/app/LiveProvider";
 import {
-  BINDING_GROUPS,
-  bindingKey,
-  parseBindingKey,
-  effectiveControls,
-  CONTROL_KINDS,
-  type EffectiveControl,
-} from "@/midi/keymap";
-import type { ControlKind } from "@/midi/types";
+  appActions,
+  hardwareBindings,
+  hardwareControls,
+  setHardwareBinding,
+  widgets,
+  type AppAction,
+  type HardwareControlRow,
+  type HardwareTarget,
+} from "@/db/schema";
+import { useTable } from "@/db/useDb";
+import { autoAssignBindings } from "@/midi/autoAssign";
+import { CONTROL_KINDS, type ControlKind } from "@/midi/types";
+import type { SlotId } from "@/controls/types";
 
-export type Tab = "controller" | "keymap";
+export type Tab = "controller" | "hardware";
 
 /** `tab`/`onTab` lift the active tab to the caller so it survives the dialog unmounting on close. */
 export function MidiSettingsDialog({ tab: tabProp, onTab }: { tab?: Tab; onTab?: (t: Tab) => void } = {}) {
   const [tabLocal, setTabLocal] = useState<Tab>("controller");
   const tab = tabProp ?? tabLocal;
   const setTab = onTab ?? setTabLocal;
-  const { keymap } = useLive();
-  const { midi } = keymap;
+  const { midi } = useLive();
   const status = midi.status;
   const devices = midi.devices();
 
@@ -51,7 +55,7 @@ export function MidiSettingsDialog({ tab: tabProp, onTab }: { tab?: Tab; onTab?:
         </div>
         <div className="flex-1" />
         <div className="flex">
-          {(["controller", "keymap"] as Tab[]).map((t) => (
+          {(["controller", "hardware"] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -76,7 +80,7 @@ export function MidiSettingsDialog({ tab: tabProp, onTab }: { tab?: Tab; onTab?:
       </div>
 
       {tab === "controller" && <ControllerTab />}
-      {tab === "keymap" && <KeymapTab />}
+      {tab === "hardware" && <HardwareTab />}
     </div>
   );
 }
@@ -90,105 +94,122 @@ function ControllerTab() {
   );
 }
 
+// ── hardware tab: the hardwareControls/hardwareBindings tables, editable inline ────────────────
 
-function KeymapTab() {
-  const { keymap } = useLive();
-  const { midi } = keymap;
-  const rows = effectiveControls(midi.list(), keymap.active);
+/** A stable string key for a target (used as the <option> value and for equality). */
+function targetKey(t: HardwareTarget | null): string {
+  if (!t) return "none";
+  return t.type === "widget" ? `widget:${t.widgetId}` : `action:${t.actionId}`;
+}
+
+function parseTargetKey(key: string): HardwareTarget | null {
+  if (key.startsWith("widget:")) return { type: "widget", widgetId: key.slice(7) as SlotId };
+  if (key.startsWith("action:")) return { type: "action", actionId: key.slice(7) as AppAction };
+  return null;
+}
+
+/** Sort key so the table is stable while editing: CC, then pitch-bend, then notes; by id. */
+function rankOf(id: string): [number, number, number] {
+  const [t, ch, n] = id.split(":");
+  const tr = t === "cc" ? 0 : t === "pb" ? 1 : 2;
+  return [tr, Number(ch) || 0, Number(n) || 0];
+}
+
+function HardwareTab() {
+  const { midi } = useLive();
+  const rows = useTable(hardwareControls, (t) =>
+    [...t.all()].sort((a, b) => {
+      const ra = rankOf(a.id);
+      const rb = rankOf(b.id);
+      return ra[0] - rb[0] || ra[1] - rb[1] || ra[2] - rb[2];
+    }),
+  );
+  const bindings = useTable(hardwareBindings, (t) => new Map(t.all().map((r) => [r.controlId, r])));
+
+  // Grouped options: app actions first, then each widget kind.
+  const groups: { label: string; options: { value: string; label: string }[] }[] = [
+    { label: "—", options: [{ value: "none", label: "Unassigned" }] },
+    { label: "App", options: appActions.all().map((a) => ({ value: `action:${a.id}`, label: a.label })) },
+  ];
+  for (const kind of ["fader", "knob", "encoder", "pad", "button", "jog", "crossfader"] as const) {
+    const of = widgets.all().filter((w) => w.kind === kind);
+    if (of.length) groups.push({ label: kind, options: of.map((w) => ({ value: `widget:${w.id}`, label: w.id })) });
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-3 text-[11px] text-ink">
-      <KeymapHeader />
-      <ControlTable
-        rows={rows}
-        onBind={(r, key) => keymap.bind(r.id, r.name, r.kind, parseBindingKey(key))}
-        onKind={(r, kind) => keymap.bind(r.id, r.name, kind, r.binding)}
-      />
-    </div>
-  );
-}
-
-function KeymapHeader() {
-  const { keymap } = useLive();
-  return (
-    <div className="space-y-2 border-b border-edge pb-2">
-      <div className="flex items-center justify-between">
-        <span className="text-[9px] uppercase tracking-wide text-ink-dim">Keymap</span>
-        <div className="flex gap-1">
-          <button onClick={keymap.create} className="rounded border border-edge px-1.5 py-0.5 hover:text-accent">New</button>
-          <button onClick={keymap.autoAssign} className="rounded border border-edge px-1.5 py-0.5 hover:text-accent" disabled={!keymap.active}>Auto</button>
-        </div>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <select
-          value={keymap.activeId ?? ""}
-          onChange={(e) => keymap.setActive(e.target.value || null)}
-          className="min-w-0 flex-1 rounded border border-edge bg-transparent px-1 py-0.5"
+      <div className="flex items-center justify-between border-b border-edge pb-2">
+        <span className="text-[9px] uppercase tracking-wide text-ink-dim">
+          Hardware — touch a control to register it
+        </span>
+        <button
+          onClick={() => {
+            for (const row of autoAssignBindings(hardwareControls.all())) setHardwareBinding(row.controlId, row.target);
+          }}
+          className="rounded border border-edge px-1.5 py-0.5 hover:text-accent"
+          disabled={rows.length === 0}
         >
-          <option value="">— no keymap —</option>
-          {keymap.keymaps.map((k) => (
-            <option key={k.id} value={k.id}>{k.name}</option>
+          Auto-assign
+        </button>
+      </div>
+      {rows.length === 0 ? (
+        <div className="py-6 text-center text-ink-dim/60">Touch a control on your device…</div>
+      ) : (
+        <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
+          {rows.map((r) => (
+            <HardwareRow key={r.id} row={r} binding={bindings.get(r.id)?.target ?? null} groups={groups} lastSeen={midi.get(r.id)?.lastSeen} />
           ))}
-        </select>
-        {keymap.active && (
-          <>
-            <input
-              value={keymap.active.name}
-              onChange={(e) => keymap.rename(keymap.active!.id, e.target.value)}
-              className="w-28 rounded border border-edge bg-transparent px-1 py-0.5"
-            />
-            <button onClick={() => keymap.remove(keymap.active!.id)} className="rounded border border-edge px-1.5 py-0.5 text-red-400 hover:bg-red-400/10">✕</button>
-          </>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function ControlTable({
-  rows,
-  onBind,
-  onKind,
+function HardwareRow({
+  row,
+  binding,
+  groups,
+  lastSeen,
 }: {
-  rows: EffectiveControl[];
-  onBind: (row: EffectiveControl, bindingKey: string) => void;
-  onKind: (row: EffectiveControl, kind: ControlKind) => void;
+  row: HardwareControlRow;
+  binding: HardwareTarget | null;
+  groups: { label: string; options: { value: string; label: string }[] }[];
+  lastSeen?: number;
 }) {
-  if (rows.length === 0) {
-    return <div className="py-6 text-center text-ink-dim/60">Touch a control on your device…</div>;
-  }
   return (
-    <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
-      {rows.map((r) => (
-        <div
-          key={r.id}
-          className={`flex items-center gap-1.5 rounded px-1 py-0.5 ${r.live && performance.now() - r.live.lastSeen < 300 ? "bg-accent/15" : ""}`}
-        >
-          <span className="w-20 shrink-0 truncate text-ink-dim" title={r.id}>{r.name}</span>
-          <select
-            value={r.kind}
-            onChange={(e) => onKind(r, e.target.value as ControlKind)}
-            className="w-16 rounded border border-edge bg-transparent px-0.5 py-0.5 text-[10px]"
-          >
-            {CONTROL_KINDS.map((k) => (
-              <option key={k} value={k}>{k}</option>
+    <div
+      className={`flex items-center gap-1.5 rounded px-1 py-0.5 ${lastSeen !== undefined && performance.now() - lastSeen < 300 ? "bg-accent/15" : ""} ${row.disabled ? "opacity-40" : ""}`}
+    >
+      <span className="w-20 shrink-0 truncate text-ink-dim" title={row.id}>{row.name}</span>
+      <select
+        value={row.kind}
+        onChange={(e) => hardwareControls.update(row.id, { kind: e.target.value as ControlKind })}
+        className="w-16 rounded border border-edge bg-transparent px-0.5 py-0.5 text-[10px]"
+      >
+        {CONTROL_KINDS.map((k) => (
+          <option key={k} value={k}>{k}</option>
+        ))}
+      </select>
+      <select
+        value={targetKey(binding)}
+        onChange={(e) => setHardwareBinding(row.id, parseTargetKey(e.target.value))}
+        className="min-w-0 flex-1 rounded border border-edge bg-transparent px-0.5 py-0.5 text-[10px]"
+      >
+        {groups.map((g) => (
+          <optgroup key={g.label} label={g.label}>
+            {g.options.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
-          </select>
-          <select
-            value={bindingKey(r.binding)}
-            onChange={(e) => onBind(r, e.target.value)}
-            className="min-w-0 flex-1 rounded border border-edge bg-transparent px-0.5 py-0.5 text-[10px]"
-          >
-            {BINDING_GROUPS.map((g) => (
-              <optgroup key={g.label} label={g.label}>
-                {g.options.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        </div>
-      ))}
+          </optgroup>
+        ))}
+      </select>
+      <button
+        onClick={() => hardwareControls.update(row.id, { disabled: !row.disabled })}
+        className="rounded border border-edge px-1 py-0.5 text-[9px] text-ink-dim hover:text-ink"
+        title={row.disabled ? "Re-enable this control" : "Ignore this control (faulty / noisy)"}
+      >
+        {row.disabled ? "off" : "on"}
+      </button>
     </div>
   );
 }

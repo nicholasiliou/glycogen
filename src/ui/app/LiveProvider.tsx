@@ -10,18 +10,19 @@ import { MidiManager } from "@/midi/MidiManager";
 import type { MidiActionHandlers } from "@/midi/router";
 import { ArmLearnContext, BankControlContext, ControlBusContext, LearnSlotContext, SlotLabelContext, type BankControl } from "@/ui/controller/widgets";
 import { useBrowse, type BrowseMode } from "./useBrowse";
-import { useKeymaps, type KeymapCtx } from "./useKeymaps";
+import { useHardwareSync } from "./useHardwareSync";
 import { useMidiRouting } from "./useMidiRouting";
 import { useRemoteBridge } from "./useRemoteBridge";
 
-export type { BrowseMode, KeymapCtx };
+export type { BrowseMode };
 
 /**
  * The live editor's context, over the factory core: one {@link ControlBus} (fed by the on-screen
  * controller AND hardware MIDI), one runtime {@link Stage} (two decks of banks + a shader), and the
- * audio engine. Hardware MIDI is routed through the active keymap straight onto bus slots /
- * app actions — no engine, no macro table. The provider itself only owns focus + the render tick;
- * browse/load, keymaps, MIDI routing and the pop-out bridge each live in their own hook.
+ * audio engine. Hardware MIDI is routed through the binding db straight onto bus slots /
+ * app actions — no engine, no macro table, no keymap list. The provider itself only owns focus +
+ * the render tick; browse/load, hardware sync, MIDI routing and the pop-out bridge each live in
+ * their own hook.
  */
 interface LiveCtx {
   bus: ControlBus;
@@ -47,8 +48,8 @@ interface LiveCtx {
   /** Audio/visual gate — the intro is dismissed once started. */
   started: boolean;
   start: () => void;
-  /** MIDI keymap editing surface. */
-  keymap: KeymapCtx;
+  /** The hardware MIDI connection (device status, live control snapshots for settings). */
+  midi: MidiManager;
   /** MIDI learn: slot currently armed for one-shot hardware capture, or null. */
   learnSlot: SlotId | null;
   /** Arm a slot for MIDI learn — next hardware touch binds it and clears. */
@@ -83,7 +84,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
 
   const browse = useBrowse({ stage, focus, setFocus: setFocusState, refresh });
   const { step, load, selectBank, clearDeck } = browse;
-  const { activeKeymap, patchActive, keymap } = useKeymaps(midi);
+  useHardwareSync(midi);
 
   // App actions a hardware control can be bound to (everything that isn't a plugin parameter).
   const runAction: MidiActionHandlers["run"] = (action) => {
@@ -112,8 +113,6 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     midi,
     bus,
     stage,
-    activeKeymap,
-    patchActive,
     handlers: { step, run: runAction },
     refresh,
   });
@@ -199,7 +198,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     clearShader: browse.clearShader,
     started,
     start,
-    keymap,
+    midi,
     learnSlot,
     armLearn,
     cancelLearn,
