@@ -137,7 +137,6 @@ export const DEFAULT_LAYOUTS: Record<string, Record<string, SlotId>> = {
     str2: "knob:5", mix: "knob:6",
   },
   fisheye: { strength: "knob:0", zoom: "knob:1" },
-  color: { preset: "pad:4" }, // the palette-cycle shader (replaces the old hue knob)
   none: {}, // passthrough shader — nothing to bind (opacity comes from its locked row)
   pixelSort: { threshold: "knob:0", horizontal: "pad:4", reverse: "pad:5" },
   pixelStretch: { threshold: "knob:0", amount: "knob:1", horizontal: "pad:4" },

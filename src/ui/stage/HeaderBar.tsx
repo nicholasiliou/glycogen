@@ -63,10 +63,12 @@ function BankStrip() {
             type="button"
             onClick={() => onBankClick(i)}
             title={`Bank ${i + 1}${bank.plugin ? (i === activeBank ? " · active (click to remove)" : " · loaded (click to activate)") : " · empty (click to load)"}`}
+            // Loaded banks wear their layer's color (the tint, else the plugin's native color).
+            style={bank.plugin ? { backgroundColor: bank.plugin.displayColor() } : undefined}
             className={cn(
               "h-3 w-3 cursor-pointer rounded-full border transition-colors hover:border-accent/70",
               i === activeBank ? "border-accent" : "border-transparent",
-              bank.plugin ? (i === activeBank ? "bg-accent" : "bg-ink/50") : "bg-edge",
+              bank.plugin ? (i === activeBank ? "" : "opacity-50") : "bg-edge",
             )}
           />
         ))}

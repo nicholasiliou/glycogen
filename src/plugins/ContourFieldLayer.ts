@@ -50,7 +50,7 @@ const LINE = [40, 40, 255, 255];
  * adds a swirling "floating on water" motion.
  */
 export class ContourFieldLayer extends Plugin {
-  override color = "#2828FF"; // matches LINE — the factory default the Color shader adopts
+  override nativeColor = "#2828FF"; // matches LINE — colors the bank dot / "native" on the color cycle
   resolution = this.number({ min: 0.05, max: 0.5, default: 0.22 });
   scale = this.number({ min: 1, max: 16, default: 6 });
   octaves = this.number({ min: 1, max: 8, step: 1, default: 4 });

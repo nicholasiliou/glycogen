@@ -18,7 +18,7 @@ export class PlantLayer extends Plugin {
   evolutionSpeed = this.number({ min: 0.01, max: 4, default: 1 });
   seed = this.number({ min: 1, max: 64, step: 1, default: 1 });
   autoEvolve = this.toggle();
-  opaque = this.toggle(true);
+  opaque = this.toggle(); // transparent by default — the plant composites like every other layer
 
   private p?: P5;
   private container: HTMLDivElement;
@@ -45,7 +45,8 @@ export class PlantLayer extends Plugin {
   private attach(p: P5): void {
     p.setup = () => {
       p.createCanvas(this.w, this.h, p.WEBGL);
-      p.setAttributes("preserveDrawingBuffer", true);
+      // alpha explicitly on: the GL canvas must clear to transparent for non-opaque compositing.
+      p.setAttributes({ preserveDrawingBuffer: true, alpha: true } as never);
       this.glCanvas = (p as unknown as { drawingContext: { canvas: HTMLCanvasElement } }).drawingContext.canvas;
       p.noLoop();
       this.angle = p.radians(35);

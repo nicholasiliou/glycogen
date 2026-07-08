@@ -1,5 +1,5 @@
 import { ButtonParam, Param, type NumOpts } from "@/controls/Param";
-import { DEFAULT_COLOR } from "./colors";
+import { COLOR_CYCLE, cycleHex, DEFAULT_COLOR } from "./colors";
 
 /**
  * A scalar field function that any plugin can export for other plugins to read.
@@ -64,9 +64,25 @@ export abstract class Plugin {
    *  Bound to the reserved knob:9 via a locked db row (the per-plugin mixing control). */
   opacity = this.bind(new Param({ min: 0, max: 1, default: 1 }));
 
-  /** The plugin's default draw color (a {@link COLOR_PRESETS} hex). Subclasses override where they
-   *  draw differently; the Color shader adopts it as its starting preset when applied to a layer. */
-  color = DEFAULT_COLOR;
+  /** The plugin's native draw color (a {@link COLOR_PRESETS} hex). Subclasses override where they
+   *  draw differently — it colors the bank dot and is what "native" on the `color` cycle means. */
+  nativeColor = DEFAULT_COLOR;
+
+  /** Factory per-layer recolor (the old Color shader, now independent of the shader slot): "native"
+   *  leaves the plugin's own look; any preset makes the Stage recolor the layer's final output —
+   *  after its shader, so a shader and a color are active at the same time. Generators only:
+   *  effects' rows are skipped at harvest, so the cycle never surfaces for them. */
+  color = this.cycle(COLOR_CYCLE);
+
+  /** The preset hex this layer is recolored to, or null for the native look. */
+  tintHex(): string | null {
+    return cycleHex(this.color.count);
+  }
+
+  /** The color representing this layer in the UI (header bank dots): the tint, else the native. */
+  displayColor(): string {
+    return this.tintHex() ?? this.nativeColor;
+  }
 
   constructor() {
     Plugin.underConstruction = this;
@@ -84,7 +100,7 @@ export abstract class Plugin {
 
   /**
    * Optional hook: called when this plugin is attached as a layer shader, with the host generator
-   * it now transforms (the Color shader uses it to adopt the host's default color).
+   * it now transforms (a shader can adopt defaults from its host here).
    */
   onAttach?(host: Plugin): void;
 

@@ -1,6 +1,10 @@
 import { Plugin, type Frame } from "@/plugins/Plugin";
 import { ShaderRunner } from "./ShaderRunner";
 
+// Alpha discipline: textures arrive straight (texImage2D un-premultiplies canvas sources) but the
+// GL canvas is composited as PREMULTIPLIED. Blurring/summing straight RGBA over a transparent
+// background leaks color into near-zero-alpha pixels, which the compositor then un-premultiplies
+// into a blown-out white halo — so both passes work premultiplied (rgb·a) and write premultiplied.
 const BLUR_FRAG = `
 precision highp float;
 varying vec2 vUv;
@@ -18,7 +22,8 @@ void main() {
     float fi = float(i);
     if (fi < -uRadius || fi > uRadius) continue;
     float w = exp(-0.5 * (fi * fi) / (sigma * sigma));
-    acc += texture2D(uTex, vUv + px * fi) * w;
+    vec4 t = texture2D(uTex, vUv + px * fi);
+    acc += vec4(t.rgb * t.a, t.a) * w;
     wsum += w;
   }
   gl_FragColor = acc / wsum;
@@ -40,8 +45,11 @@ void main() {
   vec4 b0 = texture2D(uBlur0, vUv);
   vec4 b1 = texture2D(uBlur1, vUv);
   vec4 b2 = texture2D(uBlur2, vUv);
-  vec4 glow = b0 * uStr0 + b1 * uStr1 + b2 * uStr2;
-  gl_FragColor = clamp(src + glow * uMix, 0.0, 1.0);
+  vec3 glow = b0.rgb * b0.a * uStr0 + b1.rgb * b1.a * uStr1 + b2.rgb * b2.a * uStr2;
+  float glowA = b0.a * uStr0 + b1.a * uStr1 + b2.a * uStr2;
+  float outA = clamp(src.a + glowA * uMix, 0.0, 1.0);
+  vec3 outP = min(clamp(src.rgb * src.a + glow * uMix, 0.0, 1.0), vec3(outA));
+  gl_FragColor = vec4(outP, outA);
 }`;
 
 export class DeepGlowLayer extends Plugin {

@@ -26,6 +26,12 @@ export class Stage {
   private ctx: CanvasRenderingContext2D;
   private buffer = document.createElement("canvas");
   private bctx = this.buffer.getContext("2d")!;
+  // Scratch surfaces for the per-layer recolor pass: the layer's dry+wet mix is folded into
+  // layerBuf, then luminance×preset recolored into tintBuf (only touched when a tint is active).
+  private layerBuf = document.createElement("canvas");
+  private lctx = this.layerBuf.getContext("2d")!;
+  private tintBuf = document.createElement("canvas");
+  private tctx = this.tintBuf.getContext("2d")!;
 
   readonly banks: BankState[] = Array.from({ length: BANK_COUNT }, () => ({ plugin: null, shader: null }));
   active = 0;
@@ -189,7 +195,23 @@ export class Stage {
       // default 1 the shader fully replaces the layer's output, matching the old global slot.
       const shaded = bank.shader ? bank.shader.render({ ...frame, input: out, textField: null }) : null;
       const wet = bank.shader ? clamp01(bank.shader.opacity.value) : 0;
-      if (shaded) {
+      // The layer's factory color (independent of the shader slot) recolors the *final* layer
+      // output — dry+wet are folded into a scratch first so shader and tint stack.
+      const tint = plugin.tintHex();
+      if (tint) {
+        const l = this.lctx;
+        if (this.layerBuf.width !== w || this.layerBuf.height !== h) { this.layerBuf.width = w; this.layerBuf.height = h; }
+        l.clearRect(0, 0, w, h);
+        if (shaded) {
+          if (wet < 1) { l.globalAlpha = 1 - wet; l.drawImage(out, 0, 0, w, h); }
+          if (wet > 0) { l.globalAlpha = wet; l.drawImage(shaded, 0, 0, w, h); }
+          l.globalAlpha = 1;
+        } else {
+          l.drawImage(out, 0, 0, w, h);
+        }
+        this.bctx.globalAlpha = alpha;
+        this.bctx.drawImage(this.recolor(this.layerBuf, tint, w, h), 0, 0, w, h);
+      } else if (shaded) {
         if (wet < 1) {
           this.bctx.globalAlpha = alpha * (1 - wet);
           this.bctx.drawImage(out, 0, 0, w, h);
@@ -210,6 +232,25 @@ export class Stage {
     this.ctx.fillStyle = "#000";
     this.ctx.fillRect(0, 0, w, h);
     this.ctx.drawImage(this.buffer, 0, 0, w, h);
+  }
+
+  /** Luminance × preset hex (the old Color shader's math): white → the color, black stays black,
+   *  and the source's own alpha clips the fill back out of transparent regions. */
+  private recolor(src: HTMLCanvasElement, hex: string, w: number, h: number): HTMLCanvasElement {
+    const c = this.tintBuf, ctx = this.tctx;
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    ctx.globalCompositeOperation = "source-over";
+    ctx.clearRect(0, 0, w, h);
+    ctx.filter = "grayscale(1)";
+    ctx.drawImage(src, 0, 0, w, h);
+    ctx.filter = "none";
+    ctx.globalCompositeOperation = "multiply";
+    ctx.fillStyle = hex;
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalCompositeOperation = "destination-in";
+    ctx.drawImage(src, 0, 0, w, h);
+    ctx.globalCompositeOperation = "source-over";
+    return c;
   }
 }
 

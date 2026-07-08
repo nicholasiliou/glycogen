@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { ControlBus } from "@/controls/ControlBus";
 import type { SlotId } from "@/controls/types";
 import type { AdapterKind } from "@/controls/adapters";
+import { applyAppDefaults } from "@/db/appDefaults";
 import { actionBindings, appActions, bankOf, paramBindings, params, setActionBinding, setParamBinding, type AppAction } from "@/db/schema";
 import { useTable } from "@/db/useDb";
 import type { PluginInfo } from "@/plugins/registry";
@@ -71,14 +72,16 @@ export function useLive(): LiveCtx {
   return ctx;
 }
 
-/** Accumulated jog delta that fires one browse step per this many units. */
-const JOG_STEP = 4;
+/** Accumulated jog delta that fires one browse step per this many units — deliberately coarse
+ *  (~most of a platter revolution) so a flick can't overshoot into loading the wrong plugin. */
+const JOG_STEP = 30;
 
 export function LiveProvider({ children }: { children: ReactNode }) {
   const refs = useRef<{ bus: ControlBus; stage: Stage; audio: AudioEngine; performer: LivePerformer; midi: MidiManager }>();
   if (!refs.current) {
     const bus = new ControlBus();
     const stage = new Stage(bus);
+    applyAppDefaults(stage); // dev-saved boot scene (banks + shaders), see db/appDefaults.ts
     const audio = new AudioEngine();
     refs.current = { bus, stage, audio, performer: new LivePerformer(stage, audio), midi: new MidiManager() };
   }

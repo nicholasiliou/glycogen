@@ -91,6 +91,9 @@ export function harvestRegistrations(): CodeRegistration {
     let order = 0;
     for (const [key, value] of Object.entries(plugin)) {
       if (!(value instanceof Param || value instanceof ButtonParam)) continue;
+      // The factory `color` cycle recolors a *layer* (the Stage reads the generator's) — an
+      // effect's own copy is dead weight, so it gets no row: invisible and unbindable.
+      if (kind === "effect" && value === plugin.color) continue;
       paramRows.push({ id: paramId(id, key), pluginId: id, name: key, order: order++, control: value.control });
     }
     try {
