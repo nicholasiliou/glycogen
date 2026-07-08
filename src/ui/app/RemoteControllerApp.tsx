@@ -9,10 +9,12 @@ import {
 import { Controller } from "@/ui/controller/Controller";
 import {
   ArmLearnContext,
+  AssignContext,
   BankControlContext,
   ControlBusContext,
   LearnSlotContext,
   SlotLabelContext,
+  type AssignCtxType,
   type BankControl,
 } from "@/ui/controller/widgets";
 
@@ -76,6 +78,20 @@ export function RemoteControllerApp() {
     [],
   );
 
+  // A remap armed in the host's bindings panel: legal widgets glow here too, and clicking one
+  // completes the assignment host-side. (Drag can't cross windows — click-to-assign is the path.)
+  const assignCtx = useMemo<AssignCtxType>(() => {
+    const a = snapshot.assign;
+    return {
+      pending: a
+        ? { pluginId: "", paramId: "", label: a.label, legal: Object.fromEntries(a.widgets.map((w) => [w, ["remote"]])) }
+        : null,
+      begin: () => {},
+      cancel: () => chanRef.current?.postMessage({ kind: "assignCancel" } satisfies RemoteMessage),
+      assignTo: (slot) => chanRef.current?.postMessage({ kind: "assignTo", slot } satisfies RemoteMessage),
+    };
+  }, [snapshot.assign]);
+
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-black text-ink">
       <ControlBusContext.Provider value={bus}>
@@ -83,7 +99,9 @@ export function RemoteControllerApp() {
           <SlotLabelContext.Provider value={snapshot.labels}>
             <LearnSlotContext.Provider value={null}>
               <ArmLearnContext.Provider value={() => {}}>
-                <Controller browse={{ label: snapshot.browseLabel, onStep: step }} />
+                <AssignContext.Provider value={assignCtx}>
+                  <Controller browse={{ label: snapshot.browseLabel, onStep: step }} />
+                </AssignContext.Provider>
               </ArmLearnContext.Provider>
             </LearnSlotContext.Provider>
           </SlotLabelContext.Provider>

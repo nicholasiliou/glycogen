@@ -196,7 +196,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     clear: clearDeck,
   };
 
-  useRemoteBridge({ bus, stage, step, bankControl, slotLabels, browseLabel: browse.selected?.label });
+  useRemoteBridge({ bus, stage, step, bankControl, slotLabels, browseLabel: browse.selected?.label, assign: assignCtx });
 
   const value: LiveCtx = {
     bus,

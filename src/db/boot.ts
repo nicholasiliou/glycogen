@@ -26,4 +26,15 @@ export function bootDb(code: CodeRegistration): void {
   params.replaceAll(code.params);
   db.load();
   seedParamBindings();
+  purgeLegacyKeys();
+}
+
+/** The pre-db keymap system's storage — superseded, no migration (experimental branch). */
+function purgeLegacyKeys(): void {
+  try {
+    localStorage.removeItem("marathon.midi.keymaps.v1");
+    localStorage.removeItem("marathon.midi.activeKeymap.v1");
+  } catch {
+    /* ignore */
+  }
 }

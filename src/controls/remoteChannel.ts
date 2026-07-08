@@ -25,6 +25,11 @@ export interface RemoteSnapshot {
   browseLabel?: string;
   /** Bank state per deck. */
   banks: { A: DeckBanks; B: DeckBanks };
+  /**
+   * A param remap armed in the host's bindings panel (HTML5 drag can't cross windows, so the popup
+   * completes it click-to-assign): legal widgets highlight, clicking one sends `assignTo`.
+   */
+  assign?: { label: string; widgets: SlotId[] } | null;
 }
 
 export type RemoteMessage =
@@ -33,6 +38,8 @@ export type RemoteMessage =
   | { kind: "step"; delta: number }
   | { kind: "bankSelect"; deck: "A" | "B"; bank: number }
   | { kind: "bankClear"; deck: "A" | "B" }
+  | { kind: "assignTo"; slot: SlotId } // remote → host: complete the pending param remap here
+  | { kind: "assignCancel" } // remote → host
   | { kind: "hello" } // remote → host: "send me the current snapshot"
   | { kind: "snapshot"; snapshot: RemoteSnapshot };
 
