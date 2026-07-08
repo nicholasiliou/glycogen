@@ -6,7 +6,8 @@ import { dragWith, SlotFrame, useSlot } from "./shared";
 import { FaderVisual } from "./FaderVisual";
 
 export function Fader({ slot, label, height = 160 }: { slot: number; label?: string; height?: number }) {
-  const s = useSlot(slotId("fader", slot));
+  const sid = slotId("fader", slot);
+  const s = useSlot(sid);
   const [local, setLocal] = useState(0);
   useEffect(() => {
     setLocal(s.liveValue);
@@ -29,7 +30,7 @@ export function Fader({ slot, label, height = 160 }: { slot: number; label?: str
   };
 
   return (
-    <SlotFrame label={s.label ?? label} active={s.active} armed={s.armed}>
+    <SlotFrame slot={sid} label={s.label ?? label} active={s.active} armed={s.armed}>
       <FaderVisual
         norm={local}
         orient="vertical"

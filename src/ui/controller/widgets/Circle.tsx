@@ -6,7 +6,8 @@ import { cn } from "@/ui/lib/cn";
 import { activeRing, SlotFrame, useSlot } from "./shared";
 
 export function Circle({ slot, label, size = 20 }: { slot: number; label?: string; size?: number }) {
-  const s = useSlot(slotId("button", slot));
+  const sid = slotId("button", slot);
+  const s = useSlot(sid);
   const [flash, setFlash] = useState(false);
   const lit = s.pressed || flash;
 
@@ -19,7 +20,7 @@ export function Circle({ slot, label, size = 20 }: { slot: number; label?: strin
   const onUp = () => s.drive({ pressed: false });
 
   return (
-    <SlotFrame label={s.label ?? label} active={s.active} armed={s.armed}>
+    <SlotFrame slot={sid} label={s.label ?? label} active={s.active} armed={s.armed}>
       <div
         onPointerDown={onDown}
         onPointerUp={onUp}

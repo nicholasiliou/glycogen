@@ -30,6 +30,33 @@ export const LearnSlotContext = createContext<SlotId | null>(null);
 /** Callback to arm/cancel a slot for learn. */
 export const ArmLearnContext = createContext<(slot: SlotId) => void>(() => {});
 
+/**
+ * A param remap in progress — armed by clicking/dragging a binding chip in the bindings panel.
+ * While pending, every legal widget highlights and completes the assignment on click or drop;
+ * illegal widgets dim (clicking one cancels). `legal` maps each allowed widget to its legal
+ * adapters (first entry = the default the assignment lands with).
+ */
+export interface AssignPending {
+  pluginId: string;
+  paramId: string;
+  /** The param name, shown under highlighted widgets. */
+  label: string;
+  legal: Partial<Record<SlotId, string[]>>;
+}
+export interface AssignCtxType {
+  pending: AssignPending | null;
+  begin: (p: AssignPending) => void;
+  cancel: () => void;
+  /** Complete the pending assignment onto a widget (SlotFrame calls this). */
+  assignTo: (slot: SlotId) => void;
+}
+export const AssignContext = createContext<AssignCtxType>({
+  pending: null,
+  begin: () => {},
+  cancel: () => {},
+  assignTo: () => {},
+});
+
 export function useBus(): ControlBus {
   const bus = useContext(ControlBusContext);
   if (!bus) throw new Error("ControlBusContext is missing — wrap the controller in a provider");
@@ -110,31 +137,51 @@ function Label({ children, lit }: { children: React.ReactNode; lit?: boolean }) 
   );
 }
 
-/** Wraps a widget with its label (always rendered, matching the original spacing). */
+/**
+ * Wraps a widget with its label (always rendered, matching the original spacing). Passing `slot`
+ * additionally makes the frame an assignment target: while a param remap is pending, legal frames
+ * highlight and complete it on click or drop, illegal ones dim (clicking cancels).
+ */
 export function SlotFrame({
   label,
   active,
   armed,
+  slot,
   children,
 }: {
   label?: string;
   active?: boolean;
   armed?: boolean;
+  slot?: SlotId;
   children: React.ReactNode;
 }) {
+  const assign = useContext(AssignContext);
+  const pending = slot ? assign.pending : null;
+  const legal = !!(pending && slot && pending.legal[slot]);
+
+  const capture = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (legal) assign.assignTo(slot!);
+    else assign.cancel();
+  };
+
   return (
     <div
-      className="relative flex flex-col items-center gap-1"
-      style={armed ? { filter: "drop-shadow(0 0 6px var(--color-accent))" } : undefined}
+      className={"relative flex flex-col items-center gap-1" + (pending && !legal ? " opacity-30" : "")}
+      style={armed || legal ? { filter: "drop-shadow(0 0 6px var(--color-accent))" } : undefined}
+      onPointerDownCapture={pending ? capture : undefined}
+      onDragOver={legal ? (e) => e.preventDefault() : undefined}
+      onDrop={legal ? capture : undefined}
     >
-      {armed && (
+      {(armed || legal) && (
         <span
           className="pointer-events-none absolute -inset-1 z-10 animate-pulse rounded-sm border border-accent/70"
           aria-hidden
         />
       )}
       {children}
-      <Label lit={active || armed}>{label ?? (armed ? "LEARN" : " ")}</Label>
+      <Label lit={active || armed || legal}>{legal ? pending!.label : (label ?? (armed ? "LEARN" : " "))}</Label>
     </div>
   );
 }

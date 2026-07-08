@@ -6,7 +6,8 @@ import { asset } from "@/lib/asset";
 import { activeRing, dragWith, SlotFrame, useSlot } from "./shared";
 
 export function JogWheel({ slot, label, size = 360 }: { slot: number; label?: string; size?: number }) {
-  const s = useSlot(slotId("jog", slot));
+  const sid = slotId("jog", slot);
+  const s = useSlot(sid);
   const ref = useRef<HTMLDivElement>(null);
   const last = useRef(0);
   const [spin, setSpin] = useState(0);
@@ -46,7 +47,7 @@ export function JogWheel({ slot, label, size = 360 }: { slot: number; label?: st
   };
 
   return (
-    <SlotFrame label={s.label ?? label} active={s.active} armed={s.armed}>
+    <SlotFrame slot={sid} label={s.label ?? label} active={s.active} armed={s.armed}>
       <div
         ref={ref}
         onPointerDown={onDown}

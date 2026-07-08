@@ -5,7 +5,8 @@ import { clamp01, slotId } from "@/controls/types";
 import { activeRing, dragWith, SlotFrame, useSlot } from "./shared";
 
 export function Knob({ slot, label, size = 32 }: { slot: number; label?: string; size?: number }) {
-  const s = useSlot(slotId("knob", slot));
+  const sid = slotId("knob", slot);
+  const s = useSlot(sid);
   const [local, setLocal] = useState(0.5);
   // Follow incoming (MIDI) value so the position persists when hardware goes quiet.
   useEffect(() => {
@@ -25,7 +26,7 @@ export function Knob({ slot, label, size = 32 }: { slot: number; label?: string;
   };
 
   return (
-    <SlotFrame label={s.label ?? label} active={s.active} armed={s.armed}>
+    <SlotFrame slot={sid} label={s.label ?? label} active={s.active} armed={s.armed}>
       <div
         onPointerDown={onDown}
         onContextMenu={(e) => { e.preventDefault(); s.arm(); }}

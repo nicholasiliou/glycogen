@@ -5,7 +5,7 @@
  * reacts. A hardware MIDI control maps onto the same slots separately. Shared chrome + the slot
  * binding hook live in ./shared.
  */
-export { ControlBusContext, SlotLabelContext, LearnSlotContext, ArmLearnContext, BankControlContext, useBus, useSlot, type SlotView, type BankControl } from "./shared";
+export { AssignContext, ControlBusContext, SlotLabelContext, LearnSlotContext, ArmLearnContext, BankControlContext, useBus, useSlot, type AssignCtxType, type AssignPending, type SlotView, type BankControl } from "./shared";
 export { Knob } from "./Knob";
 export { SmoothKnob } from "./SmoothKnob";
 export { Fader } from "./Fader";

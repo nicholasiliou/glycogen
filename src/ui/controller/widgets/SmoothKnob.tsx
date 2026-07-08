@@ -11,7 +11,8 @@ import { activeRing, dragWith, SlotFrame, useSlot } from "./shared";
  * has been spun; no end-stop, no absolute value to snap to.
  */
 export function SmoothKnob({ slot, label, size = 32 }: { slot: number; label?: string; size?: number }) {
-  const s = useSlot(slotId("encoder", slot));
+  const sid = slotId("encoder", slot);
+  const s = useSlot(sid);
   const [spin, setSpin] = useState(0);
   const lastSeq = useRef<number | undefined>(undefined);
 
@@ -38,7 +39,7 @@ export function SmoothKnob({ slot, label, size = 32 }: { slot: number; label?: s
   };
 
   return (
-    <SlotFrame label={s.label ?? label} active={s.active} armed={s.armed}>
+    <SlotFrame slot={sid} label={s.label ?? label} active={s.active} armed={s.armed}>
       <div
         onPointerDown={onDown}
         onContextMenu={(e) => { e.preventDefault(); s.arm(); }}

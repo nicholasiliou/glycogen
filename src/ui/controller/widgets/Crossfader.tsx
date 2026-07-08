@@ -5,7 +5,8 @@ import { clamp01, slotId } from "@/controls/types";
 import { activeRing, dragWith, SlotFrame, useSlot } from "./shared";
 
 export function Crossfader({ slot = 0, width = 240 }: { slot?: number; width?: number }) {
-  const s = useSlot(slotId("crossfader", slot));
+  const sid = slotId("crossfader", slot);
+  const s = useSlot(sid);
   const [local, setLocal] = useState(0.5);
   useEffect(() => {
     setLocal(s.liveValue);
@@ -29,7 +30,7 @@ export function Crossfader({ slot = 0, width = 240 }: { slot?: number; width?: n
   };
 
   return (
-    <SlotFrame label="A · X · B" active={s.active} armed={s.armed}>
+    <SlotFrame slot={sid} label="A · X · B" active={s.active} armed={s.armed}>
       <div
         ref={trackRef}
         onPointerDown={onDown}

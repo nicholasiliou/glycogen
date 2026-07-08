@@ -6,7 +6,8 @@ import { cn } from "@/ui/lib/cn";
 import { SlotFrame, useSlot } from "./shared";
 
 export function Pad({ slot, label, className }: { slot: number; label?: string; className?: string }) {
-  const s = useSlot(slotId("pad", slot));
+  const sid = slotId("pad", slot);
+  const s = useSlot(sid);
   const [flash, setFlash] = useState(false);
   const lit = s.pressed || flash;
 
@@ -19,7 +20,7 @@ export function Pad({ slot, label, className }: { slot: number; label?: string; 
   const onUp = () => s.drive({ pressed: false });
 
   return (
-    <SlotFrame label={s.label ?? label} active={s.active} armed={s.armed}>
+    <SlotFrame slot={sid} label={s.label ?? label} active={s.active} armed={s.armed}>
       <div
         onPointerDown={onDown}
         onPointerUp={onUp}

@@ -2,14 +2,15 @@ import { createContext, useContext, useEffect, useReducer, useRef, useState } fr
 import type { ReactNode } from "react";
 import { ControlBus } from "@/controls/ControlBus";
 import type { SlotId } from "@/controls/types";
-import { paramBindings, params } from "@/db/schema";
+import type { AdapterKind } from "@/controls/adapters";
+import { paramBindings, params, setParamBinding } from "@/db/schema";
 import type { PluginInfo } from "@/plugins/registry";
 import { Stage, type DeckName, type Focus } from "@/runtime/Stage";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { LivePerformer } from "@/audio/LivePerformer";
 import { MidiManager } from "@/midi/MidiManager";
 import type { MidiActionHandlers } from "@/midi/router";
-import { ArmLearnContext, BankControlContext, ControlBusContext, LearnSlotContext, SlotLabelContext, type BankControl } from "@/ui/controller/widgets";
+import { ArmLearnContext, AssignContext, BankControlContext, ControlBusContext, LearnSlotContext, SlotLabelContext, type AssignCtxType, type AssignPending, type BankControl } from "@/ui/controller/widgets";
 import { useBrowse, type BrowseMode } from "./useBrowse";
 import { useHardwareSync } from "./useHardwareSync";
 import { useMidiRouting } from "./useMidiRouting";
@@ -120,6 +121,24 @@ export function LiveProvider({ children }: { children: ReactNode }) {
 
   const setCrossfade = (x: number) => bus.drive("crossfader:0", { value: x });
 
+  // ── param remapping (chip → widget), shared by the panel and the controller surface ──
+  const [assignPending, setAssignPending] = useState<AssignPending | null>(null);
+  const assignCtx: AssignCtxType = {
+    pending: assignPending,
+    begin: setAssignPending,
+    cancel: () => setAssignPending(null),
+    assignTo: (slot) => {
+      if (!assignPending) return;
+      setParamBinding(assignPending.pluginId, assignPending.paramId, slot, assignPending.legal[slot]?.[0] as AdapterKind | undefined);
+      setAssignPending(null);
+    },
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setAssignPending(null);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   // ── crossfader bridge + stage loop ──
   useEffect(() => {
     bus.drive("crossfader:0", { value: 0.5 });
@@ -215,7 +234,9 @@ export function LiveProvider({ children }: { children: ReactNode }) {
         <BankControlContext.Provider value={bankControl}>
           <LearnSlotContext.Provider value={learnSlot}>
             <ArmLearnContext.Provider value={armLearn}>
-              <SlotLabelContext.Provider value={slotLabels}>{children}</SlotLabelContext.Provider>
+              <AssignContext.Provider value={assignCtx}>
+                <SlotLabelContext.Provider value={slotLabels}>{children}</SlotLabelContext.Provider>
+              </AssignContext.Provider>
             </ArmLearnContext.Provider>
           </LearnSlotContext.Provider>
         </BankControlContext.Provider>
