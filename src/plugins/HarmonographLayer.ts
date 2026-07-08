@@ -5,15 +5,15 @@ import { Plugin, type Frame } from "./Plugin";
  * EGA vibe. Fully parametric and deterministic; animate `phase` to make the figure breathe.
  */
 export class HarmonographLayer extends Plugin {
-  freqX1 = this.knob(0, { min: 1, max: 12, default: 3 });
-  freqY1 = this.knob(1, { min: 1, max: 12, default: 2 });
-  freqX2 = this.knob(2, { min: 1, max: 12, default: 5 });
-  freqY2 = this.knob(3, { min: 1, max: 12, default: 4 });
-  phaseSpeed = this.knob(4, { min: 0, max: 4, default: 0.5 });
-  damping = this.knob(5, { min: 0, max: 1, default: 0.6 });
-  cycles = this.knob(6, { min: 1, max: 24, step: 1, default: 12 });
-  lineWidth = this.knob(7, { min: 0.5, max: 8, default: 2 });
-  phase = this.fader(0, { min: 0, max: 360, default: 0 });
+  freqX1 = this.number({ min: 1, max: 12, default: 3 });
+  freqY1 = this.number({ min: 1, max: 12, default: 2 });
+  freqX2 = this.number({ min: 1, max: 12, default: 5 });
+  freqY2 = this.number({ min: 1, max: 12, default: 4 });
+  phaseSpeed = this.number({ min: 0, max: 4, default: 0.5 });
+  damping = this.number({ min: 0, max: 1, default: 0.6 });
+  cycles = this.number({ min: 1, max: 24, step: 1, default: 12 });
+  lineWidth = this.number({ min: 0.5, max: 8, default: 2 });
+  phase = this.number({ min: 0, max: 360, default: 0 });
 
   private ctx = this.canvas.getContext("2d")!;
 

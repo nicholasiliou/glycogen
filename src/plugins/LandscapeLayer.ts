@@ -46,20 +46,20 @@ function buildTerrain(N: number, amp: number, scaleN: number, time: number, octa
 
 /** A procedurally generated 3D landscape: a noise heightfield meshed and drawn as a rotating terrain. */
 export class LandscapeLayer extends Plugin {
-  resolution = this.knob(0, { min: 8, max: 120, step: 1, default: 40 });
-  amplitude = this.knob(1, { min: 0, max: 1.5, default: 0.55 });
-  scale = this.knob(2, { min: 1, max: 12, default: 4 });
-  octaves = this.knob(3, { min: 1, max: 6, step: 1, default: 4 });
-  terrace = this.knob(4, { min: 0, max: 12, step: 1, default: 0 });
-  radius = this.knob(5, { min: 0.1, max: 1.4, default: 0.8 });
-  lineWidth = this.knob(6, { min: 0.25, max: 8, default: 1 });
-  speed = this.knob(7, { min: 0, max: 1, default: 0.15 });
-  tiltX = this.fader(0, { min: -180, max: 180, default: 58 });
-  tiltY = this.fader(1, { min: -180, max: 180, default: 0 });
-  tiltZ = this.fader(2, { min: -180, max: 180, default: 0 });
-  spin = this.encoder(0, { min: -360, max: 360, default: 8 });
-  filled = this.pad(4);
-  depthShade = this.pad(5);
+  resolution = this.number({ min: 8, max: 120, step: 1, default: 40 });
+  amplitude = this.number({ min: 0, max: 1.5, default: 0.55 });
+  scale = this.number({ min: 1, max: 12, default: 4 });
+  octaves = this.number({ min: 1, max: 6, step: 1, default: 4 });
+  terrace = this.number({ min: 0, max: 12, step: 1, default: 0 });
+  radius = this.number({ min: 0.1, max: 1.4, default: 0.8 });
+  lineWidth = this.number({ min: 0.25, max: 8, default: 1 });
+  speed = this.number({ min: 0, max: 1, default: 0.15 });
+  tiltX = this.number({ min: -180, max: 180, default: 58 });
+  tiltY = this.number({ min: -180, max: 180, default: 0 });
+  tiltZ = this.number({ min: -180, max: 180, default: 0 });
+  spin = this.number({ min: -360, max: 360, default: 8 });
+  filled = this.toggle();
+  depthShade = this.toggle(true);
 
   private ctx = this.canvas.getContext("2d")!;
   private tris: number[] = [];
@@ -67,7 +67,6 @@ export class LandscapeLayer extends Plugin {
 
   constructor() {
     super();
-    this.depthShade.on = true;
   }
 
   render(f: Frame): HTMLCanvasElement {

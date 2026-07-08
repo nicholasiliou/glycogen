@@ -29,20 +29,20 @@ interface SimParams {
  * uniform-grid neighbour search, and one batched fill per frame. Velocity units are px/frame.
  */
 export class BoidsLayer extends Plugin {
-  count = this.knob(0, { min: 0, max: HARD_MAX, step: 50, default: 400 });
-  perception = this.knob(1, { min: 10, max: 160, default: 60 });
-  separationRange = this.knob(2, { min: 4, max: 80, default: 26 });
-  maxSpeed = this.knob(3, { min: 0.5, max: 10, default: 3.5 });
-  maxForce = this.knob(4, { min: 0.05, max: 2, default: 0.4 });
-  separation = this.knob(5, { min: 0, max: 4, default: 1.6 });
-  alignment = this.knob(6, { min: 0, max: 4, default: 1 });
-  cohesion = this.knob(7, { min: 0, max: 4, default: 0.9 });
-  size = this.knob(8, { min: 2, max: 30, default: 9 });
-  trail = this.fader(0, { min: 0, max: 100, default: 0 });
-  seed = this.fader(1, { min: 1, max: 64, step: 1, default: 1 });
-  wrap = this.pad(4);
-  dot = this.pad(5);
-  reseed = this.pad(6);
+  count = this.number({ min: 0, max: HARD_MAX, step: 50, default: 400 });
+  perception = this.number({ min: 10, max: 160, default: 60 });
+  separationRange = this.number({ min: 4, max: 80, default: 26 });
+  maxSpeed = this.number({ min: 0.5, max: 10, default: 3.5 });
+  maxForce = this.number({ min: 0.05, max: 2, default: 0.4 });
+  separation = this.number({ min: 0, max: 4, default: 1.6 });
+  alignment = this.number({ min: 0, max: 4, default: 1 });
+  cohesion = this.number({ min: 0, max: 4, default: 0.9 });
+  size = this.number({ min: 2, max: 30, default: 9 });
+  trail = this.number({ min: 0, max: 100, default: 0 });
+  seed = this.number({ min: 1, max: 64, step: 1, default: 1 });
+  wrap = this.toggle(true);
+  dot = this.toggle();
+  reseed = this.trigger();
 
   private ctx = this.canvas.getContext("2d")!;
   private px = new Float32Array(0);
@@ -63,7 +63,6 @@ export class BoidsLayer extends Plugin {
 
   constructor() {
     super();
-    this.wrap.on = true;
   }
 
   private ensureCapacity(n: number): void {

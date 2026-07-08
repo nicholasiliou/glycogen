@@ -1,4 +1,6 @@
 import { ButtonParam, Param } from "@/controls/Param";
+import type { CodeRegistration } from "@/db/boot";
+import { paramId, type ParamRow, type PluginRow } from "@/db/schema";
 import { Plugin } from "./Plugin";
 
 /** Generators draw fresh; effects transform the layers below. Derived from folder, never declared. */
@@ -56,11 +58,46 @@ export function create(id: string): Plugin {
   if (!entry) throw new Error(`unknown plugin: ${id}`);
   const plugin = new entry.ctor();
   plugin.id = id;
-  // Label each bound control with the field name it was assigned to (for the on-screen surface).
-  // (Slots reserved for app globals — knob:9 hue, crossfader — can't reach here: the Plugin factory
-  // types reject them at compile time, so there's no runtime collision to guard against.)
+  stampNames(plugin);
+  return plugin;
+}
+
+/** Label each declared param with the field name it was assigned to (drives labels everywhere). */
+function stampNames(plugin: Plugin): void {
   for (const [key, value] of Object.entries(plugin)) {
     if ((value instanceof Param || value instanceof ButtonParam) && !value.name) value.name = key;
   }
-  return plugin;
+}
+
+/**
+ * Author the db's code-sourced rows from the registry: one `plugins` row per entry and one
+ * read-only `params` row per declared field, harvested from a throwaway instance (declarations are
+ * field initialisers, so they only exist on instances — constructors are cheap: a canvas + empty
+ * state, no rendering).
+ */
+export function harvestRegistrations(): CodeRegistration {
+  const pluginRows: PluginRow[] = [];
+  const paramRows: ParamRow[] = [];
+  for (const { id, label, kind, ctor } of registry.values()) {
+    pluginRows.push({ id, label, kind });
+    let plugin: Plugin;
+    try {
+      plugin = new ctor();
+    } catch {
+      // A constructor body may need GL/p5 the harvest environment lacks — the declarations are
+      // field initialisers and already sit on the under-construction instance.
+      plugin = Plugin.underConstruction!;
+    }
+    let order = 0;
+    for (const [key, value] of Object.entries(plugin)) {
+      if (!(value instanceof Param || value instanceof ButtonParam)) continue;
+      paramRows.push({ id: paramId(id, key), pluginId: id, name: key, order: order++, control: value.control });
+    }
+    try {
+      plugin.dispose();
+    } catch {
+      /* partially-constructed throwaway — nothing to release */
+    }
+  }
+  return { plugins: pluginRows, params: paramRows };
 }

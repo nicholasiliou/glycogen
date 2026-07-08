@@ -49,9 +49,9 @@ void main() {
 }`;
 
 export class BayerLayer extends Plugin {
-  levels = this.knob(0, { min: 2, max: 8, step: 1, default: 4 });
-  scale = this.knob(1, { min: 1, max: 8, step: 1, default: 1 });
-  colored = this.pad(4);
+  levels = this.number({ min: 2, max: 8, step: 1, default: 4 });
+  scale = this.number({ min: 1, max: 8, step: 1, default: 1 });
+  colored = this.toggle();
 
   private runner = new ShaderRunner(FRAG);
 

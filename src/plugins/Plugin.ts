@@ -1,19 +1,4 @@
 import { ButtonParam, Param, type NumOpts } from "@/controls/Param";
-import { slotId } from "@/controls/types";
-
-// ── bindable slot indices (compile-time guard) ────────────────────────────────────────────────
-// The literal index ranges a plugin may bind per control kind. They mirror the controller's
-// exposed counts (see SLOT_CATALOG in midi/keymap) MINUS slots reserved for app-wide globals:
-//   • knob:9     — global hue (declared on the Plugin base)
-//   • crossfader — the A/B crossfade (the kind is omitted from the factory entirely)
-// Binding anything outside these unions is a TypeScript error at build time, so a plugin can never
-// silently squat a global's control. Keep these in sync with SLOT_CATALOG.
-export type FaderSlot = 0 | 1 | 2 | 3;
-export type KnobSlot = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8; // knob:9 (hue) is reserved and not bindable
-export type EncoderSlot = 0 | 1 | 2 | 3;
-export type PadSlot = 4 | 5 | 6 | 7; // pad:0..3 are the deck's global Del/Bank row, not plugin-bindable
-export type ButtonSlot = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
-export type JogSlot = 0 | 1;
 
 /**
  * A scalar field function that any plugin can export for other plugins to read.
@@ -50,36 +35,49 @@ export interface Frame {
 export type AnyParam = Param | ButtonParam;
 
 /**
- * The plugin factory. Every visual plugin extends this and, in its field initialisers, binds the
- * controls it wants — `spin = this.fader(0, { min: -360, max: 360 })`. The whole controller
- * surface (faders, knobs, encoders, buttons, pads, jog, crossfader) is exposed here, so the *only*
- * thing an author writes is which slot a field is tied to; everything else (the plugin's id, label,
- * whether it's a generator or effect, how a button behaves) is derived from structure, not declared.
+ * The plugin factory. Every visual plugin extends this and, in its field initialisers, declares the
+ * params it wants — `spin = this.number({ min: -360, max: 360 })`, `wrap = this.toggle()`. A param
+ * declaration says what the field *is* (range, step, button intent), never which control drives it:
+ * at boot every declaration becomes a read-only row in the db's `params` table, and which
+ * widget/hardware drives it is a remappable `paramBindings` row (factory layouts live in
+ * db/seeds.ts). Everything else (the plugin's id, label, generator/effect) is derived from
+ * structure, not declared.
  */
 export abstract class Plugin {
+  /**
+   * The instance currently being constructed. Param declarations are field initialisers, which run
+   * right after the base constructor — so even when a subclass constructor *body* throws (e.g. a
+   * GL/p5-backed plugin in a headless boot harvest), the declarations are already complete on this
+   * instance and the harvest can recover them.
+   */
+  static underConstruction: Plugin | null = null;
+
   /** Registry id (derived from the file path), stamped on by `create()`. Drives instrument lookup. */
   id = "";
-  /** Every bound control, in declaration order — for the host to drive and the UI to learn/show. */
+  /** Every declared param, in declaration order — harvested into the db and shown by the panel. */
   readonly params: AnyParam[] = [];
   /** A plugin owns its output surface; generators draw here, effects usually return a shader canvas. */
   protected canvas: HTMLCanvasElement = document.createElement("canvas");
 
-  /** Global hue rotation in degrees, available on every plugin via knob:9 (a slot plugins can't bind). */
-  hue = this.bind(new Param(slotId("knob", 9), { min: -180, max: 180, default: 0 }));
+  /** Global hue rotation in degrees — bound to the reserved knob:9 via a locked db row. */
+  hue = this.bind(new Param({ min: -180, max: 180, default: 0 }));
 
   /** Offscreen canvas used to apply the hue filter without mutating the plugin's own canvas. */
   private hueCanvas: HTMLCanvasElement | null = null;
 
-  // ── the controller surface ──────────────────────────────────────────────────────────────────
-  // Slot indices are typed to exactly the controller's exposed range, minus any reserved for app
-  // globals, so binding a reserved or out-of-range slot is a *compile-time* error (see PluginSlot).
-  // knob:9 is the global hue and crossfader:0 is the A/B crossfade — neither is offered to plugins.
-  protected fader(slot: FaderSlot, o: NumOpts = {}): Param { return this.bind(new Param(slotId("fader", slot), o)); }
-  protected knob(slot: KnobSlot, o: NumOpts = {}): Param { return this.bind(new Param(slotId("knob", slot), o)); }
-  protected encoder(slot: EncoderSlot, o: NumOpts = {}): Param { return this.bind(new Param(slotId("encoder", slot), o, true)); }
-  protected jog(slot: JogSlot, o: NumOpts = {}): Param { return this.bind(new Param(slotId("jog", slot), o, true)); }
-  protected button(slot: ButtonSlot): ButtonParam { return this.bind(new ButtonParam(slotId("button", slot))); }
-  protected pad(slot: PadSlot): ButtonParam { return this.bind(new ButtonParam(slotId("pad", slot))); }
+  constructor() {
+    Plugin.underConstruction = this;
+  }
+
+  // ── param declarations ──────────────────────────────────────────────────────────────────────
+  /** A continuous (or, with `step`, quantised) numeric parameter. */
+  protected number(o: NumOpts = {}): Param { return this.bind(new Param(o)); }
+  /** An on/off parameter — read `.on`. */
+  protected toggle(def = false): ButtonParam { return this.bind(new ButtonParam("toggle", { default: def })); }
+  /** A one-shot parameter — read `.fired` (or diff `.count`). */
+  protected trigger(): ButtonParam { return this.bind(new ButtonParam("trigger")); }
+  /** A parameter cycling through named options — read `.pick([...])` (labels drive the UI chips). */
+  protected cycle(options: readonly string[]): ButtonParam { return this.bind(new ButtonParam("cycle", { options })); }
 
   /**
    * Apply the hue shift (if non-zero) to `src` and return the filtered canvas.

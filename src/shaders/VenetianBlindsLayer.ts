@@ -20,10 +20,10 @@ void main() {
 }`;
 
 export class VenetianBlindsLayer extends Plugin {
-  bands = this.knob(0, { min: 1, max: 40, step: 1, default: 8 });
-  offset = this.knob(1, { min: 0, max: 1, default: 0 });
-  angle = this.fader(0, { min: -180, max: 180, default: 0 });
-  fade = this.knob(2, { min: 0, max: 0.49, default: 0.05 });
+  bands = this.number({ min: 1, max: 40, step: 1, default: 8 });
+  offset = this.number({ min: 0, max: 1, default: 0 });
+  angle = this.number({ min: -180, max: 180, default: 0 });
+  fade = this.number({ min: 0, max: 0.49, default: 0.05 });
 
   private runner = new ShaderRunner(FRAG);
 

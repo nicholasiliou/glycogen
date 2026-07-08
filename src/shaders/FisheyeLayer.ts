@@ -23,8 +23,8 @@ void main() {
 }`;
 
 export class FisheyeLayer extends Plugin {
-  strength = this.knob(0, { min: -2, max: 2, default: 0.6 });
-  zoom = this.knob(1, { min: 0.2, max: 3, default: 1 });
+  strength = this.number({ min: -2, max: 2, default: 0.6 });
+  zoom = this.number({ min: 0.2, max: 3, default: 1 });
 
   private runner = new ShaderRunner(FRAG);
 

@@ -34,15 +34,15 @@ const HIGH = [192, 252, 4, 255];
  * pad cycles named regimes; `iterations` steps advance per frame.
  */
 export class ReactionDiffusionLayer extends Plugin {
-  pattern = this.pad(4); // cycles PRESETS
-  reseed = this.pad(5);
+  pattern = this.cycle(PRESETS.map(([name]) => name));
+  reseed = this.trigger();
   /** Cycle through off → fill → attract with a pad press. */
-  textMode = this.pad(6);
-  resolution = this.knob(0, { min: 0.08, max: 0.6, default: 0.26 });
-  iterations = this.knob(1, { min: 1, max: 30, step: 1, default: 10 });
-  gain = this.knob(2, { min: 0.5, max: 5, default: 2.4 });
-  seed = this.knob(3, { min: 1, max: 64, step: 1, default: 1 });
-  textStrength = this.fader(1, { min: 0, max: 1, default: 0.8 });
+  textMode = this.cycle(["off", "fill", "attract"]);
+  resolution = this.number({ min: 0.08, max: 0.6, default: 0.26 });
+  iterations = this.number({ min: 1, max: 30, step: 1, default: 10 });
+  gain = this.number({ min: 0.5, max: 5, default: 2.4 });
+  seed = this.number({ min: 1, max: 64, step: 1, default: 1 });
+  textStrength = this.number({ min: 0, max: 1, default: 0.8 });
 
   private ctx = this.canvas.getContext("2d")!;
   private buf = document.createElement("canvas");

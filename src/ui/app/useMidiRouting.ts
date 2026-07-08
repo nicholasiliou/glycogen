@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ControlBus } from "@/controls/ControlBus";
 import type { SlotId } from "@/controls/types";
-import { appActions, hardwareControls, setHardwareBinding, type AppAction } from "@/db/schema";
+import { appActions, hardwareControls, paramBindings, params, setHardwareBinding, type AppAction } from "@/db/schema";
 import type { MidiManager } from "@/midi/MidiManager";
 import { attachMidiRouter, type MidiActionHandlers } from "@/midi/router";
 import { defaultKindFor } from "@/midi/types";
@@ -75,8 +75,14 @@ export function useMidiRouting(opts: {
         // Friendly readout: a widget resolves to the focused plugin's bound param name (or the raw
         // widget id if unbound); an app action resolves to its display label.
         const isWidget = target.includes(":");
-        const slotName = isWidget ? stage.managed()?.params.find((p) => p.slot === target)?.name : undefined;
-        const label = slotName ?? (isWidget ? target : (appActions.get(target as AppAction)?.label ?? target));
+        let label: string | undefined;
+        if (isWidget) {
+          const pluginId = stage.managed()?.id;
+          const row = pluginId ? paramBindings.by("plugin", pluginId).find((r) => r.widgetId === target) : undefined;
+          label = (row && params.get(row.paramId)?.name) ?? target;
+        } else {
+          label = appActions.get(target as AppAction)?.label ?? target;
+        }
         setLastMidi({ control, target: label });
       },
     });

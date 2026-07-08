@@ -28,7 +28,7 @@ function useRaf(): void {
  */
 export function ControlsPanel() {
   useRaf();
-  const { stage, bus } = useLive();
+  const { stage } = useLive();
   const managed = stage.managed();
 
   if (!managed) {
@@ -49,13 +49,14 @@ export function ControlsPanel() {
       <div className="space-y-3">
         {params.map((p) => {
           if (p instanceof ButtonParam) {
-            // Cycle states are discovered from the param itself (recorded on its last pick()), so
-            // any new cycle a plugin adds shows up here automatically — no hand-maintained map.
+            // Cycle options are declared on the param itself, so any new cycle a plugin adds shows
+            // up here automatically — no hand-maintained map. Presses drive the param directly:
+            // bound or not, the param is the canonical state.
             const cycleStates: readonly string[] | undefined = p.cycle.length ? p.cycle : undefined;
             const isLong = !!cycleStates && cycleStates.length > 6;
             return (
-              <div key={p.slot} className={isLong ? "flex flex-col gap-1" : "flex flex-wrap items-center gap-x-3 gap-y-1"}>
-                <span className="w-28 shrink-0 text-xs text-ink-dim">{p.name || p.slot}</span>
+              <div key={p.name} className={isLong ? "flex flex-col gap-1" : "flex flex-wrap items-center gap-x-3 gap-y-1"}>
+                <span className="w-28 shrink-0 text-xs text-ink-dim">{p.name}</span>
                 {cycleStates ? (
                   <div className="flex flex-wrap gap-1">
                     {cycleStates.map((label, i) => {
@@ -64,9 +65,9 @@ export function ControlsPanel() {
                         <button
                           key={label}
                           onClick={() => {
-                            // Fire until we land on this index.
+                            // Press until we land on this index.
                             const steps = ((i - (p.count % cycleStates.length)) + cycleStates.length) % cycleStates.length;
-                            for (let s = 0; s < steps; s++) bus.fire(p.slot);
+                            if (steps > 0) p.press(steps);
                           }}
                           className={
                             "rounded px-2 py-0.5 text-xs transition-colors " +
@@ -82,15 +83,17 @@ export function ControlsPanel() {
                   </div>
                 ) : (
                   <button
-                    onClick={() => bus.fire(p.slot)}
+                    onClick={() => p.press()}
                     className={
                       "rounded px-3 py-1 text-xs transition-colors " +
-                      (p.on
-                        ? "border-accent bg-accent/20 text-accent"
-                        : "border-edge text-ink-dim hover:border-accent/50 hover:text-ink")
+                      (p.intent === "trigger"
+                        ? "border-edge text-ink-dim hover:border-accent/50 hover:text-ink"
+                        : p.on
+                          ? "border-accent bg-accent/20 text-accent"
+                          : "border-edge text-ink-dim hover:border-accent/50 hover:text-ink")
                     }
                   >
-                    {p.on ? "ON" : "OFF"}
+                    {p.intent === "trigger" ? "FIRE" : p.on ? "ON" : "OFF"}
                   </button>
                 )}
               </div>
@@ -98,9 +101,9 @@ export function ControlsPanel() {
           }
           if (p instanceof Param) {
             return (
-              <div key={p.slot} className="flex items-center gap-3">
-                <span className="w-24 min-w-0 shrink truncate text-xs text-ink-dim">{p.name || p.slot}</span>
-                <ParamFader param={p} onDrive={(norm) => bus.drive(p.slot, { value: norm })} />
+              <div key={p.name} className="flex items-center gap-3">
+                <span className="w-24 min-w-0 shrink truncate text-xs text-ink-dim">{p.name}</span>
+                <ParamFader param={p} onDrive={(norm) => p.setNorm(norm)} />
                 <span className="w-14 shrink-0 text-right font-mono text-xs text-ink-dim">
                   {p.step >= 1 ? Math.round(p.value) : p.value.toFixed(2)}
                 </span>

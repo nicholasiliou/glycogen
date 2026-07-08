@@ -63,16 +63,16 @@ const LINE = [192, 252, 4, 180];
 
 /** Finds the brightest / most active regions below and marks them with boxes + directional lines. */
 export class TrackerLayer extends Plugin {
-  count = this.knob(0, { min: 1, max: 5, step: 1, default: 2 });
-  grid = this.knob(1, { min: 8, max: 64, step: 1, default: 24 });
-  smoothing = this.knob(2, { min: 0, max: 0.99, default: 0.7 });
-  sampleRate = this.knob(3, { min: 1, max: 30, step: 1, default: 1 });
-  lineLength = this.knob(4, { min: 0.05, max: 2, default: 0.6 });
-  dashLength = this.knob(5, { min: 0, max: 40, step: 1, default: 0 });
-  boxThickness = this.knob(6, { min: 0.5, max: 8, default: 1.5 });
-  lineThickness = this.knob(7, { min: 0.5, max: 8, default: 1 });
-  direction = this.pad(4); // cycles DIR_NAMES
-  showBackdrop = this.pad(5);
+  count = this.number({ min: 1, max: 5, step: 1, default: 2 });
+  grid = this.number({ min: 8, max: 64, step: 1, default: 24 });
+  smoothing = this.number({ min: 0, max: 0.99, default: 0.7 });
+  sampleRate = this.number({ min: 1, max: 30, step: 1, default: 1 });
+  lineLength = this.number({ min: 0.05, max: 2, default: 0.6 });
+  dashLength = this.number({ min: 0, max: 40, step: 1, default: 0 });
+  boxThickness = this.number({ min: 0.5, max: 8, default: 1.5 });
+  lineThickness = this.number({ min: 0.5, max: 8, default: 1 });
+  direction = this.cycle(DIR_NAMES);
+  showBackdrop = this.toggle(true);
 
   private ctx = this.canvas.getContext("2d")!;
   private regions: TrackedRegion[] = [];
@@ -80,7 +80,6 @@ export class TrackerLayer extends Plugin {
 
   constructor() {
     super();
-    this.showBackdrop.on = true;
   }
 
   render(f: Frame): HTMLCanvasElement | null {

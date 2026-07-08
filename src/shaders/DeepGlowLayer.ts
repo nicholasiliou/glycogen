@@ -45,13 +45,13 @@ void main() {
 }`;
 
 export class DeepGlowLayer extends Plugin {
-  radius0 = this.knob(0, { min: 1, max: 16, step: 1, default: 4 });
-  radius1 = this.knob(1, { min: 1, max: 32, step: 1, default: 12 });
-  radius2 = this.knob(2, { min: 1, max: 64, step: 1, default: 32 });
-  str0 = this.knob(3, { min: 0, max: 1, default: 0.5 });
-  str1 = this.knob(4, { min: 0, max: 1, default: 0.3 });
-  str2 = this.knob(5, { min: 0, max: 1, default: 0.2 });
-  mix = this.knob(6, { min: 0, max: 1, default: 0.8 });
+  radius0 = this.number({ min: 1, max: 16, step: 1, default: 4 });
+  radius1 = this.number({ min: 1, max: 32, step: 1, default: 12 });
+  radius2 = this.number({ min: 1, max: 64, step: 1, default: 32 });
+  str0 = this.number({ min: 0, max: 1, default: 0.5 });
+  str1 = this.number({ min: 0, max: 1, default: 0.3 });
+  str2 = this.number({ min: 0, max: 1, default: 0.2 });
+  mix = this.number({ min: 0, max: 1, default: 0.8 });
 
   private blurH = new ShaderRunner(BLUR_FRAG);
   private blurV = new ShaderRunner(BLUR_FRAG);

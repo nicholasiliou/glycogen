@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useReducer, useRef, useState } fr
 import type { ReactNode } from "react";
 import { ControlBus } from "@/controls/ControlBus";
 import type { SlotId } from "@/controls/types";
+import { paramBindings, params } from "@/db/schema";
 import type { PluginInfo } from "@/plugins/registry";
 import { Stage, type DeckName, type Focus } from "@/runtime/Stage";
 import { AudioEngine } from "@/audio/AudioEngine";
@@ -159,11 +160,14 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     stage.focus = focus;
   }, [focus, stage]);
 
-  // slot → focused plugin's variable name, for the on-screen labels.
+  // widget → focused plugin's bound param name, for the on-screen labels.
   const slotLabels: Partial<Record<SlotId, string>> = {};
   const managed = stage.managed();
   if (managed) {
-    for (const p of managed.params) slotLabels[p.slot] = p.name;
+    for (const row of paramBindings.by("plugin", managed.id)) {
+      const p = params.get(row.paramId);
+      if (p) slotLabels[row.widgetId] = p.name;
+    }
   }
 
   // Bank controls for the controller's top row (shared by the host surface and the pop-out window).

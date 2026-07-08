@@ -12,13 +12,13 @@ if (typeof window !== "undefined") {
  * with time. Grammar / palette / Phi / turtle maths are the original sketch's, untouched.
  */
 export class PlantLayer extends Plugin {
-  iterations = this.knob(0, { min: 1, max: 7, step: 1, default: 4 });
-  cameraScale = this.knob(1, { min: 0.5, max: 8, default: 3 });
-  spinSpeed = this.knob(2, { min: 0, max: 0.5, default: 0.06 });
-  evolutionSpeed = this.knob(3, { min: 0.01, max: 4, default: 1 });
-  seed = this.fader(0, { min: 1, max: 64, step: 1, default: 1 });
-  autoEvolve = this.pad(4);
-  opaque = this.pad(5);
+  iterations = this.number({ min: 1, max: 7, step: 1, default: 4 });
+  cameraScale = this.number({ min: 0.5, max: 8, default: 3 });
+  spinSpeed = this.number({ min: 0, max: 0.5, default: 0.06 });
+  evolutionSpeed = this.number({ min: 0.01, max: 4, default: 1 });
+  seed = this.number({ min: 1, max: 64, step: 1, default: 1 });
+  autoEvolve = this.toggle();
+  opaque = this.toggle(true);
 
   private p?: P5;
   private container: HTMLDivElement;
@@ -36,7 +36,6 @@ export class PlantLayer extends Plugin {
 
   constructor() {
     super();
-    this.opaque.on = true;
     this.container = document.createElement("div");
     Object.assign(this.container.style, { position: "fixed", left: "-99999px", top: "0", width: "0", height: "0", overflow: "hidden" });
     if (typeof document !== "undefined") document.body.appendChild(this.container);

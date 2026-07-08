@@ -32,8 +32,8 @@ const PALETTE = {
 };
 
 export class ColorLookupLayer extends Plugin {
-  count = this.knob(0, { min: 1, max: 6, step: 1, default: 6 });
-  amount = this.knob(1, { min: 0, max: 1, default: 1 });
+  count = this.number({ min: 1, max: 6, step: 1, default: 6 });
+  amount = this.number({ min: 0, max: 1, default: 1 });
 
   private runner = new ShaderRunner(FRAG);
 

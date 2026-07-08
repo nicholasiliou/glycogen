@@ -18,7 +18,7 @@ void main() {
  * post-processes them with the unchanged {@link ShaderRunner}. Its one parameter is a bound knob.
  */
 export class PixelateLayer extends Plugin {
-  size = this.knob(0, { min: 1, max: 64, step: 1, default: 8 });
+  size = this.number({ min: 1, max: 64, step: 1, default: 8 });
 
   private runner = new ShaderRunner(FRAG);
 

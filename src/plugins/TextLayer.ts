@@ -26,11 +26,11 @@ const GRID_MAX = 256;
 
 /** Renders a line of text centred in the frame. Cycle the preset/font with the pads. */
 export class TextLayer extends Plugin {
-  preset = this.pad(4); // cycles TEXT_PRESETS
-  font = this.pad(5); // cycles AVAILABLE_FONTS
-  bold = this.pad(6);
-  fontSize = this.knob(0, { min: 20, max: 400, default: 120 });
-  tracking = this.knob(1, { min: -20, max: 40, default: 0 });
+  preset = this.cycle(TEXT_PRESETS);
+  font = this.cycle(AVAILABLE_FONTS);
+  bold = this.toggle();
+  fontSize = this.number({ min: 20, max: 400, default: 120 });
+  tracking = this.number({ min: -20, max: 40, default: 0 });
 
   private ctx = this.canvas.getContext("2d")!;
   private gridCache: { key: string; data: Float32Array; gw: number; gh: number } | null = null;

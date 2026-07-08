@@ -33,14 +33,14 @@ const SHADOW = [62, 28, 96];
  * buffer. Two-tone (lit/shadow) so it reads graphic rather than photoreal. Transparent + deterministic.
  */
 export class VolumetricCloudLayer extends Plugin {
-  detail = this.knob(0, { min: 0.05, max: 0.6, default: 0.2 });
-  scale = this.knob(1, { min: 1, max: 8, default: 3 });
-  octaves = this.knob(2, { min: 1, max: 6, step: 1, default: 4 });
-  coverage = this.knob(3, { min: 0, max: 1, default: 0.5 });
-  density = this.knob(4, { min: 0.2, max: 3, default: 1.4 });
-  steps = this.knob(5, { min: 2, max: 24, step: 1, default: 8 });
-  shadow = this.knob(6, { min: 0, max: 1, default: 0.8 });
-  speed = this.knob(7, { min: 0, max: 1.5, default: 0.25 });
+  detail = this.number({ min: 0.05, max: 0.6, default: 0.2 });
+  scale = this.number({ min: 1, max: 8, default: 3 });
+  octaves = this.number({ min: 1, max: 6, step: 1, default: 4 });
+  coverage = this.number({ min: 0, max: 1, default: 0.5 });
+  density = this.number({ min: 0.2, max: 3, default: 1.4 });
+  steps = this.number({ min: 2, max: 24, step: 1, default: 8 });
+  shadow = this.number({ min: 0, max: 1, default: 0.8 });
+  speed = this.number({ min: 0, max: 1.5, default: 0.25 });
 
   private ctx = this.canvas.getContext("2d")!;
   private buf = document.createElement("canvas");

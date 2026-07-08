@@ -2,9 +2,9 @@ import { Plugin, type Frame } from "@/plugins/Plugin";
 
 /** CPU pixel sort — brightens runs above a threshold and sorts them by luminance. */
 export class PixelSortLayer extends Plugin {
-  threshold = this.knob(0, { min: 0, max: 1, default: 0.25 });
-  horizontal = this.pad(4);
-  reverse = this.pad(5);
+  threshold = this.number({ min: 0, max: 1, default: 0.25 });
+  horizontal = this.toggle();
+  reverse = this.toggle();
 
   private ctx = this.canvas.getContext("2d")!;
 

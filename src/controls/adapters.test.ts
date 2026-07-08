@@ -61,7 +61,7 @@ function drive(param: Param | ButtonParam, spec: AdapterSpec, frames: Partial<Sl
 
 describe("ParamDriver — absolute", () => {
   it("adopts absolute positions, only when the slot actually moved", () => {
-    const p = new Param("knob:0", { min: 0, max: 10 });
+    const p = new Param({ min: 0, max: 10 });
     drive(p, { kind: "absolute" }, [{ value: 0.5, hits: 1 }]);
     expect(p.value).toBe(5);
     // same hits again → no re-adoption even if the value snapshot changed
@@ -70,13 +70,13 @@ describe("ParamDriver — absolute", () => {
   });
 
   it("inverts when the spec says so", () => {
-    const p = new Param("knob:0", { min: 0, max: 10 });
+    const p = new Param({ min: 0, max: 10 });
     drive(p, { kind: "absolute", invert: true }, [{ value: 0.2, hits: 1 }]);
     expect(p.value).toBe(8);
   });
 
   it("thresholds a toggle param at the midpoint", () => {
-    const b = new ButtonParam("knob:0");
+    const b = new ButtonParam("toggle");
     drive(b, { kind: "absolute" }, [{ value: 0.8, hits: 1 }]);
     expect(b.on).toBe(true);
     drive(b, { kind: "absolute" }, [{ value: 0.2, hits: 2 }]);
@@ -86,7 +86,7 @@ describe("ParamDriver — absolute", () => {
 
 describe("ParamDriver — relative", () => {
   it("integrates deltas", () => {
-    const p = new Param("encoder:0", { min: 0, max: 10, step: 1 });
+    const p = new Param({ min: 0, max: 10, step: 1 });
     const d = new ParamDriver("encoder:0", p, { kind: "relative" });
     d.apply(live({ delta: 3, relative: true, hits: 1 }));
     d.apply(live({ delta: 2, relative: true, hits: 2 }));
@@ -96,7 +96,7 @@ describe("ParamDriver — relative", () => {
 
 describe("ParamDriver — press family", () => {
   it("toggle: presses flip .on and pulse .fired for exactly one frame", () => {
-    const b = new ButtonParam("pad:4");
+    const b = new ButtonParam("toggle");
     const d = new ParamDriver("pad:4", b, { kind: "toggle" });
     d.apply(live({ presses: 0 })); // baseline adoption, no fire
     b.tick();
@@ -116,7 +116,7 @@ describe("ParamDriver — press family", () => {
   });
 
   it("cycle: presses advance pick() through the declared options", () => {
-    const b = new ButtonParam("pad:4");
+    const b = new ButtonParam("toggle");
     const d = new ParamDriver("pad:4", b, { kind: "cycle" });
     d.apply(live({ presses: 0 }));
     b.tick();
@@ -127,7 +127,7 @@ describe("ParamDriver — press family", () => {
   });
 
   it("momentary: .on follows the physical hold without flipping", () => {
-    const b = new ButtonParam("pad:4");
+    const b = new ButtonParam("toggle");
     const d = new ParamDriver("pad:4", b, { kind: "momentary" });
     d.apply(live({ pressed: true, presses: 1 }));
     b.tick();
@@ -138,7 +138,7 @@ describe("ParamDriver — press family", () => {
   });
 
   it("cycle on a stepped number wraps through the quantised values", () => {
-    const p = new Param("pad:4", { min: 0, max: 2, step: 1 }); // values 0,1,2
+    const p = new Param({ min: 0, max: 2, step: 1 }); // values 0,1,2
     const d = new ParamDriver("pad:4", p, { kind: "cycle" });
     d.apply(live({ presses: 0 })); // baseline
     d.apply(live({ presses: 1 }));
@@ -150,7 +150,7 @@ describe("ParamDriver — press family", () => {
   });
 
   it("a direct UI press() queues and pulses fired on the next tick", () => {
-    const b = new ButtonParam("pad:4");
+    const b = new ButtonParam("toggle");
     b.press();
     b.tick();
     expect(b.fired).toBe(true);

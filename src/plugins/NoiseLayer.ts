@@ -58,15 +58,15 @@ const HIGH = [192, 252, 4, 255];
  * topographic look.
  */
 export class NoiseLayer extends Plugin {
-  detail = this.knob(0, { min: 0.05, max: 1, default: 0.25 });
-  scale = this.knob(1, { min: 1, max: 12, default: 3 });
-  octaves = this.knob(2, { min: 1, max: 8, step: 1, default: 3 });
-  persistence = this.knob(3, { min: 0.1, max: 0.9, default: 0.5 });
-  lacunarity = this.knob(4, { min: 1, max: 4, default: 2 });
-  contrast = this.knob(5, { min: 0.2, max: 4, default: 1 });
-  bands = this.knob(6, { min: 0, max: 16, step: 1, default: 0 });
-  speed = this.knob(7, { min: 0, max: 1.5, default: 0.3 });
-  seed = this.knob(8, { min: 1, max: 64, step: 1, default: 1 });
+  detail = this.number({ min: 0.05, max: 1, default: 0.25 });
+  scale = this.number({ min: 1, max: 12, default: 3 });
+  octaves = this.number({ min: 1, max: 8, step: 1, default: 3 });
+  persistence = this.number({ min: 0.1, max: 0.9, default: 0.5 });
+  lacunarity = this.number({ min: 1, max: 4, default: 2 });
+  contrast = this.number({ min: 0.2, max: 4, default: 1 });
+  bands = this.number({ min: 0, max: 16, step: 1, default: 0 });
+  speed = this.number({ min: 0, max: 1.5, default: 0.3 });
+  seed = this.number({ min: 1, max: 64, step: 1, default: 1 });
 
   private ctx = this.canvas.getContext("2d")!;
   private buf = document.createElement("canvas");

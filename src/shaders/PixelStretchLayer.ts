@@ -27,9 +27,9 @@ void main() {
 }`;
 
 export class PixelStretchLayer extends Plugin {
-  threshold = this.knob(0, { min: 0, max: 1, default: 0.5 });
-  amount = this.knob(1, { min: 0, max: 1, default: 0.1 });
-  horizontal = this.pad(4);
+  threshold = this.number({ min: 0, max: 1, default: 0.5 });
+  amount = this.number({ min: 0, max: 1, default: 0.1 });
+  horizontal = this.toggle();
 
   private runner = new ShaderRunner(FRAG);
 

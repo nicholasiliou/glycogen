@@ -50,16 +50,16 @@ const LINE = [40, 40, 255, 255];
  * adds a swirling "floating on water" motion.
  */
 export class ContourFieldLayer extends Plugin {
-  resolution = this.knob(0, { min: 0.05, max: 0.5, default: 0.22 });
-  scale = this.knob(1, { min: 1, max: 16, default: 6 });
-  octaves = this.knob(2, { min: 1, max: 8, step: 1, default: 4 });
-  warp = this.knob(3, { min: 0, max: 2, default: 0.4 });
-  levels = this.knob(4, { min: 2, max: 60, step: 1, default: 18 });
-  evolveSpeed = this.knob(5, { min: 0, max: 4, default: 1 });
-  swirlSpeed = this.knob(6, { min: 0, max: 4, default: 0.6 });
-  lineWidth = this.knob(7, { min: 0.25, max: 6, default: 1 });
-  seed = this.knob(8, { min: 1, max: 64, step: 1, default: 1 });
-  textStrength = this.fader(1, { min: 0, max: 1, default: 0.7 });
+  resolution = this.number({ min: 0.05, max: 0.5, default: 0.22 });
+  scale = this.number({ min: 1, max: 16, default: 6 });
+  octaves = this.number({ min: 1, max: 8, step: 1, default: 4 });
+  warp = this.number({ min: 0, max: 2, default: 0.4 });
+  levels = this.number({ min: 2, max: 60, step: 1, default: 18 });
+  evolveSpeed = this.number({ min: 0, max: 4, default: 1 });
+  swirlSpeed = this.number({ min: 0, max: 4, default: 0.6 });
+  lineWidth = this.number({ min: 0.25, max: 6, default: 1 });
+  seed = this.number({ min: 1, max: 64, step: 1, default: 1 });
+  textStrength = this.number({ min: 0, max: 1, default: 0.7 });
 
   private ctx = this.canvas.getContext("2d")!;
   private cols = 0;

@@ -15,14 +15,14 @@ function mulberry32(seed: number) {
  * seeded deterministically. Live cells are drawn in one batched fill; optional alpha-fade trails.
  */
 export class GameOfLifeLayer extends Plugin {
-  cellSize = this.knob(0, { min: 3, max: 40, step: 1, default: 10 });
-  density = this.knob(1, { min: 0.05, max: 0.9, default: 0.32 });
-  speed = this.knob(2, { min: 1, max: 8, step: 1, default: 1 });
-  trail = this.knob(3, { min: 0, max: 100, default: 0 });
-  gap = this.knob(4, { min: 0, max: 6, step: 1, default: 1 });
-  seed = this.knob(5, { min: 1, max: 64, step: 1, default: 1 });
-  wrap = this.pad(4);
-  reseed = this.pad(5);
+  cellSize = this.number({ min: 3, max: 40, step: 1, default: 10 });
+  density = this.number({ min: 0.05, max: 0.9, default: 0.32 });
+  speed = this.number({ min: 1, max: 8, step: 1, default: 1 });
+  trail = this.number({ min: 0, max: 100, default: 0 });
+  gap = this.number({ min: 0, max: 6, step: 1, default: 1 });
+  seed = this.number({ min: 1, max: 64, step: 1, default: 1 });
+  wrap = this.toggle(true);
+  reseed = this.trigger();
 
   private ctx = this.canvas.getContext("2d")!;
   private cells = new Uint8Array(0);
@@ -35,7 +35,6 @@ export class GameOfLifeLayer extends Plugin {
 
   constructor() {
     super();
-    this.wrap.on = true;
   }
 
   private reinit(seed: number, density: number): void {

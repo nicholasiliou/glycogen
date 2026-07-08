@@ -1,5 +1,7 @@
+import { ParamDriver } from "@/controls/adapters";
 import type { ControlBus } from "@/controls/ControlBus";
 import { clamp01 } from "@/controls/types";
+import { paramBindings, params } from "@/db/schema";
 import type { FieldFn, Frame, Plugin } from "@/plugins/Plugin";
 
 export type DeckName = "A" | "B";
@@ -47,6 +49,9 @@ export class Stage {
   private raf = 0;
   private startT = 0;
   private lastT = 0;
+
+  /** Per-plugin binding runtime, rebuilt lazily when the paramBindings table changes. */
+  private drivers = new WeakMap<Plugin, { at: number; list: ParamDriver[] }>();
 
   constructor(private bus: ControlBus, canvas?: HTMLCanvasElement) {
     this.canvas = canvas ?? document.createElement("canvas");
@@ -170,17 +175,39 @@ export class Stage {
     return lastOut ? dc : null;
   }
 
+  /**
+   * The focused plugin's binding rows as live drivers. Cached per plugin instance against the
+   * table version, so remaps/preset loads apply next frame and steady-state frames pay one
+   * comparison. Driver press/hit baselines reset naturally on rebuild.
+   */
+  private resolveDrivers(plugin: Plugin): ParamDriver[] {
+    const cached = this.drivers.get(plugin);
+    if (cached && cached.at === paramBindings.version) return cached.list;
+    const byName = new Map(plugin.params.map((p) => [p.name, p]));
+    const list: ParamDriver[] = [];
+    for (const row of paramBindings.by("plugin", plugin.id)) {
+      const param = params.get(row.paramId);
+      const target = param && byName.get(param.name);
+      if (target) list.push(new ParamDriver(row.widgetId, target, row.adapter));
+    }
+    this.drivers.set(plugin, { at: paramBindings.version, list });
+    return list;
+  }
+
   /** Advance one frame. Exposed (with an injectable clock) for headless tests. */
   tick(now = nowSec()): void {
     const dt = now - this.lastT;
     this.lastT = now;
 
-    // Pull live control values into only the focused/active plugin, so the controller drives one
+    // Drive only the focused/active plugin's params from the bus, so the controller drives one
     // layer at a time (not every loaded layer at once). Param state is retained on each plugin
     // instance, so a setting made while a layer is focused — e.g. a sim's textMode — persists after
     // focus moves elsewhere; text interaction does not depend on inactive layers tracking the bus.
     const managed = this.managed();
-    if (managed) for (const p of managed.params) p.pull(this.bus.get(p.slot));
+    if (managed) for (const d of this.resolveDrivers(managed)) d.apply(this.bus.get(d.widgetId));
+    // Every loaded param ticks every frame: smoothing keeps easing and queued UI presses land
+    // even while the plugin is unfocused.
+    for (const plugin of this.loaded()) for (const p of plugin.params) p.tick();
 
     const w = this.canvas.width, h = this.canvas.height;
     const frame: Frame = { width: w, height: h, time: now - this.startT, dt, input: null, textField: this.stageTextField() };

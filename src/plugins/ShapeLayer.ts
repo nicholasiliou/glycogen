@@ -18,17 +18,17 @@ const SHAPES = ["torusKnot", "sphere", "torus", "box", "cylinder", "cone", "supe
  * No id/label/kind here: those come from the filename + folder via the registry.
  */
 export class ShapeLayer extends Plugin {
-  shape = this.pad(4); // cycles through SHAPES
-  resolution = this.knob(0, { min: 8, max: 80, step: 1, default: 28 });
-  radius = this.knob(1, { min: 0.1, max: 1.4, step: 0.01, default: 0.7 });
-  lineWidth = this.knob(2, { min: 0.25, max: 8, step: 0.25, default: 1 });
-  tiltX = this.fader(0, { min: -180, max: 180, default: 28 });
-  tiltY = this.fader(1, { min: -180, max: 180, default: 0 });
-  tiltZ = this.fader(2, { min: -180, max: 180, default: 0 });
-  spin = this.encoder(0, { min: -360, max: 360, default: 24 }); // deck-A SmoothKnob
-  filled = this.pad(5); // .on
-  depthShade = this.pad(6); // .on
-  cull = this.pad(7); // .on
+  shape = this.cycle(SHAPES);
+  resolution = this.number({ min: 8, max: 80, step: 1, default: 28 });
+  radius = this.number({ min: 0.1, max: 1.4, step: 0.01, default: 0.7 });
+  lineWidth = this.number({ min: 0.25, max: 8, step: 0.25, default: 1 });
+  tiltX = this.number({ min: -180, max: 180, default: 28 });
+  tiltY = this.number({ min: -180, max: 180, default: 0 });
+  tiltZ = this.number({ min: -180, max: 180, default: 0 });
+  spin = this.number({ min: -360, max: 360, default: 24 }); // deck-A SmoothKnob
+  filled = this.toggle();
+  depthShade = this.toggle(true);
+  cull = this.toggle();
 
   private ctx = this.canvas.getContext("2d")!;
   private tris: number[] = [];
@@ -36,7 +36,6 @@ export class ShapeLayer extends Plugin {
 
   constructor() {
     super();
-    this.depthShade.on = true; // sensible default; flips off on first press
   }
 
   private buildMesh(): number[] {

@@ -26,14 +26,14 @@ const GLYPHS: GlyphData[] = BUILTIN_GLYPHS.map((b) => b.glyph);
  * there exceeds a threshold, and a second noise channel picks which glyph. Deterministic over time.
  */
 export class GlyphScatterLayer extends Plugin {
-  cell = this.knob(0, { min: 8, max: 160, default: 56 });
-  threshold = this.knob(1, { min: 0, max: 1, default: 0.5 });
-  scale = this.knob(2, { min: 0.1, max: 1, default: 0.8 });
-  noiseScale = this.knob(3, { min: 0.02, max: 0.5, default: 0.12 });
-  speed = this.knob(4, { min: 0, max: 1.5, default: 0.2 });
-  jitter = this.knob(5, { min: 0, max: 1, default: 0 });
-  seed = this.knob(6, { min: 0, max: 64, step: 1, default: 0 });
-  textStrength = this.fader(1, { min: 0, max: 1, default: 0.8 });
+  cell = this.number({ min: 8, max: 160, default: 56 });
+  threshold = this.number({ min: 0, max: 1, default: 0.5 });
+  scale = this.number({ min: 0.1, max: 1, default: 0.8 });
+  noiseScale = this.number({ min: 0.02, max: 0.5, default: 0.12 });
+  speed = this.number({ min: 0, max: 1.5, default: 0.2 });
+  jitter = this.number({ min: 0, max: 1, default: 0 });
+  seed = this.number({ min: 0, max: 64, step: 1, default: 0 });
+  textStrength = this.number({ min: 0, max: 1, default: 0.8 });
 
   private ctx = this.canvas.getContext("2d")!;
   // Cached flattened grid for textField sampling (gw×gh).

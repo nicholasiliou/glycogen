@@ -47,8 +47,8 @@ function buildAsciiAtlas(): HTMLCanvasElement {
 }
 
 export class AsciiLayer extends Plugin {
-  cell = this.knob(0, { min: 4, max: 40, step: 1, default: 12 });
-  colored = this.pad(4);
+  cell = this.number({ min: 4, max: 40, step: 1, default: 12 });
+  colored = this.toggle();
 
   private runner = new ShaderRunner(FRAG, ["uGlyph"]);
   private atlasSet = false;

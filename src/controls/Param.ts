@@ -1,10 +1,15 @@
-import { clamp01, type SlotId, type SlotLive } from "./types";
+import type { ParamControl } from "@/db/schema";
+import { clamp01 } from "./types";
 
 /**
- * Binding handles. A plugin declares a field by binding a control — `spin = this.fader(0, {...})` —
- * and the returned `Param` *is* that field. The runtime host pulls live slot state into the param
- * each frame (only for the focused plugin); `render` reads `param.value`. Params keep working with
- * nothing bound (they hold their default) and stay directly settable from UI.
+ * Param handles. A plugin declares a field — `spin = this.number({...})`, `wrap = this.toggle()` —
+ * and the returned param *is* that field: `render` reads `param.value` / `.on` / `.fired` /
+ * `.pick([...])`. Params carry no slot: which widget/hardware drives them is a `paramBindings` row
+ * in the db, executed by a `ParamDriver` (see adapters.ts). Params keep working with nothing bound
+ * (they hold their default) and stay directly settable from UI via `set()` / `press()`.
+ *
+ * `tick()` must run once per frame on every loaded param (the Stage does this): it advances
+ * smoothing and consumes queued presses so `.fired` pulses for exactly one frame.
  */
 
 export interface NumOpts {
@@ -17,39 +22,30 @@ export interface NumOpts {
   smooth?: number;
 }
 
-abstract class BaseParam {
-  readonly slot: SlotId;
-  /** The plugin field this is bound to (e.g. "spin"), filled in by the registry. Drives UI labels. */
+/** A continuous (or stepped) numeric parameter. */
+export class Param {
+  /** The plugin field this was assigned to (e.g. "spin"), filled in by the registry. */
   name = "";
-  protected lastHits = -1;
-  constructor(slot: SlotId) {
-    this.slot = slot;
-  }
-  /** Apply a live slot snapshot. Called once per frame by the host for the focused plugin. */
-  abstract pull(live: SlotLive): void;
-}
-
-/** A continuous numeric parameter driven by an absolute control (fader/knob) or relative encoder. */
-export class Param extends BaseParam {
   value: number;
   readonly min: number;
   readonly max: number;
   readonly step: number;
   readonly default: number;
   readonly smooth: number;
-  /** True for encoders/jog: live `delta` is integrated rather than `value` adopted. */
-  readonly relative: boolean;
   private target: number;
 
-  constructor(slot: SlotId, opts: NumOpts = {}, relative = false) {
-    super(slot);
+  constructor(opts: NumOpts = {}) {
     this.min = opts.min ?? 0;
     this.max = opts.max ?? 1;
     this.step = opts.step ?? 0;
     this.default = opts.default ?? this.min;
     this.smooth = opts.smooth ?? 0;
-    this.relative = relative;
     this.value = this.target = this.quantize(this.default);
+  }
+
+  /** The db `params` row metadata this declaration authors. */
+  get control(): ParamControl {
+    return { type: "number", min: this.min, max: this.max, step: this.step, default: this.default, smooth: this.smooth };
   }
 
   /** Set from a normalised 0..1 absolute position (fader / knob / UI slider). */
@@ -78,30 +74,18 @@ export class Param extends BaseParam {
     this.set(this.min + next * this.step);
   }
 
-  /** Advance smoothing one frame — call once per frame whether or not anything drove the param. */
-  tick(): void {
-    if (this.smooth > 0 && this.value !== this.target) {
-      this.value += (this.target - this.value) * (1 - this.smooth);
-      if (Math.abs(this.target - this.value) < 1e-4) this.value = this.target;
-    }
-  }
-
   /** Current value as a 0..1 fraction of the range. */
   get norm(): number {
     const span = this.max - this.min;
     return span ? (this.value - this.min) / span : 0;
   }
 
-  pull(live: SlotLive): void {
-    if (live.hits !== 0 && live.hits !== this.lastHits) {
-      this.lastHits = live.hits;
-      if (this.relative) {
-        if (live.delta) this.nudge(live.delta);
-      } else {
-        this.setNorm(live.value);
-      }
+  /** Advance smoothing one frame — call once per frame whether or not anything drove the param. */
+  tick(): void {
+    if (this.smooth > 0 && this.value !== this.target) {
+      this.value += (this.target - this.value) * (1 - this.smooth);
+      if (Math.abs(this.target - this.value) < 1e-4) this.value = this.target;
     }
-    this.tick(); // ease toward target even on idle frames
   }
 
   private quantize(v: number): number {
@@ -111,41 +95,46 @@ export class Param extends BaseParam {
   }
 }
 
-/** Best-effort human label for a cycle option (string as-is; objects fall back to a `name`/`label`). */
-function cycleLabel(v: unknown): string {
-  if (typeof v === "string") return v;
-  if (v && typeof v === "object") {
-    const o = v as Record<string, unknown>;
-    for (const k of ["label", "name", "id"]) if (typeof o[k] === "string") return o[k] as string;
-  }
-  return String(v);
-}
+/** What a press *means* for this param — declared so the db can derive adapter legality. */
+export type ButtonIntent = "toggle" | "trigger" | "cycle";
 
 /**
- * A discrete parameter driven by a button or pad. There is no declared "mode" — the same press
- * stream is exposed as every behaviour at once, and the plugin expresses intent purely by which it
- * reads: `.on` (toggle), `.held` (momentary), `.fired` (one-shot trigger), `.pick([…])` (cycle).
+ * A discrete parameter driven by presses. The declared {@link intent} names what the plugin reads
+ * — `.on` (toggle), `.fired` (trigger), `.pick([...])` / `.count` (cycle) — but every facet stays
+ * live regardless, so reads don't need to match pedantically (a cycle can also check `.held`).
  */
-export class ButtonParam extends BaseParam {
+export class ButtonParam {
+  /** The plugin field this was assigned to, filled in by the registry. */
+  name = "";
+  readonly intent: ButtonIntent;
+  /** Declared cycle option labels (empty for toggle/trigger) — drives the UI chips + legality. */
+  readonly cycle: readonly string[];
   /** Total presses since creation — `pick()` and any counter derive from this. */
   count = 0;
   /** Toggle state: flips on every press. */
-  on = false;
+  on: boolean;
   /** Momentary: true while the control is physically held down. */
   held = false;
   private firedFrame = false;
-  private lastPresses = -1;
-  /**
-   * Labels of the most recent `pick()` cycle, captured so the UI can render named cycle states
-   * (off/fill/attract, preset names, …) without a hand-maintained map — any new cycle a plugin
-   * adds shows up automatically once it has rendered once. Empty for plain toggle/trigger pads.
-   */
-  cycle: readonly string[] = [];
+  private pending = 0;
 
-  /** Cycle: the entry selected by the running press count. Records the option labels for the UI. */
+  constructor(intent: ButtonIntent, opts: { default?: boolean; options?: readonly string[] } = {}) {
+    this.intent = intent;
+    this.cycle = opts.options ?? [];
+    this.on = opts.default ?? false;
+  }
+
+  /** The db `params` row metadata this declaration authors. */
+  get control(): ParamControl {
+    switch (this.intent) {
+      case "toggle": return { type: "toggle", default: this.on };
+      case "trigger": return { type: "trigger" };
+      case "cycle": return { type: "cycle", options: this.cycle };
+    }
+  }
+
+  /** Cycle: the entry selected by the running press count. */
   pick<T>(values: readonly T[]): T {
-    const next = values.map((v) => cycleLabel(v));
-    if (next.length !== this.cycle.length || next.some((s, i) => s !== this.cycle[i])) this.cycle = next;
     return values[this.count % values.length];
   }
 
@@ -153,9 +142,6 @@ export class ButtonParam extends BaseParam {
   get fired(): boolean {
     return this.firedFrame;
   }
-
-  /** Presses queued since the last {@link tick} (from a driver or a direct UI press). */
-  private pending = 0;
 
   /** Queue presses — applied (and `fired` pulsed) by the next {@link tick}. */
   press(n = 1): void {
@@ -180,17 +166,5 @@ export class ButtonParam extends BaseParam {
       this.count++;
       this.on = !this.on;
     }
-  }
-
-  pull(live: SlotLive): void {
-    this.held = live.pressed;
-    if (this.lastPresses === -1) {
-      this.lastPresses = live.presses; // first pull: adopt baseline without firing
-      this.tick();
-      return;
-    }
-    this.press(live.presses - this.lastPresses);
-    this.lastPresses = live.presses;
-    this.tick();
   }
 }

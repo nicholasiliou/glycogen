@@ -3,9 +3,9 @@ import { addGlyphRects, BUILTIN_GLYPHS, type GlyphData } from "./glyphData";
 
 /** Draws a single pixel glyph scaled to fill the layer. Cycle through the built-in glyphs with the pad. */
 export class GlyphLayer extends Plugin {
-  glyph = this.pad(4); // cycles the built-in glyph set
-  padding = this.knob(0, { min: 0, max: 0.4, default: 0.08 });
-  gap = this.knob(1, { min: 0, max: 0.9, default: 0.08 });
+  glyph = this.cycle(BUILTIN_GLYPHS.map((g) => g.name));
+  padding = this.number({ min: 0, max: 0.4, default: 0.08 });
+  gap = this.number({ min: 0, max: 0.9, default: 0.08 });
 
   private ctx = this.canvas.getContext("2d")!;
 

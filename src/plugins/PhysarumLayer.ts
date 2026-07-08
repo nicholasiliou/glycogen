@@ -32,20 +32,20 @@ interface AgentParams {
  * which diffuses and decays — self-organising into branching vein networks.
  */
 export class PhysarumLayer extends Plugin {
-  count = this.knob(0, { min: 200, max: HARD_MAX, step: 100, default: 5000 });
-  sensorDist = this.knob(1, { min: 1, max: 30, default: 9 });
-  sensorAngle = this.knob(2, { min: 1, max: 90, default: 22 });
-  turnAngle = this.knob(3, { min: 1, max: 90, default: 30 });
-  stepSize = this.knob(4, { min: 0.2, max: 4, default: 1 });
-  deposit = this.knob(5, { min: 0.1, max: 3, default: 1 });
-  decay = this.knob(6, { min: 0, max: 0.95, default: 0.1 });
-  gain = this.knob(7, { min: 0.1, max: 3, default: 0.6 });
-  seed = this.knob(8, { min: 1, max: 64, step: 1, default: 1 });
-  speed = this.fader(0, { min: 1, max: 6, step: 1, default: 1 });
-  textStrength = this.fader(1, { min: 0, max: 1, default: 0.8 });
+  count = this.number({ min: 200, max: HARD_MAX, step: 100, default: 5000 });
+  sensorDist = this.number({ min: 1, max: 30, default: 9 });
+  sensorAngle = this.number({ min: 1, max: 90, default: 22 });
+  turnAngle = this.number({ min: 1, max: 90, default: 30 });
+  stepSize = this.number({ min: 0.2, max: 4, default: 1 });
+  deposit = this.number({ min: 0.1, max: 3, default: 1 });
+  decay = this.number({ min: 0, max: 0.95, default: 0.1 });
+  gain = this.number({ min: 0.1, max: 3, default: 0.6 });
+  seed = this.number({ min: 1, max: 64, step: 1, default: 1 });
+  speed = this.number({ min: 1, max: 6, step: 1, default: 1 });
+  textStrength = this.number({ min: 0, max: 1, default: 0.8 });
   /** Cycle through off → fill → attract with a pad press. */
-  textMode = this.pad(4);
-  reseed = this.pad(5);
+  textMode = this.cycle(["off", "fill", "attract"]);
+  reseed = this.trigger();
 
   private ctx = this.canvas.getContext("2d")!;
   private buf = document.createElement("canvas");
