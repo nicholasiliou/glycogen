@@ -66,8 +66,7 @@ function BankStrip() {
             // Loaded banks wear their layer's color (the tint, else the plugin's native color).
             style={bank.plugin ? { backgroundColor: bank.plugin.displayColor() } : undefined}
             className={cn(
-              "h-3 w-3 cursor-pointer rounded-full border transition-colors hover:border-accent/70",
-              i === activeBank ? "border-accent" : "border-transparent",
+              "h-3 w-3 cursor-pointer rounded-full transition-colors",
               bank.plugin ? (i === activeBank ? "" : "opacity-50") : "bg-edge",
             )}
           />
