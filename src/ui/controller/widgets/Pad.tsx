@@ -25,7 +25,7 @@ export function Pad({ slot, label, className }: { slot: number; label?: string; 
         onPointerDown={onDown}
         onPointerUp={onUp}
         onPointerLeave={onUp}
-        onContextMenu={(e) => { e.preventDefault(); s.arm(); }}
+        onClick={() => s.arm()}
         className={cn("flex h-8 w-16 touch-none cursor-pointer items-center justify-center rounded", className)}
         style={{
           background: lit ? "linear-gradient(#1c2a00, #0e1500)" : "linear-gradient(#303236, #1a1b1d 60%, #131416)",

@@ -38,7 +38,7 @@ export function Fader({ slot, label, height = 160 }: { slot: number; label?: str
         active={s.active}
         trackRef={trackRef}
         onPointerDown={onDown}
-        onContextMenu={(e) => { e.preventDefault(); s.arm(); }}
+        onClick={() => s.arm()}
       />
     </SlotFrame>
   );

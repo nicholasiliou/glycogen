@@ -17,7 +17,7 @@ export function FaderVisual({
   active = false,
   trackRef,
   onPointerDown,
-  onContextMenu,
+  onClick,
 }: {
   norm: number;
   orient?: "vertical" | "horizontal";
@@ -25,7 +25,7 @@ export function FaderVisual({
   active?: boolean;
   trackRef?: React.Ref<HTMLDivElement>;
   onPointerDown?: (e: React.PointerEvent) => void;
-  onContextMenu?: (e: React.MouseEvent) => void;
+  onClick?: (e: React.MouseEvent) => void;
 }) {
   const CAP = 16;
   const THICK = 24;
@@ -40,7 +40,7 @@ export function FaderVisual({
     <div
       ref={trackRef}
       onPointerDown={onPointerDown}
-      onContextMenu={onContextMenu}
+      onClick={onClick}
       className={`relative touch-none rounded ${vertical ? "cursor-ns-resize" : "cursor-ew-resize"}`}
       style={{ width: vertical ? THICK : "100%", height: vertical ? length : THICK }}
     >

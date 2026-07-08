@@ -200,7 +200,7 @@ export function SlotFrame({
   return (
     <div
       className={"relative flex flex-col items-center gap-1" + (pending && !legal ? " opacity-30" : "")}
-      style={armed || legal ? { filter: "drop-shadow(0 0 6px var(--color-accent))" } : undefined}
+      style={armed || legal ? { filter: "drop-shadow(0 0 3px var(--color-accent))" } : undefined}
       onPointerDownCapture={pending ? capture : mode === "assign" ? inertCapture : undefined}
       onDragOver={legal ? (e) => e.preventDefault() : undefined}
       onDrop={legal ? capture : undefined}
@@ -216,14 +216,10 @@ export function SlotFrame({
       }
       onDragEnd={draggable ? () => assign.cancel() : undefined}
     >
-      {(armed || legal) && (
-        <span
-          className="pointer-events-none absolute -inset-1 z-10 animate-pulse rounded-sm border border-accent/70"
-          aria-hidden
-        />
-      )}
       {children}
-      <Label lit={active || armed || legal}>{legal ? pending!.label : (label ?? (armed ? "LEARN" : " "))}</Label>
+      <Label lit={active || armed}>
+        {label ?? (armed ? "LEARN" : " ")}
+      </Label>
     </div>
   );
 }

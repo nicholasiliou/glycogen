@@ -51,7 +51,7 @@ export function JogWheel({ slot, label, size = 360 }: { slot: number; label?: st
       <div
         ref={ref}
         onPointerDown={onDown}
-        onContextMenu={(e) => { e.preventDefault(); s.arm(); }}
+        onClick={() => s.arm()}
         className="relative touch-none cursor-grab active:cursor-grabbing rounded-full"
         style={{ width: size, height: size, ...activeRing(s.active) }}
       >

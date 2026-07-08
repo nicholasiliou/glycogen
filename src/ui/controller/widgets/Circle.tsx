@@ -25,7 +25,7 @@ export function Circle({ slot, label, size = 20 }: { slot: number; label?: strin
         onPointerDown={onDown}
         onPointerUp={onUp}
         onPointerLeave={onUp}
-        onContextMenu={(e) => { e.preventDefault(); s.arm(); }}
+        onClick={() => s.arm()}
         className="flex touch-none cursor-pointer items-center justify-center rounded-full"
         style={{
           width: size,

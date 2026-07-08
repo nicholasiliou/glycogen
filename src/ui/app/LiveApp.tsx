@@ -61,8 +61,8 @@ function LearnToast() {
   const { learnSlot, cancelLearn } = useLive();
   if (!learnSlot) return null;
   return (
-    <div className="pointer-events-auto absolute bottom-4 left-1/2 z-50 -translate-x-1/2 flex items-center gap-3 rounded-lg border border-accent/50 bg-black/90 px-4 py-2 text-sm text-ink shadow-lg shadow-accent/20">
-      <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
+    <div className="pointer-events-auto absolute bottom-4 left-1/2 z-50 -translate-x-1/2 flex items-center gap-3 rounded-lg px-4 py-2 text-sm text-ink">
+      <span className="h-2 w-2 animate-pulse rounded-full" />
       <span>Touch a hardware control to bind <span className="font-mono text-accent">{learnSlot}</span></span>
       <button onClick={cancelLearn} className="ml-2 text-ink-dim hover:text-ink">✕</button>
     </div>

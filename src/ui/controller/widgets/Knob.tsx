@@ -29,7 +29,7 @@ export function Knob({ slot, label, size = 32 }: { slot: number; label?: string;
     <SlotFrame slot={sid} label={s.label ?? label} active={s.active} armed={s.armed}>
       <div
         onPointerDown={onDown}
-        onContextMenu={(e) => { e.preventDefault(); s.arm(); }}
+        onClick={() => s.arm()}
         className="relative touch-none cursor-ns-resize rounded-full"
         style={{ width: size, height: size, ...activeRing(s.active) }}
       >
