@@ -74,12 +74,7 @@ export function RemoteControllerApp() {
           <SlotLabelContext.Provider value={snapshot.labels}>
             <LearnSlotContext.Provider value={null}>
               <ArmLearnContext.Provider value={() => {}}>
-                <Controller
-                  browse={{
-                    plugin: { label: snapshot.browseLabels?.plugin, onStep: (d) => step("plugin", d) },
-                    shader: { label: snapshot.browseLabels?.shader, onStep: (d) => step("shader", d) },
-                  }}
-                />
+                <Controller/>
               </ArmLearnContext.Provider>
             </LearnSlotContext.Provider>
           </SlotLabelContext.Provider>
