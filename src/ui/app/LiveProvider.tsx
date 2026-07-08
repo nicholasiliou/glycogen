@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import { ControlBus } from "@/controls/ControlBus";
 import type { SlotId } from "@/controls/types";
 import type { AdapterKind } from "@/controls/adapters";
-import { applyAppDefaults } from "@/db/appDefaults";
 import { actionBindings, appActions, bankOf, paramBindings, params, setActionBinding, setParamBinding, type AppAction } from "@/db/schema";
 import { useTable } from "@/db/useDb";
 import type { PluginInfo } from "@/plugins/registry";
@@ -81,7 +80,6 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   if (!refs.current) {
     const bus = new ControlBus();
     const stage = new Stage(bus);
-    applyAppDefaults(stage); // dev-saved boot scene (banks + shaders), see db/appDefaults.ts
     const audio = new AudioEngine();
     refs.current = { bus, stage, audio, performer: new LivePerformer(stage, audio), midi: new MidiManager() };
   }

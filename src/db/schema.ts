@@ -22,7 +22,8 @@
  *   • code-sourced tables (plugins, params, widgets, appActions) are re-seeded from typed
  *     registrations every boot and never stored — the code is their source of truth;
  *   • user-mutable tables (hardwareControls, hardwareBindings, paramBindings, actionBindings,
- *     presets) persist to localStorage and are pruned on boot if their FKs no longer resolve.
+ *     paramDefaults, presets) persist to localStorage and are pruned on boot if their FKs no
+ *     longer resolve.
  *
  * Live per-frame values are NOT stored here — that's the ControlBus's job. This db is structure.
  */
@@ -127,6 +128,18 @@ export interface ParamBindingRow {
   locked?: boolean;
 }
 
+/**
+ * Admin-authored default override for one param: the value a plugin's param lands on whenever the
+ * plugin is created, replacing its code-declared default. Authored visually via the `#admin`
+ * controls-panel surface; `id` IS the param id, so one override per param. Numbers for number
+ * params, `{count, on}` for button params (cycle position / toggle state).
+ */
+export interface ParamDefaultRow {
+  id: string;
+  pluginId: string;
+  value: number | { count: number; on: boolean };
+}
+
 export interface PresetRow {
   id: string;
   name: string;
@@ -214,6 +227,23 @@ export const paramBindings = db.table<ParamBindingRow>("paramBindings", {
   },
 });
 
+export const paramDefaults = db.table<ParamDefaultRow>("paramDefaults", {
+  persist: { key: "marathon.db.paramDefaults.v1", sanitize: sanitizeParamDefault },
+  fks: [
+    { table: () => plugins, ids: (r) => [r.pluginId], onDelete: "cascade" },
+    { table: () => params, ids: (r) => [r.id], onDelete: "cascade" },
+  ],
+  indexes: { plugin: (r) => r.pluginId },
+  validate: (r) => {
+    const param = params.get(r.id);
+    if (!param) return null; // FK pruning handles missing params
+    if (param.pluginId !== r.pluginId) return `param "${r.id}" belongs to "${param.pluginId}", not "${r.pluginId}"`;
+    if ((param.control.type === "number") !== (typeof r.value === "number"))
+      return `value shape doesn't match a ${param.control.type} param`;
+    return null;
+  },
+});
+
 export const presets = db.table<PresetRow>("presets", {
   persist: { key: "marathon.db.presets.v1", sanitize: sanitizePreset },
 });
@@ -251,6 +281,15 @@ function sanitizeActionBinding(raw: unknown): ActionBindingRow | null {
   if (!isRecord(raw) || typeof raw.id !== "string") return null;
   if (typeof raw.widgetId !== "string" || typeof raw.actionId !== "string") return null;
   return { id: raw.id, widgetId: raw.widgetId as SlotId, actionId: raw.actionId as AppAction };
+}
+
+function sanitizeParamDefault(raw: unknown): ParamDefaultRow | null {
+  if (!isRecord(raw) || typeof raw.id !== "string" || typeof raw.pluginId !== "string") return null;
+  const v = raw.value;
+  if (typeof v === "number" && Number.isFinite(v)) return { id: raw.id, pluginId: raw.pluginId, value: v };
+  if (isRecord(v) && typeof v.count === "number" && typeof v.on === "boolean")
+    return { id: raw.id, pluginId: raw.pluginId, value: { count: v.count, on: v.on } };
+  return null;
 }
 
 function sanitizeAdapter(raw: unknown): AdapterSpec | null {

@@ -30,11 +30,13 @@ export function bootDb(code: CodeRegistration): void {
   purgeLegacyKeys();
 }
 
-/** The pre-db keymap system's storage — superseded, no migration (experimental branch). */
+/** Superseded storage — the pre-db keymap system and the boot-scene take on app defaults. */
 function purgeLegacyKeys(): void {
   try {
     localStorage.removeItem("marathon.midi.keymaps.v1");
     localStorage.removeItem("marathon.midi.activeKeymap.v1");
+    localStorage.removeItem("marathon.appDefaults.plugins.v1");
+    localStorage.removeItem("marathon.appDefaults.shaders.v1");
   } catch {
     /* ignore */
   }

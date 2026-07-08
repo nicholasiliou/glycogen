@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { ButtonParam, Param } from "@/controls/Param";
 import { clamp01 } from "@/controls/types";
-import { clearAppDefaults, isAdmin, saveDefaultPlugins, saveDefaultShaders } from "@/db/appDefaults";
+import { clearDefaults, hasDefaults, isAdmin, saveDefaults } from "@/db/appDefaults";
 import { params, type ParamRow } from "@/db/schema";
+import type { Plugin } from "@/plugins/Plugin";
 import { useTable } from "@/db/useDb";
 import { useLive } from "@/ui/app/LiveProvider";
 import { FaderVisual } from "@/ui/controller/widgets/FaderVisual";
@@ -41,11 +42,8 @@ export function ControlsPanel() {
 
   if (!managed) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="flex min-h-0 flex-1 items-center justify-center p-4 text-center text-sm text-ink-dim/60">
-          No plugin focused — load one first
-        </div>
-        {isAdmin() && <AdminDefaults />}
+      <div className="flex min-h-0 flex-1 items-center justify-center p-4 text-center text-sm text-ink-dim/60">
+        No plugin focused — load one first
       </div>
     );
   }
@@ -73,40 +71,45 @@ export function ControlsPanel() {
           })}
         </div>
       </div>
-      {isAdmin() && <AdminDefaults />}
+      {isAdmin() && <AdminDefaults managed={managed} />}
     </div>
   );
 }
 
 /**
- * The `#admin` dev surface: freeze the CURRENT bank setup as what the app boots with. Plugins and
- * shaders save separately, so a shader pass can be re-authored without re-saving the plugins.
+ * The `#admin` dev surface: freeze the FOCUSED plugin's current values as its load-time defaults
+ * (`paramDefaults` rows applied on every `create()`). Focus is per bank-half, so a generator and
+ * its shader are saved separately — focus the fx preview to author the shader's defaults.
  */
-function AdminDefaults() {
+function AdminDefaults({ managed }: { managed: Plugin }) {
   const { stage } = useLive();
-  const [saved, setSaved] = useState<"plugins" | "shaders" | "cleared" | null>(null);
-  const flash = (what: "plugins" | "shaders" | "cleared") => {
-    setSaved(what);
-    setTimeout(() => setSaved((cur) => (cur === what ? null : cur)), 1500);
+  const [flashed, setFlashed] = useState<"saved" | "cleared" | null>(null);
+  const flash = (what: "saved" | "cleared") => {
+    setFlashed(what);
+    setTimeout(() => setFlashed((cur) => (cur === what ? null : cur)), 1500);
   };
+  const name = managed.constructor.name.replace(/Layer$/, "");
+  const overridden = hasDefaults(managed.id);
   const btn =
     "rounded border border-edge px-2 py-1 text-left text-xs text-ink-dim transition-colors hover:border-accent/50 hover:text-ink";
   return (
     <div className="shrink-0 border-t border-edge p-3">
       <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-wide text-ink-dim">
-        <span>Admin · app defaults</span>
-        {saved && <span className="text-accent normal-case">{saved === "cleared" ? "cleared" : `${saved} saved ✓`}</span>}
+        <span>
+          Admin · defaults
+          {stage.focusPart === "shader" && <span className="ml-1 rounded bg-accent/15 px-1 text-accent">fx</span>}
+        </span>
+        {flashed && <span className="normal-case text-accent">{flashed} ✓</span>}
       </div>
       <div className="flex flex-col gap-1.5">
-        <button className={btn} onClick={() => { saveDefaultPlugins(stage); flash("plugins"); }}>
-          Save plugin setup as app default
+        <button className={btn} onClick={() => { saveDefaults(managed); flash("saved"); }}>
+          Save current values as {name} defaults
         </button>
-        <button className={btn} onClick={() => { saveDefaultShaders(stage); flash("shaders"); }}>
-          Save shader setup as app default
-        </button>
-        <button className={btn} onClick={() => { clearAppDefaults(); flash("cleared"); }}>
-          Clear app defaults
-        </button>
+        {overridden && (
+          <button className={btn} onClick={() => { clearDefaults(managed.id); flash("cleared"); }}>
+            Reset {name} to code defaults
+          </button>
+        )}
       </div>
     </div>
   );

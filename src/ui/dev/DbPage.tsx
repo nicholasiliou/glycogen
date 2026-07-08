@@ -6,6 +6,7 @@ import {
   hardwareBindings,
   hardwareControls,
   paramBindings,
+  paramDefaults,
   params,
   plugins,
   presets,
@@ -31,12 +32,13 @@ const TABLES = {
   hardwareBindings,
   paramBindings,
   actionBindings,
+  paramDefaults,
   presets,
 } as const;
 type TableName = keyof typeof TABLES;
 
 /** Persisted tables — the user's rows, safe to delete here. Code-sourced tables are read-only. */
-const MUTABLE: TableName[] = ["hardwareControls", "hardwareBindings", "paramBindings", "actionBindings", "presets"];
+const MUTABLE: TableName[] = ["hardwareControls", "hardwareBindings", "paramBindings", "actionBindings", "paramDefaults", "presets"];
 
 function DeviceStatus() {
   const midiRef = useRef<MidiManager>();

@@ -1,4 +1,5 @@
 import { ButtonParam, Param } from "@/controls/Param";
+import { applyDefaults } from "@/db/appDefaults";
 import type { CodeRegistration } from "@/db/boot";
 import { paramId, type ParamRow, type PluginRow } from "@/db/schema";
 import { Plugin } from "./Plugin";
@@ -59,6 +60,7 @@ export function create(id: string): Plugin {
   const plugin = new entry.ctor();
   plugin.id = id;
   stampNames(plugin);
+  applyDefaults(plugin); // admin-saved paramDefaults rows override the code-declared defaults
   return plugin;
 }
 

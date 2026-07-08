@@ -74,6 +74,11 @@ export class Param {
     this.set(this.min + next * this.step);
   }
 
+  /** Land on the target immediately, skipping smoothing (load-time default overrides). */
+  snap(): void {
+    this.value = this.target;
+  }
+
   /** Current value as a 0..1 fraction of the range. */
   get norm(): number {
     const span = this.max - this.min;
