@@ -91,10 +91,11 @@ export class Stage {
     if (this.decks[deck].banks[index]) this.decks[deck].active = index;
   }
 
-  clearBank(deck: DeckName): void {
+  clearBank(deck: DeckName, index?: number): void {
     const d = this.decks[deck];
-    d.banks[d.active]?.dispose();
-    d.banks[d.active] = null;
+    const i = index ?? d.active;
+    d.banks[i]?.dispose();
+    d.banks[i] = null;
   }
 
   setShader(plugin: Plugin | null): void {

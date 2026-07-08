@@ -20,15 +20,16 @@ const ICONS: Record<string, string> = {
   glyphScatter: "LayoutDashboard",
   plant: "Sprout",
   // effects
+  none: "Ban",
   pixelate: "Aperture",
   bayer: "Grid2x2",
   ascii: "Hash",
   colorLookup: "Palette",
   deepGlow: "Crosshair",
   fisheye: "Aperture",
-  pixelSort: "Layers",
-  pixelStretch: "Layers",
-  venetianBlinds: "Layers",
+  pixelSort: "ArrowDownUp",
+  pixelStretch: "MoveHorizontal",
+  venetianBlinds: "AlignJustify",
   tracker: "Crosshair",
 };
 

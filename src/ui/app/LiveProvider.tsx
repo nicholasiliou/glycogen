@@ -45,8 +45,11 @@ interface LiveCtx {
   setFocus: (f: Focus) => void;
   load: (deck: DeckName, bank?: number) => void;
   selectBank: (deck: DeckName, bank: number) => void;
-  clearDeck: (deck: DeckName) => void;
+  clearDeck: (deck: DeckName, bank?: number) => void;
   clearShader: () => void;
+  /** Master audio mute — silences the master bus without stopping the engine. */
+  muted: boolean;
+  toggleMute: () => void;
   /** Audio/visual gate — the intro is dismissed once started. */
   started: boolean;
   start: () => void;
@@ -120,6 +123,15 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   });
 
   const setCrossfade = (x: number) => bus.drive("crossfader:0", { value: x });
+
+  // ── header master mute (silences the master bus, engine keeps running) ──
+  const [muted, setMuted] = useState(false);
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    audio.setMasterLevel(next ? 0 : 0.9);
+  };
+
 
   // ── param remapping (chip → widget), shared by the panel and the controller surface ──
   const [assignPending, setAssignPending] = useState<AssignPending | null>(null);
@@ -219,6 +231,8 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     selectBank,
     clearDeck,
     clearShader: browse.clearShader,
+    muted,
+    toggleMute,
     started,
     start,
     midi,

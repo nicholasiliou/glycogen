@@ -14,7 +14,7 @@ export interface Browse {
   step: (delta: number) => void;
   load: (deck: DeckName, bank?: number) => void;
   selectBank: (deck: DeckName, bank: number) => void;
-  clearDeck: (deck: DeckName) => void;
+  clearDeck: (deck: DeckName, bank?: number) => void;
   clearShader: () => void;
 }
 
@@ -104,8 +104,8 @@ export function useBrowse({ stage, focus, setFocus, refresh }: {
     refresh();
   };
 
-  const clearDeck = (deck: DeckName) => {
-    stage.clearBank(deck);
+  const clearDeck = (deck: DeckName, bank?: number) => {
+    stage.clearBank(deck, bank);
     refresh();
   };
 
