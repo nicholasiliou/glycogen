@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { ControlBus } from "@/controls/ControlBus";
 import { hardwareBindings, hardwareControls, setHardwareBinding } from "@/db/schema";
 import { seedCodeTables } from "@/db/seeds";
-import { attachMidiRouter, type MidiActionHandlers } from "./router";
+import { attachMidiRouter } from "./router";
 import type { MidiManager } from "./MidiManager";
 import type { MidiControl, MidiEvent } from "./types";
 
@@ -28,21 +28,19 @@ function ctl(id: string, over: Partial<MidiControl> = {}): MidiControl {
   };
 }
 
-describe("attachMidiRouter (db-driven)", () => {
+describe("attachMidiRouter (db-driven, widget-only)", () => {
   let bus: ControlBus;
-  let handlers: { step: ReturnType<typeof vi.fn>; run: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     seedCodeTables();
     hardwareBindings.replaceAll([]);
     hardwareControls.replaceAll([]);
     bus = new ControlBus();
-    handlers = { step: vi.fn(), run: vi.fn() };
   });
 
   function attach(): ReturnType<typeof fakeMidi>["emit"] {
     const { midi, emit } = fakeMidi();
-    attachMidiRouter(midi, bus, handlers as unknown as MidiActionHandlers);
+    attachMidiRouter(midi, bus);
     return emit;
   }
 
@@ -58,7 +56,7 @@ describe("attachMidiRouter (db-driven)", () => {
   it("drives a bound widget's bus slot from a continuous control", () => {
     const emit = attach();
     emit(ctl("cc:0:7")); // register
-    setHardwareBinding("cc:0:7", { type: "widget", widgetId: "knob:3" });
+    setHardwareBinding("cc:0:7", "knob:3");
     emit(ctl("cc:0:7", { value: 0.75 }));
     expect(bus.get("knob:3").value).toBe(0.75);
   });
@@ -66,39 +64,25 @@ describe("attachMidiRouter (db-driven)", () => {
   it("routes button presses into the slot's pressed state", () => {
     const emit = attach();
     emit(ctl("note:0:36", { continuous: false }));
-    setHardwareBinding("note:0:36", { type: "widget", widgetId: "pad:4" });
+    setHardwareBinding("note:0:36", "pad:4");
     emit(ctl("note:0:36", { continuous: false, pressed: true }));
     expect(bus.get("pad:4").pressed).toBe(true);
     expect(bus.get("pad:4").presses).toBe(1);
   });
 
-  it("runs momentary app actions on press only", () => {
-    const emit = attach();
-    emit(ctl("note:0:1", { continuous: false }));
-    setHardwareBinding("note:0:1", { type: "action", actionId: "load" });
-    emit(ctl("note:0:1", { continuous: false, pressed: false }));
-    expect(handlers.run).not.toHaveBeenCalled();
-    emit(ctl("note:0:1", { continuous: false, pressed: true }));
-    expect(handlers.run).toHaveBeenCalledWith("load");
-  });
-
-  it("browse steps by delta sign from a relative control and +1 from a button", () => {
+  it("drives relative jog deltas onto the reserved browse widgets", () => {
     const emit = attach();
     emit(ctl("cc:0:20", { relative: true }));
-    setHardwareBinding("cc:0:20", { type: "action", actionId: "browsePlugin" });
+    setHardwareBinding("cc:0:20", "jog:0");
     emit(ctl("cc:0:20", { relative: true, delta: -3 }));
-    expect(handlers.step).toHaveBeenCalledWith("plugin", -1);
-
-    emit(ctl("note:0:2", { continuous: false }));
-    setHardwareBinding("note:0:2", { type: "action", actionId: "browseShader" });
-    emit(ctl("note:0:2", { continuous: false, pressed: true }));
-    expect(handlers.step).toHaveBeenCalledWith("shader", 1);
+    expect(bus.get("jog:0").relative).toBe(true);
+    expect(bus.get("jog:0").delta).toBe(-3);
   });
 
   it("routes nothing for disabled controls", () => {
     const emit = attach();
     emit(ctl("cc:0:7"));
-    setHardwareBinding("cc:0:7", { type: "widget", widgetId: "knob:0" });
+    setHardwareBinding("cc:0:7", "knob:0");
     hardwareControls.update("cc:0:7", { disabled: true });
     emit(ctl("cc:0:7", { value: 0.9 }));
     expect(bus.get("knob:0").hits).toBe(0);
@@ -107,7 +91,7 @@ describe("attachMidiRouter (db-driven)", () => {
   it("cascades the binding away when its control row is deleted", () => {
     const emit = attach();
     emit(ctl("cc:0:7"));
-    setHardwareBinding("cc:0:7", { type: "widget", widgetId: "knob:0" });
+    setHardwareBinding("cc:0:7", "knob:0");
     expect(hardwareBindings.size).toBe(1);
     hardwareControls.delete("cc:0:7");
     expect(hardwareBindings.size).toBe(0);

@@ -2,13 +2,11 @@
 // Identical layout to before — only the wiring changed: each widget now drives an abstract
 // ControlBus slot (assigned here), instead of a learned MIDI assignment.
 
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  BankControlContext,
   BrowsePanel,
   Circle,
   Fader,
-  GlobalPad,
   JogWheel,
   Knob,
   Pad,
@@ -37,37 +35,16 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return <span className="select-none text-[8px] font-semibold uppercase tracking-[0.18em] text-ink-dim/70">{children}</span>;
 }
 
-/**
- * The top row of every panel is global, not plugin-bindable: Del + three of the unified banks
- * (banks are one flat row now — the left panel shows 1–3, the right 4–6). A bank button selects
- * its bank if loaded, else loads the browsed plugin into it; Del clears the active bank.
- */
-function BankRow({ from }: { from: number }) {
-  const bank = useContext(BankControlContext);
-  const s = bank?.state() ?? { loaded: [], active: -1 };
-  return (
-    <>
-      <GlobalPad label="Del" onPress={() => bank?.clear()} loaded={!!s.loaded[s.active]} />
-      {Array.from({ length: 3 }, (_, i) => from + i).map((i) => (
-        <GlobalPad
-          key={i}
-          label={`Bank ${i + 1}`}
-          active={s.active === i && !!s.loaded[i]}
-          loaded={!!s.loaded[i]}
-          onPress={() => bank?.select(i)}
-        />
-      ))}
-    </>
-  );
-}
-
 /** A side panel. `pad`/`enc` are the slot indices for this side; `jog` is its browse wheel. */
-function SidePanel({ bankFrom, pad, enc, jog, jogLabel }: { bankFrom: number; pad: number; enc: number; jog: number; jogLabel: string }) {
+function SidePanel({ pad, enc, jog, jogLabel }: { pad: number; enc: number; jog: number; jogLabel: string }) {
   const stack = (
     <div className="flex flex-col items-center gap-6">
     <div className="grid grid-cols-4 gap-3">
-      {/* top row: global bank/del controls (not plugin slots) */}
-      <BankRow from={bankFrom} />
+      {/* top row: ordinary pads — the factory action layout puts Clear/Bank 1–6 here */}
+      <Pad slot={pad + 0}/>
+      <Pad slot={pad + 1}/>
+      <Pad slot={pad + 2}/>
+      <Pad slot={pad + 3}/>
 
       <Pad slot={pad + 4}/>
       <SmoothKnob slot={enc + 0}/>
@@ -150,9 +127,9 @@ export function Controller({ browse }: { browse?: BrowseProps }) {
     // uniformly to fit the masked overlay without distorting the components.
     <div className="relative flex flex-col items-center justify-center">
       <div className="flex items-stretch gap-4 p-4">
-        <SidePanel bankFrom={0} pad={0} enc={0} jog={0} jogLabel="plugins"/>
+        <SidePanel pad={0} enc={0} jog={0} jogLabel="plugins"/>
         <MixerPanel browse={browse}/>
-        <SidePanel bankFrom={3} pad={13} enc={3} jog={1} jogLabel="shaders"/>
+        <SidePanel pad={13} enc={3} jog={1} jogLabel="shaders"/>
       </div>
     </div>
   );

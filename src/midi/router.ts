@@ -1,29 +1,24 @@
 import type { ControlBus } from "@/controls/ControlBus";
-import { appActions, hardwareBindings, hardwareControls, type AppAction } from "@/db/schema";
+import { hardwareBindings, hardwareControls } from "@/db/schema";
 import { defaultKindFor, type MidiControl } from "./types";
 import type { MidiManager } from "./MidiManager";
 
-/** App-level functions the router can invoke (everything that isn't a plugin parameter). */
 export interface MidiActionHandlers {
-  /** Step one of the two browse dials by a signed amount. */
-  step: (target: "plugin" | "shader", delta: number) => void;
-  /** Run a momentary app action (load / clear / bank select). */
-  run: (action: Exclude<AppAction, "browsePlugin" | "browseShader">) => void;
   /** Report each routed control for the "last MIDI action" readout: the physical control's label
-   *  and what it resolved to (a widget id or an app action). Continuous moves report on every tick. */
-  report?: (control: string, target: string) => void;
+   *  and the widget it resolved to. Continuous moves report on every tick. */
+  report?: (control: string, widgetId: string) => void;
 }
 
 /**
- * Wire hardware MIDI onto the {@link ControlBus} and app actions, through the binding db. This is
- * the whole MIDI→runtime path: every message resolves `hardwareBindings` by the control's id — a
- * control bound to a widget drives that widget's bus slot (the focused plugin reacts); a control
- * bound to an app action invokes the matching handler. Newly seen controls auto-register a
- * `hardwareControls` row so they surface in settings without a separate learn step.
+ * Wire hardware MIDI onto the {@link ControlBus}, through the binding db. This is the whole
+ * MIDI→runtime path: every message resolves `hardwareBindings` by the control's id and drives the
+ * bound widget's bus slot — everything downstream (params, app actions, browse) hangs off the bus.
+ * Newly seen controls auto-register a `hardwareControls` row so they surface without a separate
+ * learn step.
  *
  * Returns an unsubscribe.
  */
-export function attachMidiRouter(midi: MidiManager, bus: ControlBus, handlers: MidiActionHandlers): () => void {
+export function attachMidiRouter(midi: MidiManager, bus: ControlBus, handlers: MidiActionHandlers = {}): () => void {
   return midi.on("control", (ev) => {
     const ctl = ev.control;
     register(ctl);
@@ -31,27 +26,13 @@ export function attachMidiRouter(midi: MidiManager, bus: ControlBus, handlers: M
     const row = hardwareBindings.by("control", ctl.id)[0];
     if (!row || hardwareControls.get(ctl.id)?.disabled) return;
 
-    if (row.target.type === "widget") {
-      const widgetId = row.target.widgetId;
-      if (ctl.continuous) {
-        const value = row.invert ? 1 - ctl.value : ctl.value;
-        bus.drive(widgetId, { value, delta: ctl.delta, relative: ctl.relative });
-        handlers.report?.(ctl.label, widgetId);
-      } else {
-        bus.drive(widgetId, { pressed: ctl.pressed });
-        if (ctl.pressed) handlers.report?.(ctl.label, widgetId);
-      }
-      return;
-    }
-
-    const action = row.target.actionId;
-    if (action === "browsePlugin" || action === "browseShader") {
-      const target = action === "browsePlugin" ? "plugin" : "shader";
-      if (ctl.relative && ctl.delta) { handlers.step(target, Math.sign(ctl.delta)); handlers.report?.(ctl.label, action); }
-      else if (!ctl.continuous && ctl.pressed) { handlers.step(target, 1); handlers.report?.(ctl.label, action); }
-    } else if (appActions.get(action)?.momentary && !ctl.continuous && ctl.pressed) {
-      handlers.run(action);
-      handlers.report?.(ctl.label, action);
+    if (ctl.continuous) {
+      const value = row.invert ? 1 - ctl.value : ctl.value;
+      bus.drive(row.widgetId, { value, delta: ctl.delta, relative: ctl.relative });
+      handlers.report?.(ctl.label, row.widgetId);
+    } else {
+      bus.drive(row.widgetId, { pressed: ctl.pressed });
+      if (ctl.pressed) handlers.report?.(ctl.label, row.widgetId);
     }
   });
 }

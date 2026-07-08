@@ -120,6 +120,8 @@ export function HeaderBar({
     stepShader,
     banks,
     activeBank,
+    focusPart,
+    setFocusPart,
     muted,
     toggleMute,
     clearShader,
@@ -127,22 +129,26 @@ export function HeaderBar({
   } = useLive();
 
   const shaderLoaded = !!banks[activeBank]?.shader;
+  // Clicking a preview focuses that half of the active bank (which one the controls drive).
+  const focusRing = (part: "plugin" | "shader") =>
+    focusPart === part ? "rounded ring-1 ring-accent/70" : "rounded ring-1 ring-transparent hover:ring-accent/30";
 
   return (
     <div className="flex h-14 shrink-0 items-center gap-3 px-3 text-ink">
       {/* Plugins and shaders browse side by side — one dial each, no mode switch. */}
-      <div className="flex items-center gap-1.5" title="Browse plugins">
+      <div className="flex items-center gap-1.5" title="Browse plugins · click the preview to focus the plugin">
         <span className="shrink-0 text-[10px] uppercase tracking-wide text-ink-dim">gen</span>
         <MiniDial index={selectedPluginIndex} count={generators.length} onStep={stepPlugin} />
-        <PluginPreview info={selectedPlugin} className="w-44" />
+        <button type="button" onClick={() => setFocusPart("plugin")} className={focusRing("plugin")}>
+          <PluginPreview info={selectedPlugin} className="w-44" />
+        </button>
       </div>
-      <div className="flex items-center gap-1.5" title="Browse shaders (applies to the active bank)">
+      <div className="flex items-center gap-1.5" title="Browse shaders (applies to the active bank) · click the preview to focus the shader">
         <span className="shrink-0 text-[10px] uppercase tracking-wide text-ink-dim">fx</span>
         <MiniDial index={selectedShaderIndex} count={effects.length} onStep={stepShader} />
-        <PluginPreview info={selectedShader} className="w-32" />
-        {shaderLoaded && (
-          <button onClick={clearShader} className="shrink-0 text-ink-dim/40 hover:text-ink leading-none" title="Clear this bank's shader (None)">✕</button>
-        )}
+        <button type="button" onClick={() => setFocusPart("shader")} className={focusRing("shader")}>
+          <PluginPreview info={selectedShader} className="w-32" />
+        </button>
       </div>
 
       <div className="flex-1" />

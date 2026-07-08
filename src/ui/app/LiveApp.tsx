@@ -6,7 +6,8 @@ import { asset } from "@/lib/asset";
 import { HeaderBar } from "@/ui/stage/HeaderBar";
 import { Stage } from "@/ui/stage/Stage";
 import { ControlsPanel } from "@/ui/controls/ControlsPanel";
-import { MidiSettingsDialog, type Tab } from "@/ui/settings/MidiSettingsDialog";
+import { AssignPanel } from "@/ui/controls/AssignPanel";
+import { MidiSettingsDialog } from "@/ui/settings/MidiSettingsDialog";
 
 export function LiveApp() {
   return (
@@ -71,29 +72,25 @@ function LearnToast() {
 function LiveShell() {
   const { load } = useLive();
   const [controllerOpen, setControllerOpen] = useState(false);
-  // Lifted here so the chosen tab persists across closing/reopening the overlay (the dialog itself
-  // unmounts on close, which would otherwise reset it to "controller").
-  const [tab, setTab] = useState<Tab>("controller");
   // Right-side controls drawer. When open it takes width from the stage row, so the canvas (sized
   // by a ResizeObserver on its host) re-fits to the narrower area automatically.
   const [controlsOpen, setControlsOpen] = useState(false);
 
-  // The controller tab auto-opens the controls drawer (params are what you tweak there), then puts
+  // The controller overlay auto-opens the drawer (it shows the assign sidebar there), then puts
   // it back how it was: closed again if it was closed before, kept open if it was open.
-  const controllerTabShown = controllerOpen && tab === "controller";
   const controlsBefore = useRef(false);
   const prevShown = useRef(false);
   useEffect(() => {
-    if (controllerTabShown === prevShown.current) return;
-    prevShown.current = controllerTabShown;
-    if (controllerTabShown) {
+    if (controllerOpen === prevShown.current) return;
+    prevShown.current = controllerOpen;
+    if (controllerOpen) {
       controlsBefore.current = controlsOpen;
       setControlsOpen(true);
     } else {
       setControlsOpen(controlsBefore.current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- controlsOpen is only sampled on the transition
-  }, [controllerTabShown]);
+  }, [controllerOpen]);
 
   // Space loads the browsed plugin onto the stage (replaces the old play/pause transport toggle).
   useEffect(() => {
@@ -148,21 +145,22 @@ function LiveShell() {
               {/* The mask notches the top/bottom edges and rounds the corners, so the dialog content
                   is inset into the mask's clip-free interior rather than filling the raw box. */}
               <div className="absolute inset-0" style={{ padding: "0% 3.5%" }}>
-                <MidiSettingsDialog tab={tab} onTab={setTab} />
+                <MidiSettingsDialog />
               </div>
             </div>
           </div>
         )}
         </div>
 
-        {/* Right-side controls drawer. Lives in the flex row, so opening it narrows the stage. */}
+        {/* Right-side drawer. Lives in the flex row, so opening it narrows the stage. While the
+            controller overlay is open it shows the assign sidebar; otherwise the value editors. */}
         {controlsOpen && (
           <aside className="flex h-full w-72 shrink-0 flex-col">
             <div className="flex items-center gap-2 px-3 py-2 text-[11px] uppercase tracking-wide text-ink-dim">
               <Sliders className="h-3.5 w-3.5" />
-              Controls
+              {controllerOpen ? "Assign" : "Controls"}
             </div>
-            <ControlsPanel />
+            {controllerOpen ? <AssignPanel /> : <ControlsPanel />}
           </aside>
         )}
       </div>

@@ -3,14 +3,15 @@ import type { ReactNode } from "react";
 import { ControlBus } from "@/controls/ControlBus";
 import type { SlotId } from "@/controls/types";
 import type { AdapterKind } from "@/controls/adapters";
-import { bankOf, paramBindings, params, setParamBinding } from "@/db/schema";
+import { actionBindings, appActions, bankOf, paramBindings, params, setActionBinding, setParamBinding, type AppAction } from "@/db/schema";
+import { useTable } from "@/db/useDb";
 import type { PluginInfo } from "@/plugins/registry";
 import { Stage, type FocusPart } from "@/runtime/Stage";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { LivePerformer } from "@/audio/LivePerformer";
 import { MidiManager } from "@/midi/MidiManager";
-import type { MidiActionHandlers } from "@/midi/router";
-import { ArmLearnContext, AssignContext, BankControlContext, ControlBusContext, LearnSlotContext, SlotLabelContext, type AssignCtxType, type AssignPending, type BankControl } from "@/ui/controller/widgets";
+import { ArmLearnContext, AssignContext, ControlBusContext, LearnSlotContext, SlotActionContext, SlotLabelContext, SlotOccupantContext, type AssignCtxType, type AssignPending, type SlotAction } from "@/ui/controller/widgets";
+import { pendingForAction, pendingForParam } from "@/ui/controls/assign";
 import { useBrowse } from "./useBrowse";
 import { useHardwareSync } from "./useHardwareSync";
 import { useMidiRouting } from "./useMidiRouting";
@@ -18,11 +19,11 @@ import { useRemoteBridge } from "./useRemoteBridge";
 
 /**
  * The live editor's context, over the factory core: one {@link ControlBus} (fed by the on-screen
- * controller AND hardware MIDI), one runtime {@link Stage} (a flat row of banks, each a generator
- * plus an optional per-layer shader), and the audio engine. Hardware MIDI is routed through the
- * binding db straight onto bus slots / app actions. The provider itself only owns the render tick
- * and small UI state; browse/load, hardware sync, MIDI routing and the pop-out bridge each live in
- * their own hook.
+ * controller, the pop-out relay AND hardware MIDI), one runtime {@link Stage} (a flat row of banks,
+ * each a generator plus an optional per-layer shader), and the audio engine. Hardware MIDI is
+ * routed through the binding db straight onto bus slots; app functions run off the bus too, via
+ * their `actionBindings` widgets. The provider itself only owns the render tick and small UI state;
+ * browse/load, hardware sync, MIDI routing and the pop-out bridge each live in their own hook.
  */
 interface LiveCtx {
   bus: ControlBus;
@@ -50,7 +51,7 @@ interface LiveCtx {
   /** Audio/visual gate — the intro is dismissed once started. */
   started: boolean;
   start: () => void;
-  /** The hardware MIDI connection (device status, live control snapshots for settings). */
+  /** The hardware MIDI connection (device status, live control snapshots). */
   midi: MidiManager;
   /** MIDI learn: slot currently armed for one-shot hardware capture, or null. */
   learnSlot: SlotId | null;
@@ -58,7 +59,7 @@ interface LiveCtx {
   armLearn: (slot: SlotId) => void;
   /** Cancel any pending learn. */
   cancelLearn: () => void;
-  /** Last routed hardware MIDI control + the param/action it hit, for the settings header readout. */
+  /** Last routed hardware MIDI control + the param/action it hit, for the overlay header readout. */
   lastMidi: { control: string; target: string } | null;
 }
 
@@ -90,32 +91,10 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   const { stepPlugin, stepShader, load, selectBank, clearBank, clearShader } = browse;
   useHardwareSync(midi);
 
-  // App actions a hardware control can be bound to (everything that isn't a plugin parameter).
-  const runAction: MidiActionHandlers["run"] = (action) => {
-    switch (action) {
-      case "load": return load();
-      case "clear": return clearBank();
-      case "clearShader": return clearShader();
-      default: {
-        const bank = bankOf(action);
-        if (bank !== null) {
-          if (stage.banks[bank].plugin) selectBank(bank);
-          else load(bank);
-        }
-      }
-    }
-  };
-
   const stepBrowse = (target: "plugin" | "shader", delta: number) =>
     target === "plugin" ? stepPlugin(delta) : stepShader(delta);
 
-  const { learnSlot, armLearn, cancelLearn, lastMidi } = useMidiRouting({
-    midi,
-    bus,
-    stage,
-    handlers: { step: stepBrowse, run: runAction },
-    refresh,
-  });
+  const { learnSlot, armLearn, cancelLearn, lastMidi } = useMidiRouting({ midi, bus, stage, refresh });
 
   // ── the jog wheels ARE the browse dials: jog:0 sweeps plugins, jog:1 sweeps shaders ──
   const stepRef = useRef(stepBrowse);
@@ -141,6 +120,32 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     };
   }, [bus]);
 
+  // ── app functions run off the bus: each actionBindings row watches its widget's slot for a
+  //    rising press. Works identically for the on-screen pads, pop-out relays and hardware, since
+  //    everything lands on the host bus. Rebuilt whenever the table changes. ──
+  const actionRows = useTable(actionBindings, (t) => t.all());
+  const runAction = (actionId: AppAction) => {
+    if (actionId === "clear") return clearBank();
+    const bank = bankOf(actionId);
+    if (bank !== null) {
+      if (stage.banks[bank].plugin) selectBank(bank);
+      else load(bank);
+    }
+  };
+  const runActionRef = useRef(runAction);
+  runActionRef.current = runAction;
+  useEffect(() => {
+    const offs = actionRows.map((row) => {
+      let lastPresses = bus.get(row.widgetId).presses;
+      return bus.subscribe(row.widgetId, (live) => {
+        if (live.presses === lastPresses) return;
+        lastPresses = live.presses;
+        runActionRef.current(row.actionId);
+      });
+    });
+    return () => offs.forEach((off) => off());
+  }, [bus, actionRows]);
+
   // ── header master mute (silences the master bus, engine keeps running) ──
   const [muted, setMuted] = useState(false);
   const toggleMute = () => {
@@ -149,7 +154,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     audio.setMasterLevel(next ? 0 : 0.9);
   };
 
-  // ── param remapping (chip → widget), shared by the panel and the controller surface ──
+  // ── assignment (sidebar row / occupant → widget), shared by the panel and the overlay ──
   const [assignPending, setAssignPending] = useState<AssignPending | null>(null);
   const assignCtx: AssignCtxType = {
     pending: assignPending,
@@ -157,7 +162,9 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     cancel: () => setAssignPending(null),
     assignTo: (slot) => {
       if (!assignPending) return;
-      setParamBinding(assignPending.pluginId, assignPending.paramId, slot, assignPending.legal[slot]?.[0] as AdapterKind | undefined);
+      if (assignPending.type === "param")
+        setParamBinding(assignPending.pluginId, assignPending.paramId, slot, assignPending.legal[slot]?.[0] as AdapterKind | undefined);
+      else setActionBinding(assignPending.actionId, slot);
       setAssignPending(null);
     },
   };
@@ -205,21 +212,39 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Bank controls for the controller's top row (shared by the host surface and the pop-out window).
-  const bankControl: BankControl = {
-    state: () => ({ loaded: stage.banks.map((b) => !!b.plugin), active: stage.active }),
-    select: (i) => (stage.banks[i].plugin ? selectBank(i) : load(i)),
-    clear: () => clearBank(),
-  };
+  // widget → the app function sitting on it (label + lit), for pad labels/lighting everywhere.
+  const slotActions: Partial<Record<SlotId, SlotAction>> = {};
+  for (const row of actionRows) {
+    const action = appActions.get(row.actionId);
+    if (!action) continue;
+    const bank = bankOf(row.actionId);
+    slotActions[row.widgetId] = {
+      actionId: row.actionId,
+      label: action.label,
+      lit: bank !== null && bank === stage.active && !!stage.banks[bank].plugin,
+    };
+  }
+
+  // widget → its occupant as a ready-to-arm pending, so the assign overlay can drag occupants off.
+  const slotOccupants: Partial<Record<SlotId, AssignPending>> = {};
+  if (managed) {
+    for (const row of paramBindings.by("plugin", managed.id)) {
+      const p = params.get(row.paramId);
+      if (p && !row.locked) slotOccupants[row.widgetId] = pendingForParam(p);
+    }
+  }
+  for (const row of actionRows) {
+    const action = appActions.get(row.actionId);
+    if (action) slotOccupants[row.widgetId] = pendingForAction(action);
+  }
 
   useRemoteBridge({
     bus,
     stage,
     step: stepBrowse,
-    bankControl,
     slotLabels,
+    slotActions,
     browseLabels: { plugin: browse.selectedPlugin?.label, shader: browse.selectedShader?.label },
-    assign: assignCtx,
   });
 
   const value: LiveCtx = {
@@ -259,15 +284,17 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={value}>
       <ControlBusContext.Provider value={bus}>
-        <BankControlContext.Provider value={bankControl}>
-          <LearnSlotContext.Provider value={learnSlot}>
-            <ArmLearnContext.Provider value={armLearn}>
-              <AssignContext.Provider value={assignCtx}>
-                <SlotLabelContext.Provider value={slotLabels}>{children}</SlotLabelContext.Provider>
-              </AssignContext.Provider>
-            </ArmLearnContext.Provider>
-          </LearnSlotContext.Provider>
-        </BankControlContext.Provider>
+        <LearnSlotContext.Provider value={learnSlot}>
+          <ArmLearnContext.Provider value={armLearn}>
+            <AssignContext.Provider value={assignCtx}>
+              <SlotActionContext.Provider value={slotActions}>
+                <SlotOccupantContext.Provider value={slotOccupants}>
+                  <SlotLabelContext.Provider value={slotLabels}>{children}</SlotLabelContext.Provider>
+                </SlotOccupantContext.Provider>
+              </SlotActionContext.Provider>
+            </AssignContext.Provider>
+          </ArmLearnContext.Provider>
+        </LearnSlotContext.Provider>
       </ControlBusContext.Provider>
     </Ctx.Provider>
   );

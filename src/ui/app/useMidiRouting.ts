@@ -1,14 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { ControlBus } from "@/controls/ControlBus";
 import type { SlotId } from "@/controls/types";
-import { appActions, hardwareControls, paramBindings, params, setHardwareBinding, type AppAction } from "@/db/schema";
+import { actionBindings, appActions, hardwareControls, paramBindings, params, setHardwareBinding } from "@/db/schema";
 import type { MidiManager } from "@/midi/MidiManager";
-import { attachMidiRouter, type MidiActionHandlers } from "@/midi/router";
+import { attachMidiRouter } from "@/midi/router";
 import { defaultKindFor } from "@/midi/types";
 import type { Stage } from "@/runtime/Stage";
-
-/** App-level handlers the hardware router invokes (reporting is handled inside the hook). */
-export type MidiRoutingHandlers = Pick<MidiActionHandlers, "step" | "run">;
 
 export interface UseMidiRouting {
   /** MIDI learn: widget currently armed for one-shot hardware capture, or null. */
@@ -17,24 +14,21 @@ export interface UseMidiRouting {
   armLearn: (slot: SlotId) => void;
   /** Cancel any pending learn. */
   cancelLearn: () => void;
-  /** Last routed hardware MIDI control + the param/action it hit, for the settings header readout. */
+  /** Last routed hardware MIDI control + the param/action it hit, for the overlay header readout. */
   lastMidi: { control: string; target: string } | null;
 }
 
 /**
- * Hardware MIDI → bus / app actions, through the binding db, plus one-shot MIDI learn and the
- * "last MIDI action" readout. The router and control listener are attached once; everything that
- * changes per render (handlers, learn state) is read through refs so the once-attached closures
- * always see fresh values. Learning writes `hardwareControls` + `hardwareBindings` rows — nothing
- * else holds mapping state.
+ * Hardware MIDI → bus, through the binding db, plus one-shot MIDI learn and the "last MIDI action"
+ * readout. The router and control listener are attached once; per-render state (learn) is read
+ * through refs so the once-attached closures always see fresh values. Learning writes
+ * `hardwareControls` + `hardwareBindings` rows — nothing else holds mapping state.
  */
 export function useMidiRouting(opts: {
   midi: MidiManager;
   bus: ControlBus;
   stage: Stage;
-  /** Fresh closures each render — step the browse dial, run an app action. */
-  handlers: MidiRoutingHandlers;
-  /** Bump the host's render tick (surfaces newly-seen controls in settings). */
+  /** Bump the host's render tick (surfaces newly-seen controls). */
   refresh: () => void;
 }): UseMidiRouting {
   const { midi, bus, stage } = opts;
@@ -43,8 +37,6 @@ export function useMidiRouting(opts: {
 
   const learnSlotRef = useRef<SlotId | null>(null);
   learnSlotRef.current = learnSlot;
-  const handlersRef = useRef(opts.handlers);
-  handlersRef.current = opts.handlers;
   const refreshRef = useRef(opts.refresh);
   refreshRef.current = opts.refresh;
 
@@ -63,25 +55,21 @@ export function useMidiRouting(opts: {
           disabled: false,
           deviceName: ctl.deviceName,
         });
-        setHardwareBinding(ctl.id, { type: "widget", widgetId: pending });
+        setHardwareBinding(ctl.id, pending);
         return;
       }
-      refreshRef.current(); // surface newly-seen controls in settings
+      refreshRef.current(); // surface newly-seen controls
     });
     const offRouter = attachMidiRouter(midi, bus, {
-      step: (target, d) => handlersRef.current.step(target, d),
-      run: (a) => handlersRef.current.run(a),
-      report: (control, target) => {
-        // Friendly readout: a widget resolves to the focused plugin's bound param name (or the raw
-        // widget id if unbound); an app action resolves to its display label.
-        const isWidget = target.includes(":");
-        let label: string | undefined;
-        if (isWidget) {
+      report: (control, widgetId) => {
+        // Friendly readout: the widget's occupant — the app action sitting on it, else the focused
+        // plugin's bound param name, else the raw widget id.
+        const action = actionBindings.by("widget", widgetId as SlotId)[0];
+        let label: string | undefined = action && appActions.get(action.actionId)?.label;
+        if (!label) {
           const pluginId = stage.managed()?.id;
-          const row = pluginId ? paramBindings.by("plugin", pluginId).find((r) => r.widgetId === target) : undefined;
-          label = (row && params.get(row.paramId)?.name) ?? target;
-        } else {
-          label = appActions.get(target as AppAction)?.label ?? target;
+          const row = pluginId ? paramBindings.by("plugin", pluginId).find((r) => r.widgetId === widgetId) : undefined;
+          label = (row && params.get(row.paramId)?.name) ?? widgetId;
         }
         setLastMidi({ control, target: label });
       },

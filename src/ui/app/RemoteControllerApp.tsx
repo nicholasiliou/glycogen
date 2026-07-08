@@ -9,13 +9,10 @@ import {
 import { Controller } from "@/ui/controller/Controller";
 import {
   ArmLearnContext,
-  AssignContext,
-  BankControlContext,
   ControlBusContext,
   LearnSlotContext,
+  SlotActionContext,
   SlotLabelContext,
-  type AssignCtxType,
-  type BankControl,
 } from "@/ui/controller/widgets";
 
 /**
@@ -37,14 +34,14 @@ class RemoteBus extends ControlBus {
   }
 }
 
-/** The pop-out controller: renders only the surface, relaying input to the host window. */
-const EMPTY_BANKS = { loaded: [], active: -1 };
-
+/**
+ * The pop-out controller: a live performance surface (mode `"live"` — the default — so widgets
+ * drive), relaying input to the host window. Assignment happens only on the host's overlay; this
+ * window renders labels/lighting from the mirrored snapshot.
+ */
 export function RemoteControllerApp() {
-  const [snapshot, setSnapshot] = useState<RemoteSnapshot>({ labels: {}, banks: EMPTY_BANKS });
+  const [snapshot, setSnapshot] = useState<RemoteSnapshot>({ labels: {}, actions: {} });
   const chanRef = useRef<BroadcastChannel | null>(null);
-  const snapRef = useRef(snapshot);
-  snapRef.current = snapshot;
 
   const bus = useMemo(
     () => new RemoteBus((m) => chanRef.current?.postMessage(m)),
@@ -70,48 +67,23 @@ export function RemoteControllerApp() {
   const step = (target: "plugin" | "shader", delta: number) =>
     chanRef.current?.postMessage({ kind: "step", target, delta } satisfies RemoteMessage);
 
-  const bankControl = useMemo<BankControl>(
-    () => ({
-      state: () => snapRef.current.banks,
-      select: (bank) => chanRef.current?.postMessage({ kind: "bankSelect", bank } satisfies RemoteMessage),
-      clear: () => chanRef.current?.postMessage({ kind: "bankClear" } satisfies RemoteMessage),
-    }),
-    [],
-  );
-
-  // A remap armed in the host's bindings panel: legal widgets glow here too, and clicking one
-  // completes the assignment host-side. (Drag can't cross windows — click-to-assign is the path.)
-  const assignCtx = useMemo<AssignCtxType>(() => {
-    const a = snapshot.assign;
-    return {
-      pending: a
-        ? { pluginId: "", paramId: "", label: a.label, legal: Object.fromEntries(a.widgets.map((w) => [w, ["remote"]])) }
-        : null,
-      begin: () => {},
-      cancel: () => chanRef.current?.postMessage({ kind: "assignCancel" } satisfies RemoteMessage),
-      assignTo: (slot) => chanRef.current?.postMessage({ kind: "assignTo", slot } satisfies RemoteMessage),
-    };
-  }, [snapshot.assign]);
-
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-black text-ink">
       <ControlBusContext.Provider value={bus}>
-        <BankControlContext.Provider value={bankControl}>
+        <SlotActionContext.Provider value={snapshot.actions}>
           <SlotLabelContext.Provider value={snapshot.labels}>
             <LearnSlotContext.Provider value={null}>
               <ArmLearnContext.Provider value={() => {}}>
-                <AssignContext.Provider value={assignCtx}>
-                  <Controller
-                    browse={{
-                      plugin: { label: snapshot.browseLabels?.plugin, onStep: (d) => step("plugin", d) },
-                      shader: { label: snapshot.browseLabels?.shader, onStep: (d) => step("shader", d) },
-                    }}
-                  />
-                </AssignContext.Provider>
+                <Controller
+                  browse={{
+                    plugin: { label: snapshot.browseLabels?.plugin, onStep: (d) => step("plugin", d) },
+                    shader: { label: snapshot.browseLabels?.shader, onStep: (d) => step("shader", d) },
+                  }}
+                />
               </ArmLearnContext.Provider>
             </LearnSlotContext.Provider>
           </SlotLabelContext.Provider>
-        </BankControlContext.Provider>
+        </SlotActionContext.Provider>
       </ControlBusContext.Provider>
     </div>
   );

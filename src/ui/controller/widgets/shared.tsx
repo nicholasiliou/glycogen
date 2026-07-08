@@ -7,23 +7,28 @@ import * as React from "react";
 import { createContext, useContext } from "react";
 import type { ControlBus } from "@/controls/ControlBus";
 import type { DriveInput, SlotId } from "@/controls/types";
+import type { AppAction } from "@/db/schema";
 
 export const ControlBusContext = createContext<ControlBus | null>(null);
 
 /**
- * Bank state + actions for the top-row Del/Bank buttons. Supplied by the host (LiveProvider)
- * and by the pop-out window (over the channel), so the controller surface renders the same in both
- * without depending on the full live context. `loaded[i]` = bank i has a plugin; `active` = current.
+ * What the surface is for right now: `"live"` (pop-out + host bus — widgets drive the app) or
+ * `"assign"` (the controller overlay — an inert map you drag functions onto; widgets never drive
+ * the bus).
  */
-export interface BankControl {
-  state: () => { loaded: boolean[]; active: number };
-  select: (bank: number) => void;
-  clear: () => void;
-}
-export const BankControlContext = createContext<BankControl | null>(null);
+export type SurfaceMode = "live" | "assign";
+export const SurfaceModeContext = createContext<SurfaceMode>("live");
 
 /** Slot → label (the focused plugin's bound variable name). Updates as focus changes. */
 export const SlotLabelContext = createContext<Partial<Record<SlotId, string>>>({});
+
+/** Slot → the app function sitting on it (`lit` = that bank is active). Overrides the param label. */
+export interface SlotAction {
+  actionId: AppAction;
+  label: string;
+  lit: boolean;
+}
+export const SlotActionContext = createContext<Partial<Record<SlotId, SlotAction>>>({});
 
 /** The slot currently armed for MIDI learn, or null. */
 export const LearnSlotContext = createContext<SlotId | null>(null);
@@ -31,18 +36,24 @@ export const LearnSlotContext = createContext<SlotId | null>(null);
 export const ArmLearnContext = createContext<(slot: SlotId) => void>(() => {});
 
 /**
- * A param remap in progress — armed by clicking/dragging a binding chip in the bindings panel.
- * While pending, every legal widget highlights and completes the assignment on click or drop;
- * illegal widgets dim (clicking one cancels). `legal` maps each allowed widget to its legal
- * adapters (first entry = the default the assignment lands with).
+ * An assignment in progress — armed by clicking/dragging a row in the assign sidebar, or by
+ * dragging a widget's occupant on the assign surface. While pending, every legal widget highlights
+ * and completes the assignment on click or drop; illegal widgets dim (clicking one cancels).
+ * `legal` maps each allowed widget to its legal adapters (first entry = the default the assignment
+ * lands with; actions carry a placeholder entry — legality is press-widgets-only).
  */
-export interface AssignPending {
-  pluginId: string;
-  paramId: string;
-  /** The param name, shown under highlighted widgets. */
-  label: string;
-  legal: Partial<Record<SlotId, string[]>>;
-}
+export type AssignPending =
+  | { type: "param"; pluginId: string; paramId: string; label: string; legal: Partial<Record<SlotId, string[]>> }
+  | { type: "action"; actionId: AppAction; label: string; legal: Partial<Record<SlotId, string[]>> };
+
+/**
+ * Slot → the occupant sitting on it, as a ready-to-arm pending (assign mode only). Dragging an
+ * occupied frame re-arms its occupant so it can move to another widget or return to the sidebar.
+ */
+export const SlotOccupantContext = createContext<Partial<Record<SlotId, AssignPending>>>({});
+
+/** dataTransfer type for a dragged occupant/function; payload = JSON-serialised AssignPending. */
+export const ASSIGN_MIME = "application/x-marathon-assign";
 export interface AssignCtxType {
   pending: AssignPending | null;
   begin: (p: AssignPending) => void;
@@ -83,8 +94,10 @@ export function dragWith(onMove: (e: PointerEvent) => void, onEnd?: () => void):
 
 /** Everything a widget reads about its slot, plus the actions to drive it. */
 export interface SlotView {
-  /** The focused plugin's variable name bound to this slot, if any (for the on-screen label). */
+  /** The occupant's label: the app function on this slot, else the focused plugin's bound param. */
   label?: string;
+  /** The app action on this slot wants the widget lit steady (its bank is active). */
+  lit: boolean;
   /** Last absolute position 0..1 (faders/knobs). */
   liveValue: number;
   /** Last signed step (encoders/jog). */
@@ -102,14 +115,21 @@ export interface SlotView {
   fire: () => void;
 }
 
-/** Bind a widget to a slot: read its live state + focused label, get actions to drive it. */
+/**
+ * Bind a widget to a slot: read its live state + occupant label, get actions to drive it. In
+ * assign mode the surface is an inert map — drive/fire are no-ops, only the frames respond.
+ */
 export function useSlot(slot: SlotId): SlotView {
   const bus = useBus();
+  const mode = useContext(SurfaceModeContext);
   const labels = useContext(SlotLabelContext);
+  const action = useContext(SlotActionContext)[slot];
   const { armed, arm } = useLearn(slot);
   const live = bus.get(slot);
+  const inert = mode === "assign";
   return {
-    label: labels[slot],
+    label: action?.label ?? labels[slot],
+    lit: !!action?.lit,
     liveValue: live.value,
     liveDelta: live.delta,
     liveSeq: live.hits,
@@ -117,8 +137,8 @@ export function useSlot(slot: SlotId): SlotView {
     active: live.lastSeen > 0 && performance.now() - live.lastSeen < 300,
     armed,
     arm,
-    drive: (input) => bus.drive(slot, input),
-    fire: () => bus.fire(slot),
+    drive: inert ? () => {} : (input) => bus.drive(slot, input),
+    fire: inert ? () => {} : () => bus.fire(slot),
   };
 }
 
@@ -139,8 +159,11 @@ function Label({ children, lit }: { children: React.ReactNode; lit?: boolean }) 
 
 /**
  * Wraps a widget with its label (always rendered, matching the original spacing). Passing `slot`
- * additionally makes the frame an assignment target: while a param remap is pending, legal frames
- * highlight and complete it on click or drop, illegal ones dim (clicking cancels).
+ * additionally makes the frame an assignment target: while an assignment is pending, legal frames
+ * highlight and complete it on click or drop, illegal ones dim (clicking cancels). In assign mode
+ * the frame also blocks pointer input from reaching the widget (the surface is an inert map) and,
+ * when the slot has an occupant, becomes draggable — dragging re-arms the occupant so it can move
+ * to another widget or be dropped on the sidebar to unbind.
  */
 export function SlotFrame({
   label,
@@ -156,6 +179,9 @@ export function SlotFrame({
   children: React.ReactNode;
 }) {
   const assign = useContext(AssignContext);
+  const mode = useContext(SurfaceModeContext);
+  const occupants = useContext(SlotOccupantContext);
+  const occupant = slot ? occupants[slot] : undefined;
   const pending = slot ? assign.pending : null;
   const legal = !!(pending && slot && pending.legal[slot]);
 
@@ -165,14 +191,30 @@ export function SlotFrame({
     if (legal) assign.assignTo(slot!);
     else assign.cancel();
   };
+  // Assign mode, nothing pending: swallow the pointer before the widget sees it (inert surface) —
+  // no preventDefault, so a native drag of the occupant can still start.
+  const inertCapture = (e: React.SyntheticEvent) => e.stopPropagation();
+
+  const draggable = mode === "assign" && !!occupant;
 
   return (
     <div
       className={"relative flex flex-col items-center gap-1" + (pending && !legal ? " opacity-30" : "")}
       style={armed || legal ? { filter: "drop-shadow(0 0 6px var(--color-accent))" } : undefined}
-      onPointerDownCapture={pending ? capture : undefined}
+      onPointerDownCapture={pending ? capture : mode === "assign" ? inertCapture : undefined}
       onDragOver={legal ? (e) => e.preventDefault() : undefined}
       onDrop={legal ? capture : undefined}
+      draggable={draggable}
+      onDragStart={
+        draggable
+          ? (e) => {
+              e.dataTransfer.setData(ASSIGN_MIME, JSON.stringify(occupant));
+              e.dataTransfer.effectAllowed = "move";
+              assign.begin(occupant!);
+            }
+          : undefined
+      }
+      onDragEnd={draggable ? () => assign.cancel() : undefined}
     >
       {(armed || legal) && (
         <span

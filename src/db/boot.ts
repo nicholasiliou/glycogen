@@ -9,7 +9,7 @@
  * the registry) so this module stays free of plugin imports.
  */
 import { db, params, plugins, type ParamRow, type PluginRow } from "./schema";
-import { seedCodeTables, seedParamBindings } from "./seeds";
+import { seedActionBindings, seedCodeTables, seedParamBindings } from "./seeds";
 
 export interface CodeRegistration {
   plugins: PluginRow[];
@@ -25,6 +25,7 @@ export function bootDb(code: CodeRegistration): void {
   plugins.replaceAll(code.plugins);
   params.replaceAll(code.params);
   db.load();
+  seedActionBindings(); // before params: an action on a widget blocks param rows there
   seedParamBindings();
   purgeLegacyKeys();
 }

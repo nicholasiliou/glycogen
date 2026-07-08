@@ -1,7 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { LiveApp } from "@/ui/app/LiveApp";
 import { RemoteControllerApp } from "@/ui/app/RemoteControllerApp";
-import { DbInspectorApp } from "@/ui/app/DbInspectorApp";
+import { DbPage } from "@/ui/dev/DbPage";
 import { isRemoteWindow } from "@/controls/remoteChannel";
 import { bootDb } from "@/db/boot";
 import { harvestRegistrations } from "@/plugins/registry";
@@ -11,10 +11,10 @@ document.fonts.ready.then(() => {
   const hash = window.location.hash;
   const remote = isRemoteWindow();
 
-  // #db — read-only binding-db inspector, boots db so tables are populated
+  // #db — binding-db dev page (tables + hardware kind override), boots db so tables are populated
   if (hash.startsWith("#db")) {
     bootDb(harvestRegistrations());
-    createRoot(document.getElementById("root")!).render(<DbInspectorApp />);
+    createRoot(document.getElementById("root")!).render(<DbPage />);
     return;
   }
 

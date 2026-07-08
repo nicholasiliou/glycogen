@@ -13,12 +13,15 @@
 import { defaultAdapter } from "@/controls/adapters";
 import { slotId, type SlotId } from "@/controls/types";
 import {
+  actionBindings,
   appActions,
   paramBindings,
   paramId,
   params,
   plugins,
+  uid,
   widgets,
+  type AppAction,
   type AppActionRow,
   type WidgetRow,
 } from "./schema";
@@ -42,26 +45,33 @@ export const WIDGET_CATALOG: WidgetRow[] = [
   { id: "jog:0", kind: "jog", index: 0, reserved: "browsePlugin" },
   { id: "jog:1", kind: "jog", index: 1, reserved: "browseShader" },
   ...range("button", 0, 1),
-  ...range("pad", 4, 12), // left panel (pad:0..3 don't exist — that row is the global Del/Bank strip)
-  ...range("pad", 17, 25), // right panel
+  ...range("pad", 0, 12), // left panel (0..3 = top row, factory home of Clear/Bank 1–3)
+  ...range("pad", 13, 25), // right panel (13..16 = top row, factory home of Bank 4–6)
   ...range("pad", 26, 28), // mixer
 ];
 
 // ── app actions ─────────────────────────────────────────────────────────────────────────────────
 
 export const APP_ACTION_SEED: AppActionRow[] = [
-  { id: "browsePlugin", label: "Browse plugins", momentary: false },
-  { id: "browseShader", label: "Browse shaders", momentary: false },
-  { id: "load", label: "Load", momentary: true },
-  { id: "clear", label: "Clear layer", momentary: true },
-  { id: "clearShader", label: "Clear shader", momentary: true },
-  { id: "bank0", label: "Bank 1", momentary: true },
-  { id: "bank1", label: "Bank 2", momentary: true },
-  { id: "bank2", label: "Bank 3", momentary: true },
-  { id: "bank3", label: "Bank 4", momentary: true },
-  { id: "bank4", label: "Bank 5", momentary: true },
-  { id: "bank5", label: "Bank 6", momentary: true },
+  { id: "clear", label: "Clear" },
+  { id: "bank0", label: "Bank 1" },
+  { id: "bank1", label: "Bank 2" },
+  { id: "bank2", label: "Bank 3" },
+  { id: "bank3", label: "Bank 4" },
+  { id: "bank4", label: "Bank 5" },
+  { id: "bank5", label: "Bank 6" },
 ];
+
+/** Factory placement of the app functions on the pads' top rows (pad:13 is the spare). */
+export const DEFAULT_ACTION_LAYOUT: Record<string, AppAction> = {
+  "pad:0": "clear",
+  "pad:1": "bank0",
+  "pad:2": "bank1",
+  "pad:3": "bank2",
+  "pad:14": "bank3",
+  "pad:15": "bank4",
+  "pad:16": "bank5",
+};
 
 // ── factory layouts (transcribed 1:1 from the plugins' former hardcoded slots) ──────────────────
 
@@ -166,7 +176,22 @@ export function seedPluginBindings(pluginId: string): void {
       console.warn(`[db.seed] ${pluginId}.${field} → ${widgetId}: no legal adapter`);
       continue;
     }
+    if (actionBindings.by("widget", widgetId).length > 0) {
+      console.warn(`[db.seed] ${pluginId}.${field} → ${widgetId}: occupied by an app action`);
+      continue;
+    }
     paramBindings.upsert({ id: seedRowId(pluginId, field), pluginId, widgetId, paramId: param.id, adapter });
+  }
+}
+
+/**
+ * Copy-on-first-touch for the app functions: only when the user has never placed any (the table is
+ * empty) does the factory layout materialise — after that the rows are the user's.
+ */
+export function seedActionBindings(): void {
+  if (actionBindings.size > 0) return;
+  for (const [widgetId, actionId] of Object.entries(DEFAULT_ACTION_LAYOUT)) {
+    actionBindings.insert({ id: uid(), widgetId: widgetId as SlotId, actionId });
   }
 }
 

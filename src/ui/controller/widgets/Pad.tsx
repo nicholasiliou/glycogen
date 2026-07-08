@@ -9,7 +9,7 @@ export function Pad({ slot, label, className }: { slot: number; label?: string; 
   const sid = slotId("pad", slot);
   const s = useSlot(sid);
   const [flash, setFlash] = useState(false);
-  const lit = s.pressed || flash;
+  const lit = s.pressed || flash || s.lit; // s.lit = a bank action on this pad is the active bank
 
   const onDown = (e: React.PointerEvent) => {
     e.preventDefault();
@@ -20,7 +20,7 @@ export function Pad({ slot, label, className }: { slot: number; label?: string; 
   const onUp = () => s.drive({ pressed: false });
 
   return (
-    <SlotFrame slot={sid} label={s.label ?? label} active={s.active} armed={s.armed}>
+    <SlotFrame slot={sid} label={s.label ?? label} active={s.active || s.lit} armed={s.armed}>
       <div
         onPointerDown={onDown}
         onPointerUp={onUp}

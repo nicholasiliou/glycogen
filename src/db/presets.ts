@@ -6,6 +6,7 @@
  */
 import type { RowBase, Table } from "./engine";
 import {
+  actionBindings,
   hardwareBindings,
   hardwareControls,
   paramBindings,
@@ -16,32 +17,24 @@ import {
 } from "./schema";
 import { seedParamBindings } from "./seeds";
 
+function snapshotData(): PresetRow["data"] {
+  return {
+    paramBindings: paramBindings.all(),
+    actionBindings: actionBindings.all(),
+    hardwareBindings: hardwareBindings.all(),
+    hardwareControls: hardwareControls.all(),
+  };
+}
+
 export function savePreset(name: string): PresetRow {
   const now = Date.now();
-  return presets.insert({
-    id: uid(),
-    name,
-    createdAt: now,
-    updatedAt: now,
-    data: {
-      paramBindings: paramBindings.all(),
-      hardwareBindings: hardwareBindings.all(),
-      hardwareControls: hardwareControls.all(),
-    },
-  });
+  return presets.insert({ id: uid(), name, createdAt: now, updatedAt: now, data: snapshotData() });
 }
 
 /** Overwrite an existing preset's snapshot with the current state. */
 export function updatePreset(id: string): void {
   if (!presets.has(id)) return;
-  presets.update(id, {
-    updatedAt: Date.now(),
-    data: {
-      paramBindings: paramBindings.all(),
-      hardwareBindings: hardwareBindings.all(),
-      hardwareControls: hardwareControls.all(),
-    },
-  });
+  presets.update(id, { updatedAt: Date.now(), data: snapshotData() });
 }
 
 function insertEach<Row extends RowBase>(table: Table<Row>, rows: Row[]): void {
@@ -59,10 +52,13 @@ export function applyPreset(id: string): void {
   if (!preset) return;
   // Children first so nothing dangles while the parents swap.
   paramBindings.replaceAll([]);
+  actionBindings.replaceAll([]);
   hardwareBindings.replaceAll([]);
   hardwareControls.replaceAll([]);
   insertEach(hardwareControls, preset.data.hardwareControls);
   insertEach(hardwareBindings, preset.data.hardwareBindings);
+  // Actions before params: they win the widget, so conflicting param rows are skipped below.
+  insertEach(actionBindings, preset.data.actionBindings);
   insertEach(paramBindings, preset.data.paramBindings);
   seedParamBindings(); // locked opacity rows + factory layouts for plugins the preset doesn't cover
 }

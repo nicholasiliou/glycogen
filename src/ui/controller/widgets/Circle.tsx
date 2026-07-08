@@ -9,7 +9,7 @@ export function Circle({ slot, label, size = 20 }: { slot: number; label?: strin
   const sid = slotId("button", slot);
   const s = useSlot(sid);
   const [flash, setFlash] = useState(false);
-  const lit = s.pressed || flash;
+  const lit = s.pressed || flash || s.lit;
 
   const onDown = (e: React.PointerEvent) => {
     e.preventDefault();

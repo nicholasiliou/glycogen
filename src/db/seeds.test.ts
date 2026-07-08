@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { harvestRegistrations } from "@/plugins/registry";
-import { paramBindings, paramId, params, plugins } from "./schema";
-import { DEFAULT_LAYOUTS, seedCodeTables, seedParamBindings } from "./seeds";
+import { actionBindings, paramBindings, paramId, params, plugins } from "./schema";
+import { DEFAULT_ACTION_LAYOUT, DEFAULT_LAYOUTS, seedActionBindings, seedCodeTables, seedParamBindings } from "./seeds";
 
 /**
  * Parity net for the M3 migration: boots the db from the real plugin registry and checks that the
@@ -15,6 +15,7 @@ describe("seedParamBindings against the real registry", () => {
     plugins.replaceAll(reg.plugins);
     params.replaceAll(reg.params);
     paramBindings.replaceAll([]);
+    actionBindings.replaceAll([]);
   });
 
   it("materialises every DEFAULT_LAYOUTS entry without warnings", () => {
@@ -47,6 +48,18 @@ describe("seedParamBindings against the real registry", () => {
     for (const plugin of plugins.all()) {
       expect(DEFAULT_LAYOUTS[plugin.id], `DEFAULT_LAYOUTS["${plugin.id}"]`).toBeDefined();
     }
+  });
+
+  it("materialises the default action layout only into an empty table", () => {
+    seedActionBindings();
+    const placed = new Map(actionBindings.all().map((r) => [r.widgetId, r.actionId]));
+    expect(Object.fromEntries(placed)).toEqual(DEFAULT_ACTION_LAYOUT);
+
+    // user moves Clear elsewhere, then "reboots" — nothing re-materialises (the rows are theirs)
+    const clear = actionBindings.all().find((r) => r.actionId === "clear")!;
+    actionBindings.delete(clear.id);
+    seedActionBindings();
+    expect(actionBindings.all().find((r) => r.actionId === "clear")).toBeUndefined();
   });
 
   it("leaves user rows alone on reboot (copy-on-first-touch)", () => {
