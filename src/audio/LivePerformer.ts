@@ -8,10 +8,10 @@ import { createInstrument, instrumentSpec } from "./instruments/registry";
 
 /**
  * Bridges the runtime {@link Stage} and the audio engine. Once per animation frame it looks at the
- * two decks' active plugins, ensures every voiced plugin has an instrument, and pushes that plugin's
- * *live param values* into the instrument — so what you hear is literally driven by what you see.
- * Voices are created/disposed as plugins are loaded/cleared, and a deck's audio presence follows the
- * crossfade (fading a deck out fades its sound).
+ * loaded banks, ensures every voiced plugin has an instrument, and pushes that plugin's *live param
+ * values* into the instrument — so what you hear is literally driven by what you see. Voices are
+ * created/disposed as plugins are loaded/cleared, and each layer's audio presence follows its own
+ * opacity (fading a layer out fades its sound).
  *
  * It deliberately does NOT touch the Stage's render path; it only reads its public state per frame.
  */
@@ -43,16 +43,10 @@ export class LivePerformer {
     const time = nowSec();
     const seen = new Set<Plugin>();
 
-    // Equal-power crossfade → per-deck audio presence (mirrors Stage's visual blend).
-    const t = clamp01(this.stage.crossfade);
-    const deckA = this.stage.decks["A"].banks.filter((p): p is Plugin => p !== null);
-    const deckB = this.stage.decks["B"].banks.filter((p): p is Plugin => p !== null);
-    const both = deckA.length > 0 && deckB.length > 0;
-    const presA = both ? Math.cos((t * Math.PI) / 2) : deckA.length > 0 ? 1 : 0;
-    const presB = both ? Math.sin((t * Math.PI) / 2) : deckB.length > 0 ? 1 : 0;
-
-    for (const plugin of deckA) this.voice(plugin, presA, time, seen);
-    for (const plugin of deckB) this.voice(plugin, presB, time, seen);
+    // Per-layer opacity → audio presence (mirrors Stage's visual composite).
+    for (const bank of this.stage.banks) {
+      if (bank.plugin) this.voice(bank.plugin, clamp01(bank.plugin.opacity.value), time, seen);
+    }
 
     // Dispose voices whose plugins left the stage.
     for (const [plugin, inst] of this.voices) {

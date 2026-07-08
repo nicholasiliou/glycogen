@@ -5,7 +5,7 @@
  * of controller.
  */
 
-export type ControlKind = "fader" | "knob" | "encoder" | "button" | "pad" | "jog" | "crossfader";
+export type ControlKind = "fader" | "knob" | "encoder" | "button" | "pad" | "jog";
 
 /** Stable address of one logical control, e.g. "fader:0". */
 export type SlotId = `${ControlKind}:${number}`;
@@ -16,7 +16,7 @@ export function slotId(kind: ControlKind, index: number): SlotId {
 
 /** Live state of one slot, fed by the {@link ControlBus} from hardware or on-screen widgets. */
 export interface SlotLive {
-  /** Last absolute position, normalised 0..1 (faders / knobs / crossfader). */
+  /** Last absolute position, normalised 0..1 (faders / knobs). */
   value: number;
   /** Last signed step (relative controls: encoders / jog). */
   delta: number;

@@ -7,7 +7,6 @@ import {
   BankControlContext,
   BrowsePanel,
   Circle,
-  Crossfader,
   Fader,
   GlobalPad,
   JogWheel,
@@ -15,7 +14,6 @@ import {
   Pad,
   SmoothKnob,
 } from "./widgets";
-import { BANK_COUNT, type DeckName } from "@/runtime/Stage";
 
 /** ~30fps tick so live meters / "just moved" glows animate while the surface is mounted. */
 function useRaf(): void {
@@ -40,36 +38,36 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * The top row of every deck is global, not plugin-bindable: Del + Bank 1/2/3 for this deck. A bank
- * button selects its bank if loaded, else loads the browsed plugin into it; Del clears the active
- * bank. (The pad slots they replace — pad:0..3 — are reserved away from plugins in the factory.)
+ * The top row of every panel is global, not plugin-bindable: Del + three of the unified banks
+ * (banks are one flat row now — the left panel shows 1–3, the right 4–6). A bank button selects
+ * its bank if loaded, else loads the browsed plugin into it; Del clears the active bank.
  */
-function DeckBankRow({ deck }: { deck: DeckName }) {
+function BankRow({ from }: { from: number }) {
   const bank = useContext(BankControlContext);
-  const s = bank?.state(deck) ?? { loaded: [], active: -1 };
+  const s = bank?.state() ?? { loaded: [], active: -1 };
   return (
     <>
-      <GlobalPad label="Del" onPress={() => bank?.clear(deck)} loaded={!!s.loaded[s.active]} />
-      {Array.from({ length: BANK_COUNT }, (_, i) => (
+      <GlobalPad label="Del" onPress={() => bank?.clear()} loaded={!!s.loaded[s.active]} />
+      {Array.from({ length: 3 }, (_, i) => from + i).map((i) => (
         <GlobalPad
           key={i}
           label={`Bank ${i + 1}`}
           active={s.active === i && !!s.loaded[i]}
           loaded={!!s.loaded[i]}
-          onPress={() => bank?.select(deck, i)}
+          onPress={() => bank?.select(i)}
         />
       ))}
     </>
   );
 }
 
-/** A deck. `pad`/`enc`/`jog` are the slot indices for this deck so the two decks don't collide. */
-function DeckPanel({ deck, pad, enc, jog }: { deck: DeckName; pad: number; enc: number; jog: number }) {
+/** A side panel. `pad`/`enc` are the slot indices for this side; `jog` is its browse wheel. */
+function SidePanel({ bankFrom, pad, enc, jog, jogLabel }: { bankFrom: number; pad: number; enc: number; jog: number; jogLabel: string }) {
   const stack = (
     <div className="flex flex-col items-center gap-6">
     <div className="grid grid-cols-4 gap-3">
       {/* top row: global bank/del controls (not plugin slots) */}
-      <DeckBankRow deck={deck} />
+      <BankRow from={bankFrom} />
 
       <Pad slot={pad + 4}/>
       <SmoothKnob slot={enc + 0}/>
@@ -81,7 +79,7 @@ function DeckPanel({ deck, pad, enc, jog }: { deck: DeckName; pad: number; enc: 
       <Pad slot={pad + 7}/>
       <Pad slot={pad + 8}/>
     </div>
-      <JogWheel slot={jog}/>
+      <JogWheel slot={jog} label={jogLabel}/>
       <div className="flex items-center gap-3">
         <Pad slot={pad + 9}/>
         <Pad slot={pad + 10}/>
@@ -113,7 +111,7 @@ function MixerPanel({ browse }: { browse?: BrowseProps }) {
   <Knob slot={5}/>
 
   <Knob slot={6}/>
-  <BrowsePanel label={browse?.label} onStep={browse?.onStep} />
+  <BrowsePanel label={browse?.plugin.label} onStep={browse?.plugin.onStep} />
   <Knob slot={7}/>
 
   <Circle slot={0}/>
@@ -127,16 +125,21 @@ function MixerPanel({ browse }: { browse?: BrowseProps }) {
   <Fader slot={2}/>
   </div>
       <div className="flex flex-col items-center gap-2">
-        <SectionLabel>Crossfade</SectionLabel>
-        <Crossfader/>
+        <SectionLabel>Shader</SectionLabel>
+        <BrowsePanel label={browse?.shader.label ?? "None"} onStep={browse?.shader.onStep} />
       </div>
     </div>
   );
 }
 
-export interface BrowseProps {
+interface BrowseDial {
   label?: string;
   onStep?: (delta: number) => void;
+}
+
+export interface BrowseProps {
+  plugin: BrowseDial;
+  shader: BrowseDial;
 }
 
 export function Controller({ browse }: { browse?: BrowseProps }) {
@@ -147,9 +150,9 @@ export function Controller({ browse }: { browse?: BrowseProps }) {
     // uniformly to fit the masked overlay without distorting the components.
     <div className="relative flex flex-col items-center justify-center">
       <div className="flex items-stretch gap-4 p-4">
-        <DeckPanel deck="A" pad={0} enc={0} jog={0}/>
+        <SidePanel bankFrom={0} pad={0} enc={0} jog={0} jogLabel="plugins"/>
         <MixerPanel browse={browse}/>
-        <DeckPanel deck="B" pad={13} enc={3} jog={1}/>
+        <SidePanel bankFrom={3} pad={13} enc={3} jog={1} jogLabel="shaders"/>
       </div>
     </div>
   );

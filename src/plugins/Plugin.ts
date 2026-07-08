@@ -1,4 +1,5 @@
 import { ButtonParam, Param, type NumOpts } from "@/controls/Param";
+import { DEFAULT_COLOR } from "./colors";
 
 /**
  * A scalar field function that any plugin can export for other plugins to read.
@@ -59,11 +60,13 @@ export abstract class Plugin {
   /** A plugin owns its output surface; generators draw here, effects usually return a shader canvas. */
   protected canvas: HTMLCanvasElement = document.createElement("canvas");
 
-  /** Global hue rotation in degrees — bound to the reserved knob:9 via a locked db row. */
-  hue = this.bind(new Param({ min: -180, max: 180, default: 0 }));
+  /** Layer opacity 0..1 — the Stage composites this plugin's output at this alpha every frame.
+   *  Bound to the reserved knob:9 via a locked db row (the per-plugin mixing control). */
+  opacity = this.bind(new Param({ min: 0, max: 1, default: 1 }));
 
-  /** Offscreen canvas used to apply the hue filter without mutating the plugin's own canvas. */
-  private hueCanvas: HTMLCanvasElement | null = null;
+  /** The plugin's default draw color (a {@link COLOR_PRESETS} hex). Subclasses override where they
+   *  draw differently; the Color shader adopts it as its starting preset when applied to a layer. */
+  color = DEFAULT_COLOR;
 
   constructor() {
     Plugin.underConstruction = this;
@@ -80,25 +83,10 @@ export abstract class Plugin {
   protected cycle(options: readonly string[]): ButtonParam { return this.bind(new ButtonParam("cycle", { options })); }
 
   /**
-   * Apply the hue shift (if non-zero) to `src` and return the filtered canvas.
-   * Called by Stage after render() so plugins don't need to think about it.
+   * Optional hook: called when this plugin is attached as a layer shader, with the host generator
+   * it now transforms (the Color shader uses it to adopt the host's default color).
    */
-  applyHue(src: HTMLCanvasElement): HTMLCanvasElement {
-    const deg = this.hue.value % 360;
-    if (Math.abs(deg) < 0.5) return src;
-    const w = src.width, h = src.height;
-    if (!this.hueCanvas) this.hueCanvas = document.createElement("canvas");
-    if (this.hueCanvas.width !== w || this.hueCanvas.height !== h) {
-      this.hueCanvas.width = w;
-      this.hueCanvas.height = h;
-    }
-    const ctx = this.hueCanvas.getContext("2d")!;
-    ctx.clearRect(0, 0, w, h);
-    ctx.filter = `hue-rotate(${deg}deg)`;
-    ctx.drawImage(src, 0, 0);
-    ctx.filter = "none";
-    return this.hueCanvas;
-  }
+  onAttach?(host: Plugin): void;
 
   private bind<T extends AnyParam>(p: T): T {
     this.params.push(p);

@@ -13,7 +13,6 @@ describe("legalAdapters — the full legality matrix", () => {
   it("continuous numbers take absolute from abs widgets, relative from rel widgets, nothing from presses", () => {
     expect(legalAdapters(num(), "knob")).toEqual(["absolute"]);
     expect(legalAdapters(num(), "fader")).toEqual(["absolute"]);
-    expect(legalAdapters(num(), "crossfader")).toEqual(["absolute"]);
     expect(legalAdapters(num(), "encoder")).toEqual(["relative"]);
     expect(legalAdapters(num(), "jog")).toEqual(["relative"]);
     expect(legalAdapters(num(), "pad")).toEqual([]);

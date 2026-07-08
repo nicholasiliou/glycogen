@@ -3,7 +3,7 @@
  *   1. re-seed the code-sourced tables from typed registrations (widgets, actions, plugins, params);
  *   2. load the user-mutable tables from localStorage, pruning rows whose FKs no longer resolve
  *      (a renamed plugin/param, a removed widget);
- *   3. materialise factory layouts for plugins the user hasn't remapped, plus the locked hue rows.
+ *   3. materialise factory layouts for plugins the user hasn't remapped, plus the locked opacity rows.
  *
  * The plugin/param registration is passed in (harvested from one throwaway instance per plugin by
  * the registry) so this module stays free of plugin imports.

@@ -5,10 +5,10 @@ import type { MidiManager } from "./MidiManager";
 
 /** App-level functions the router can invoke (everything that isn't a plugin parameter). */
 export interface MidiActionHandlers {
-  /** Step the browse selection by a signed amount. */
-  step: (delta: number) => void;
-  /** Run a momentary app action (load / clear / focus / bank / browse-mode). */
-  run: (action: Exclude<AppAction, "browse">) => void;
+  /** Step one of the two browse dials by a signed amount. */
+  step: (target: "plugin" | "shader", delta: number) => void;
+  /** Run a momentary app action (load / clear / bank select). */
+  run: (action: Exclude<AppAction, "browsePlugin" | "browseShader">) => void;
   /** Report each routed control for the "last MIDI action" readout: the physical control's label
    *  and what it resolved to (a widget id or an app action). Continuous moves report on every tick. */
   report?: (control: string, target: string) => void;
@@ -45,9 +45,10 @@ export function attachMidiRouter(midi: MidiManager, bus: ControlBus, handlers: M
     }
 
     const action = row.target.actionId;
-    if (action === "browse") {
-      if (ctl.relative && ctl.delta) { handlers.step(Math.sign(ctl.delta)); handlers.report?.(ctl.label, "browse"); }
-      else if (!ctl.continuous && ctl.pressed) { handlers.step(1); handlers.report?.(ctl.label, "browse"); }
+    if (action === "browsePlugin" || action === "browseShader") {
+      const target = action === "browsePlugin" ? "plugin" : "shader";
+      if (ctl.relative && ctl.delta) { handlers.step(target, Math.sign(ctl.delta)); handlers.report?.(ctl.label, action); }
+      else if (!ctl.continuous && ctl.pressed) { handlers.step(target, 1); handlers.report?.(ctl.label, action); }
     } else if (appActions.get(action)?.momentary && !ctl.continuous && ctl.pressed) {
       handlers.run(action);
       handlers.report?.(ctl.label, action);

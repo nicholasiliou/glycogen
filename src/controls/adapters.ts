@@ -19,7 +19,6 @@ export type SignalClass = "abs" | "rel" | "press";
 export const WIDGET_SIGNAL: Record<ControlKind, SignalClass> = {
   fader: "abs",
   knob: "abs",
-  crossfader: "abs",
   encoder: "rel",
   jog: "rel",
   button: "press",

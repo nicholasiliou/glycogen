@@ -69,7 +69,7 @@ export function useMidiRouting(opts: {
       refreshRef.current(); // surface newly-seen controls in settings
     });
     const offRouter = attachMidiRouter(midi, bus, {
-      step: (d) => handlersRef.current.step(d),
+      step: (target, d) => handlersRef.current.step(target, d),
       run: (a) => handlersRef.current.run(a),
       report: (control, target) => {
         // Friendly readout: a widget resolves to the focused plugin's bound param name (or the raw

@@ -86,10 +86,15 @@ export function MidiSettingsDialog({ tab: tabProp, onTab }: { tab?: Tab; onTab?:
 }
 
 function ControllerTab() {
-  const { selected, step } = useLive();
+  const { selectedPlugin, selectedShader, stepPlugin, stepShader } = useLive();
   return (
     <FitBox className="flex-1 p-2">
-      <Controller browse={{ label: selected?.label, onStep: step }} />
+      <Controller
+        browse={{
+          plugin: { label: selectedPlugin?.label, onStep: stepPlugin },
+          shader: { label: selectedShader?.label, onStep: stepShader },
+        }}
+      />
     </FitBox>
   );
 }
@@ -131,7 +136,7 @@ function HardwareTab() {
     { label: "—", options: [{ value: "none", label: "Unassigned" }] },
     { label: "App", options: appActions.all().map((a) => ({ value: `action:${a.id}`, label: a.label })) },
   ];
-  for (const kind of ["fader", "knob", "encoder", "pad", "button", "jog", "crossfader"] as const) {
+  for (const kind of ["fader", "knob", "encoder", "pad", "button", "jog"] as const) {
     const of = widgets.all().filter((w) => w.kind === kind);
     if (of.length) groups.push({ label: kind, options: of.map((w) => ({ value: `widget:${w.id}`, label: w.id })) });
   }

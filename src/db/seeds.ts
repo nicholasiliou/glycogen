@@ -2,9 +2,9 @@
  * Seed data for the code-sourced tables and the default layouts.
  *
  * `WIDGET_CATALOG` is the authoritative description of the controller surface — it matches what
- * `Controller.tsx` actually renders (deck A pads 4–12, deck B pads 17–25, mixer pads 26–28,
- * encoders 0–5, faders 0–2, buttons 0–1) plus the hardware-only knob:8 and the two app-reserved
- * widgets (knob:9 hue, crossfader:0).
+ * `Controller.tsx` actually renders (left pads 4–12, right pads 17–25, mixer pads 26–28,
+ * encoders 0–5, faders 0–2, buttons 0–1) plus the hardware-only knob:8 and the app-reserved
+ * widgets (knob:9 opacity, jog:0/jog:1 browse).
  *
  * `DEFAULT_LAYOUTS` is the per-plugin factory layout: which widget each param sits on out of the
  * box. It is only materialised into `paramBindings` rows for a plugin the user hasn't remapped yet
@@ -36,34 +36,31 @@ function range(kind: WidgetRow["kind"], from: number, to: number): WidgetRow[] {
 export const WIDGET_CATALOG: WidgetRow[] = [
   ...range("fader", 0, 2),
   ...range("knob", 0, 8), // knob:8 has no on-screen widget (hardware-only) but is a real slot
-  { id: "knob:9", kind: "knob", index: 9, reserved: "hue" },
+  { id: "knob:9", kind: "knob", index: 9, reserved: "opacity" },
   ...range("encoder", 0, 5),
-  ...range("jog", 0, 1),
+  // The jog wheels are the two always-live browse dials (plugins left, shaders right).
+  { id: "jog:0", kind: "jog", index: 0, reserved: "browsePlugin" },
+  { id: "jog:1", kind: "jog", index: 1, reserved: "browseShader" },
   ...range("button", 0, 1),
-  ...range("pad", 4, 12), // deck A (pad:0..3 don't exist — that row is the global Del/Bank strip)
-  ...range("pad", 17, 25), // deck B
+  ...range("pad", 4, 12), // left panel (pad:0..3 don't exist — that row is the global Del/Bank strip)
+  ...range("pad", 17, 25), // right panel
   ...range("pad", 26, 28), // mixer
-  { id: "crossfader:0", kind: "crossfader", index: 0, reserved: "crossfade" },
 ];
 
 // ── app actions ─────────────────────────────────────────────────────────────────────────────────
 
 export const APP_ACTION_SEED: AppActionRow[] = [
-  { id: "browse", label: "Browse", momentary: false },
-  { id: "browseMode", label: "Browse mode", momentary: true },
-  { id: "loadA", label: "Load A", momentary: true },
-  { id: "loadB", label: "Load B", momentary: true },
-  { id: "clearA", label: "Clear A", momentary: true },
-  { id: "clearB", label: "Clear B", momentary: true },
-  { id: "focusA", label: "Focus A", momentary: true },
-  { id: "focusB", label: "Focus B", momentary: true },
-  { id: "focusShader", label: "Focus shader", momentary: true },
-  { id: "bankA0", label: "Bank A1", momentary: true },
-  { id: "bankA1", label: "Bank A2", momentary: true },
-  { id: "bankA2", label: "Bank A3", momentary: true },
-  { id: "bankB0", label: "Bank B1", momentary: true },
-  { id: "bankB1", label: "Bank B2", momentary: true },
-  { id: "bankB2", label: "Bank B3", momentary: true },
+  { id: "browsePlugin", label: "Browse plugins", momentary: false },
+  { id: "browseShader", label: "Browse shaders", momentary: false },
+  { id: "load", label: "Load", momentary: true },
+  { id: "clear", label: "Clear layer", momentary: true },
+  { id: "clearShader", label: "Clear shader", momentary: true },
+  { id: "bank0", label: "Bank 1", momentary: true },
+  { id: "bank1", label: "Bank 2", momentary: true },
+  { id: "bank2", label: "Bank 3", momentary: true },
+  { id: "bank3", label: "Bank 4", momentary: true },
+  { id: "bank4", label: "Bank 5", momentary: true },
+  { id: "bank5", label: "Bank 6", momentary: true },
 ];
 
 // ── factory layouts (transcribed 1:1 from the plugins' former hardcoded slots) ──────────────────
@@ -130,7 +127,8 @@ export const DEFAULT_LAYOUTS: Record<string, Record<string, SlotId>> = {
     str2: "knob:5", mix: "knob:6",
   },
   fisheye: { strength: "knob:0", zoom: "knob:1" },
-  none: {}, // passthrough shader — nothing to bind (hue comes from its locked row)
+  color: { preset: "pad:4" }, // the palette-cycle shader (replaces the old hue knob)
+  none: {}, // passthrough shader — nothing to bind (opacity comes from its locked row)
   pixelSort: { threshold: "knob:0", horizontal: "pad:4", reverse: "pad:5" },
   pixelStretch: { threshold: "knob:0", amount: "knob:1", horizontal: "pad:4" },
   pixelate: { size: "knob:0" },
@@ -174,20 +172,20 @@ export function seedPluginBindings(pluginId: string): void {
 
 /**
  * Copy-on-first-touch: plugins with no user rows get their factory layout; every plugin always
- * gets its locked hue row (the one binding allowed on the reserved knob:9).
+ * gets its locked opacity row (the one binding allowed on the reserved knob:9).
  */
 export function seedParamBindings(): void {
   for (const plugin of plugins.all()) {
     const rows = paramBindings.by("plugin", plugin.id);
     if (rows.filter((r) => !r.locked).length === 0) seedPluginBindings(plugin.id);
 
-    const hue = params.get(paramId(plugin.id, "hue"));
-    if (hue && !paramBindings.has(`hue:${plugin.id}`)) {
+    const opacity = params.get(paramId(plugin.id, "opacity"));
+    if (opacity && !paramBindings.has(`opacity:${plugin.id}`)) {
       paramBindings.upsert({
-        id: `hue:${plugin.id}`,
+        id: `opacity:${plugin.id}`,
         pluginId: plugin.id,
         widgetId: "knob:9",
-        paramId: hue.id,
+        paramId: opacity.id,
         adapter: { kind: "absolute" },
         locked: true,
       });

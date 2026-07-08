@@ -4,23 +4,22 @@ import { clamp01 } from "@/controls/types";
 import { paramBindings, params } from "@/db/schema";
 import type { FieldFn, Frame, Plugin } from "@/plugins/Plugin";
 
-export type DeckName = "A" | "B";
-/** One deck: a set of banks (loaded generators) and which one is currently active. */
-export interface DeckState {
-  banks: (Plugin | null)[];
-  active: number;
+/** One layer: a generator plugin plus an optional per-layer effect ("shader") on its output. */
+export interface BankState {
+  plugin: Plugin | null;
+  shader: Plugin | null;
 }
-/** What the controller is currently driving: a deck's active bank, or the full-canvas shader. */
-export type Focus = DeckName | "shader";
+/** Which half of the focused bank the controller is currently driving. */
+export type FocusPart = "plugin" | "shader";
 
-export const BANK_COUNT = 3;
+export const BANK_COUNT = 6;
 
 /**
- * The runtime host and compositor. Reproduces the old engine's live composition: two decks (A/B),
- * each holding up to {@link BANK_COUNT} generator plugins with one active bank, blended by an
- * equal-power crossfade, with a single full-canvas effect ("shader") on top. Each frame it pulls
- * live control values into the *focused* plugin's params, renders the active banks + shader, and
- * composites to the output canvas.
+ * The runtime host and compositor: one flat row of {@link BANK_COUNT} banks. Each bank holds a
+ * generator plugin with an optional per-layer shader on its output, and every loaded bank is
+ * composited in order — each at its plugin's own `opacity` (the factory param that replaced the
+ * deck crossfade). One bank is *active* (focused): each frame the bus drives that bank's plugin
+ * — or its shader, per {@link focusPart} — then all banks render and composite to the output.
  */
 export class Stage {
   readonly canvas: HTMLCanvasElement;
@@ -28,23 +27,9 @@ export class Stage {
   private buffer = document.createElement("canvas");
   private bctx = this.buffer.getContext("2d")!;
 
-  readonly decks: Record<DeckName, DeckState> = {
-    A: { banks: Array(BANK_COUNT).fill(null), active: 0 },
-    B: { banks: Array(BANK_COUNT).fill(null), active: 0 },
-  };
-  crossfade = 0.5;
-  shader: Plugin | null = null;
-  focus: Focus = "A";
-
-  // Per-deck compositor canvas: each bank's output is drawn here in source-over order.
-  private deckCanvas: Record<DeckName, HTMLCanvasElement> = {
-    A: document.createElement("canvas"),
-    B: document.createElement("canvas"),
-  };
-  private deckCtx: Record<DeckName, CanvasRenderingContext2D> = {
-    A: this.deckCanvas.A.getContext("2d")!,
-    B: this.deckCanvas.B.getContext("2d")!,
-  };
+  readonly banks: BankState[] = Array.from({ length: BANK_COUNT }, () => ({ plugin: null, shader: null }));
+  active = 0;
+  focusPart: FocusPart = "plugin";
 
   private raf = 0;
   private startT = 0;
@@ -59,60 +44,63 @@ export class Stage {
   }
 
   // ── composition ──────────────────────────────────────────────────────────────────────────────
-  active(deck: DeckName): Plugin | null {
-    const d = this.decks[deck];
-    return d.banks[d.active];
-  }
 
-  /** The plugin whose param labels the controller surface shows right now. */
+  /** The plugin the controller drives right now: the focused bank's generator or its shader. */
   managed(): Plugin | null {
-    return this.focus === "shader" ? this.shader : this.active(this.focus);
+    const bank = this.banks[this.active];
+    return this.focusPart === "shader" ? bank.shader : bank.plugin;
   }
 
-  /** Every currently-loaded plugin (all banks in both decks + the shader), for live param pulls. */
+  /** Every currently-loaded plugin (all bank generators + their shaders), for live param ticks. */
   private loaded(): Plugin[] {
     const out: Plugin[] = [];
-    for (const deck of ["A", "B"] as const) {
-      for (const p of this.decks[deck].banks) if (p) out.push(p);
+    for (const bank of this.banks) {
+      if (bank.plugin) out.push(bank.plugin);
+      if (bank.shader) out.push(bank.shader);
     }
-    if (this.shader) out.push(this.shader);
     return out;
   }
 
-  loadBank(deck: DeckName, index: number, plugin: Plugin): void {
-    const d = this.decks[deck];
-    d.banks[index]?.dispose();
+  loadBank(index: number, plugin: Plugin): void {
+    const bank = this.banks[index];
+    bank.plugin?.dispose();
     plugin.resize(this.canvas.width, this.canvas.height);
-    d.banks[index] = plugin;
-    d.active = index;
+    bank.plugin = plugin;
+    bank.shader?.onAttach?.(plugin); // a kept layer shader re-adopts the new host's defaults
+    this.active = index;
+    this.focusPart = "plugin";
   }
 
-  selectBank(deck: DeckName, index: number): void {
-    if (this.decks[deck].banks[index]) this.decks[deck].active = index;
+  selectBank(index: number): void {
+    if (this.banks[index].plugin) {
+      this.active = index;
+      this.focusPart = "plugin";
+    }
   }
 
-  clearBank(deck: DeckName, index?: number): void {
-    const d = this.decks[deck];
-    const i = index ?? d.active;
-    d.banks[i]?.dispose();
-    d.banks[i] = null;
+  clearBank(index = this.active): void {
+    const bank = this.banks[index];
+    bank.plugin?.dispose();
+    bank.shader?.dispose();
+    bank.plugin = null;
+    bank.shader = null;
   }
 
-  setShader(plugin: Plugin | null): void {
-    if (this.shader && this.shader !== plugin) this.shader.dispose();
-    this.shader = plugin;
-    plugin?.resize(this.canvas.width, this.canvas.height);
+  /** Put a shader on a bank's output (or clear it with null). */
+  setShader(index: number, shader: Plugin | null): void {
+    const bank = this.banks[index];
+    if (bank.shader && bank.shader !== shader) bank.shader.dispose();
+    bank.shader = shader;
+    if (shader) {
+      shader.resize(this.canvas.width, this.canvas.height);
+      if (bank.plugin) shader.onAttach?.(bank.plugin);
+    }
   }
 
   resize(w: number, h: number): void {
     this.canvas.width = this.buffer.width = w;
     this.canvas.height = this.buffer.height = h;
-    for (const deck of ["A", "B"] as const) {
-      this.deckCanvas[deck].width = w;
-      this.deckCanvas[deck].height = h;
-      for (const p of this.decks[deck].banks) p?.resize(w, h);
-    }
-    this.shader?.resize(w, h);
+    for (const p of this.loaded()) p.resize(w, h);
   }
 
   // ── loop ─────────────────────────────────────────────────────────────────────────────────────
@@ -132,48 +120,17 @@ export class Stage {
   }
 
   /**
-   * The text field for sims to react to, sourced from *any* loaded TextLayer anywhere on the stage
-   * (either deck, any bank). The deck/bank split means a TextLayer and a sim usually can't share a
-   * bank stack, so a stage-wide field is what makes text interaction (fill/attract) reachable — it
-   * restores the old "text sits below everything" behaviour. A deck's own in-stack TextLayer (a
-   * lower bank) still overrides this for that deck.
+   * The text field for sims to react to, sourced from *any* loaded TextLayer anywhere on the stage.
+   * A stage-wide field is what makes text interaction (fill/attract) reachable from any bank — it
+   * restores the old "text sits below everything" behaviour. A TextLayer in an earlier bank still
+   * overrides this for later banks (see the threading in {@link tick}).
    */
   private stageTextField(): FieldFn | null {
-    for (const p of this.loaded()) {
-      if (p.exportField) {
-        const f = p.exportField();
-        if (f) return f;
-      }
+    for (const bank of this.banks) {
+      const f = bank.plugin?.exportField?.();
+      if (f) return f;
     }
     return null;
-  }
-
-  /** Render all loaded banks in a deck, compositing each onto a shared deck canvas. */
-  private renderDeck(deck: DeckName, frame: Frame): HTMLCanvasElement | null {
-    const d = this.decks[deck];
-    const plugins = d.banks.filter((p): p is Plugin => p !== null);
-    if (plugins.length === 0) return null;
-
-    const dc = this.deckCanvas[deck];
-    const dctx = this.deckCtx[deck];
-    const { width: w, height: h } = frame;
-    dctx.clearRect(0, 0, w, h);
-
-    // Thread frame.input (composite so far) and frame.textField. Seed textField from the stage-wide
-    // source (frame.textField), then let any TextLayer earlier in this deck's stack override it.
-    let lastOut: HTMLCanvasElement | null = null;
-    let textField: FieldFn | null = frame.textField;
-    for (const plugin of plugins) {
-      const result = plugin.render({ ...frame, input: lastOut, textField });
-      if (result) {
-        const huedResult = plugin.applyHue(result);
-        dctx.drawImage(huedResult, 0, 0, w, h);
-        lastOut = dc;
-      }
-      // If this plugin exports a field function, thread it to subsequent banks.
-      if (plugin.exportField) textField = plugin.exportField();
-    }
-    return lastOut ? dc : null;
   }
 
   /**
@@ -200,10 +157,9 @@ export class Stage {
     const dt = now - this.lastT;
     this.lastT = now;
 
-    // Drive only the focused/active plugin's params from the bus, so the controller drives one
-    // layer at a time (not every loaded layer at once). Param state is retained on each plugin
-    // instance, so a setting made while a layer is focused — e.g. a sim's textMode — persists after
-    // focus moves elsewhere; text interaction does not depend on inactive layers tracking the bus.
+    // Drive only the focused plugin's (or shader's) params from the bus, so the controller drives
+    // one layer at a time. Param state is retained on each plugin instance, so a setting made while
+    // a layer is focused persists after focus moves elsewhere.
     const managed = this.managed();
     if (managed) for (const d of this.resolveDrivers(managed)) d.apply(this.bus.get(d.widgetId));
     // Every loaded param ticks every frame: smoothing keeps easing and queued UI presses land
@@ -212,34 +168,48 @@ export class Stage {
 
     const w = this.canvas.width, h = this.canvas.height;
     const frame: Frame = { width: w, height: h, time: now - this.startT, dt, input: null, textField: this.stageTextField() };
-    const ca = this.renderDeck("A", frame);
-    const cb = this.renderDeck("B", frame);
 
-    // composite the two decks with an equal-power crossfade
+    // Composite every loaded bank in order, each at its plugin's own opacity. frame.input threads
+    // the composite-so-far, and a TextLayer in an earlier bank overrides the stage-wide field for
+    // the banks above it.
     this.bctx.clearRect(0, 0, w, h);
-    const both = !!ca && !!cb;
-    const t = clamp01(this.crossfade);
-    if (ca) {
-      this.bctx.globalAlpha = both ? Math.cos((t * Math.PI) / 2) : 1;
-      this.bctx.drawImage(ca, 0, 0, w, h);
-    }
-    if (cb) {
-      this.bctx.globalAlpha = both ? Math.sin((t * Math.PI) / 2) : 1;
-      this.bctx.drawImage(cb, 0, 0, w, h);
+    let drawnAny = false;
+    let textField: FieldFn | null = frame.textField;
+    for (const bank of this.banks) {
+      const plugin = bank.plugin;
+      if (!plugin) continue;
+      const out = plugin.render({ ...frame, input: drawnAny ? this.buffer : null, textField });
+      if (plugin.exportField) textField = plugin.exportField();
+      if (!out) continue;
+
+      const alpha = clamp01(plugin.opacity.value);
+      if (alpha <= 0) continue;
+
+      // Per-layer shader: blend dry (plugin) and wet (shader) by the shader's own opacity — at the
+      // default 1 the shader fully replaces the layer's output, matching the old global slot.
+      const shaded = bank.shader ? bank.shader.render({ ...frame, input: out, textField: null }) : null;
+      const wet = bank.shader ? clamp01(bank.shader.opacity.value) : 0;
+      if (shaded) {
+        if (wet < 1) {
+          this.bctx.globalAlpha = alpha * (1 - wet);
+          this.bctx.drawImage(out, 0, 0, w, h);
+        }
+        if (wet > 0) {
+          this.bctx.globalAlpha = alpha * wet;
+          this.bctx.drawImage(shaded, 0, 0, w, h);
+        }
+      } else {
+        this.bctx.globalAlpha = alpha;
+        this.bctx.drawImage(out, 0, 0, w, h);
+      }
+      drawnAny = true;
     }
     this.bctx.globalAlpha = 1;
-
-    // full-canvas shader on top
-    let out: HTMLCanvasElement = this.buffer;
-    if (this.shader) {
-      const s = this.shader.render({ ...frame, input: this.buffer, textField: null });
-      if (s) out = this.shader.applyHue(s);
-    }
 
     this.ctx.clearRect(0, 0, w, h);
     this.ctx.fillStyle = "#000";
     this.ctx.fillRect(0, 0, w, h);
-    this.ctx.drawImage(out, 0, 0, w, h);
+    this.ctx.drawImage(this.buffer, 0, 0, w, h);
   }
 }
 

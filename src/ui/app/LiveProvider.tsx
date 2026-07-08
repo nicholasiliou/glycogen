@@ -3,27 +3,25 @@ import type { ReactNode } from "react";
 import { ControlBus } from "@/controls/ControlBus";
 import type { SlotId } from "@/controls/types";
 import type { AdapterKind } from "@/controls/adapters";
-import { paramBindings, params, setParamBinding } from "@/db/schema";
+import { bankOf, paramBindings, params, setParamBinding } from "@/db/schema";
 import type { PluginInfo } from "@/plugins/registry";
-import { Stage, type DeckName, type Focus } from "@/runtime/Stage";
+import { Stage, type FocusPart } from "@/runtime/Stage";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { LivePerformer } from "@/audio/LivePerformer";
 import { MidiManager } from "@/midi/MidiManager";
 import type { MidiActionHandlers } from "@/midi/router";
 import { ArmLearnContext, AssignContext, BankControlContext, ControlBusContext, LearnSlotContext, SlotLabelContext, type AssignCtxType, type AssignPending, type BankControl } from "@/ui/controller/widgets";
-import { useBrowse, type BrowseMode } from "./useBrowse";
+import { useBrowse } from "./useBrowse";
 import { useHardwareSync } from "./useHardwareSync";
 import { useMidiRouting } from "./useMidiRouting";
 import { useRemoteBridge } from "./useRemoteBridge";
 
-export type { BrowseMode };
-
 /**
  * The live editor's context, over the factory core: one {@link ControlBus} (fed by the on-screen
- * controller AND hardware MIDI), one runtime {@link Stage} (two decks of banks + a shader), and the
- * audio engine. Hardware MIDI is routed through the binding db straight onto bus slots /
- * app actions — no engine, no macro table, no keymap list. The provider itself only owns focus +
- * the render tick; browse/load, hardware sync, MIDI routing and the pop-out bridge each live in
+ * controller AND hardware MIDI), one runtime {@link Stage} (a flat row of banks, each a generator
+ * plus an optional per-layer shader), and the audio engine. Hardware MIDI is routed through the
+ * binding db straight onto bus slots / app actions. The provider itself only owns the render tick
+ * and small UI state; browse/load, hardware sync, MIDI routing and the pop-out bridge each live in
  * their own hook.
  */
 interface LiveCtx {
@@ -32,20 +30,19 @@ interface LiveCtx {
   audio: AudioEngine;
   generators: PluginInfo[];
   effects: PluginInfo[];
-  browseMode: BrowseMode;
-  toggleBrowseMode: () => void;
-  selected: PluginInfo | undefined;
-  selectedIndex: number;
-  step: (delta: number) => void;
-  decks: Stage["decks"];
-  crossfade: number;
-  setCrossfade: (x: number) => void;
-  shaderName: string | null;
-  focus: Focus;
-  setFocus: (f: Focus) => void;
-  load: (deck: DeckName, bank?: number) => void;
-  selectBank: (deck: DeckName, bank: number) => void;
-  clearDeck: (deck: DeckName, bank?: number) => void;
+  selectedPlugin: PluginInfo | undefined;
+  selectedPluginIndex: number;
+  selectedShader: PluginInfo | undefined;
+  selectedShaderIndex: number;
+  stepPlugin: (delta: number) => void;
+  stepShader: (delta: number) => void;
+  banks: Stage["banks"];
+  activeBank: number;
+  focusPart: FocusPart;
+  setFocusPart: (p: FocusPart) => void;
+  load: (bank?: number) => void;
+  selectBank: (bank: number) => void;
+  clearBank: (bank?: number) => void;
   clearShader: () => void;
   /** Master audio mute — silences the master bus without stopping the engine. */
   muted: boolean;
@@ -73,6 +70,9 @@ export function useLive(): LiveCtx {
   return ctx;
 }
 
+/** Accumulated jog delta that fires one browse step per this many units. */
+const JOG_STEP = 4;
+
 export function LiveProvider({ children }: { children: ReactNode }) {
   const refs = useRef<{ bus: ControlBus; stage: Stage; audio: AudioEngine; performer: LivePerformer; midi: MidiManager }>();
   if (!refs.current) {
@@ -83,46 +83,63 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   }
   const { bus, stage, audio, performer, midi } = refs.current;
 
-  const [focus, setFocusState] = useState<Focus>("A");
   const [started, setStarted] = useState(false);
   const [, refresh] = useReducer((x) => x + 1, 0);
 
-  const browse = useBrowse({ stage, focus, setFocus: setFocusState, refresh });
-  const { step, load, selectBank, clearDeck } = browse;
+  const browse = useBrowse({ stage, refresh });
+  const { stepPlugin, stepShader, load, selectBank, clearBank, clearShader } = browse;
   useHardwareSync(midi);
 
   // App actions a hardware control can be bound to (everything that isn't a plugin parameter).
   const runAction: MidiActionHandlers["run"] = (action) => {
     switch (action) {
-      case "loadA": return load("A");
-      case "loadB": return load("B");
-      case "clearA": return clearDeck("A");
-      case "clearB": return clearDeck("B");
-      case "browseMode": return browse.toggleBrowseMode();
-      case "focusA": return setFocusState("A");
-      case "focusB": return setFocusState("B");
-      case "focusShader": return setFocusState("shader");
+      case "load": return load();
+      case "clear": return clearBank();
+      case "clearShader": return clearShader();
       default: {
-        const m = /^bank([AB])([012])$/.exec(action);
-        if (m) {
-          const deck = m[1] as DeckName;
-          const i = Number(m[2]);
-          if (stage.decks[deck].banks[i]) selectBank(deck, i);
-          else load(deck, i);
+        const bank = bankOf(action);
+        if (bank !== null) {
+          if (stage.banks[bank].plugin) selectBank(bank);
+          else load(bank);
         }
       }
     }
   };
 
+  const stepBrowse = (target: "plugin" | "shader", delta: number) =>
+    target === "plugin" ? stepPlugin(delta) : stepShader(delta);
+
   const { learnSlot, armLearn, cancelLearn, lastMidi } = useMidiRouting({
     midi,
     bus,
     stage,
-    handlers: { step, run: runAction },
+    handlers: { step: stepBrowse, run: runAction },
     refresh,
   });
 
-  const setCrossfade = (x: number) => bus.drive("crossfader:0", { value: x });
+  // ── the jog wheels ARE the browse dials: jog:0 sweeps plugins, jog:1 sweeps shaders ──
+  const stepRef = useRef(stepBrowse);
+  stepRef.current = stepBrowse;
+  useEffect(() => {
+    const attach = (slot: SlotId, target: "plugin" | "shader") => {
+      let acc = 0;
+      return bus.subscribe(slot, (live) => {
+        if (!live.relative || !live.delta) return;
+        acc += live.delta;
+        const steps = Math.trunc(acc / JOG_STEP);
+        if (steps !== 0) {
+          acc -= steps * JOG_STEP;
+          stepRef.current(target, steps);
+        }
+      });
+    };
+    const offPlugin = attach("jog:0", "plugin");
+    const offShader = attach("jog:1", "shader");
+    return () => {
+      offPlugin();
+      offShader();
+    };
+  }, [bus]);
 
   // ── header master mute (silences the master bus, engine keeps running) ──
   const [muted, setMuted] = useState(false);
@@ -131,7 +148,6 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     setMuted(next);
     audio.setMasterLevel(next ? 0 : 0.9);
   };
-
 
   // ── param remapping (chip → widget), shared by the panel and the controller surface ──
   const [assignPending, setAssignPending] = useState<AssignPending | null>(null);
@@ -151,19 +167,11 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // ── crossfader bridge + stage loop ──
+  // ── stage loop ──
   useEffect(() => {
-    bus.drive("crossfader:0", { value: 0.5 });
-    const off = bus.subscribe("crossfader:0", (live) => {
-      stage.crossfade = live.value;
-      refresh();
-    });
     stage.start();
-    return () => {
-      off();
-      stage.stop();
-    };
-  }, [stage, bus]);
+    return () => stage.stop();
+  }, [stage]);
 
   // ── audio: started on the intro gesture ──
   const start = () => {
@@ -172,7 +180,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   };
   useEffect(() => () => performer.dispose(), [performer]);
 
-  // light tick so live indicators (crossfade, labels, learned controls) refresh while mounted
+  // light tick so live indicators (bank dots, labels, learned controls) refresh while mounted
   useEffect(() => {
     let raf = 0;
     let last = 0;
@@ -187,10 +195,6 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  useEffect(() => {
-    stage.focus = focus;
-  }, [focus, stage]);
-
   // widget → focused plugin's bound param name, for the on-screen labels.
   const slotLabels: Partial<Record<SlotId, string>> = {};
   const managed = stage.managed();
@@ -203,12 +207,20 @@ export function LiveProvider({ children }: { children: ReactNode }) {
 
   // Bank controls for the controller's top row (shared by the host surface and the pop-out window).
   const bankControl: BankControl = {
-    state: (deck) => ({ loaded: stage.decks[deck].banks.map((b) => !!b), active: stage.decks[deck].active }),
-    select: (deck, i) => (stage.decks[deck].banks[i] ? selectBank(deck, i) : load(deck, i)),
-    clear: clearDeck,
+    state: () => ({ loaded: stage.banks.map((b) => !!b.plugin), active: stage.active }),
+    select: (i) => (stage.banks[i].plugin ? selectBank(i) : load(i)),
+    clear: () => clearBank(),
   };
 
-  useRemoteBridge({ bus, stage, step, bankControl, slotLabels, browseLabel: browse.selected?.label, assign: assignCtx });
+  useRemoteBridge({
+    bus,
+    stage,
+    step: stepBrowse,
+    bankControl,
+    slotLabels,
+    browseLabels: { plugin: browse.selectedPlugin?.label, shader: browse.selectedShader?.label },
+    assign: assignCtx,
+  });
 
   const value: LiveCtx = {
     bus,
@@ -216,21 +228,23 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     audio,
     generators: browse.generators,
     effects: browse.effects,
-    browseMode: browse.browseMode,
-    toggleBrowseMode: browse.toggleBrowseMode,
-    selected: browse.selected,
-    selectedIndex: browse.selectedIndex,
-    step,
-    decks: stage.decks,
-    crossfade: stage.crossfade,
-    setCrossfade,
-    shaderName: stage.shader ? stage.shader.constructor.name.replace(/Layer$/, "") : null,
-    focus,
-    setFocus: setFocusState,
+    selectedPlugin: browse.selectedPlugin,
+    selectedPluginIndex: browse.selectedPluginIndex,
+    selectedShader: browse.selectedShader,
+    selectedShaderIndex: browse.selectedShaderIndex,
+    stepPlugin,
+    stepShader,
+    banks: stage.banks,
+    activeBank: stage.active,
+    focusPart: stage.focusPart,
+    setFocusPart: (p) => {
+      stage.focusPart = p;
+      refresh();
+    },
     load,
     selectBank,
-    clearDeck,
-    clearShader: browse.clearShader,
+    clearBank,
+    clearShader,
     muted,
     toggleMute,
     started,

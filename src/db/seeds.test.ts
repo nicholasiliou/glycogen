@@ -33,16 +33,16 @@ describe("seedParamBindings against the real registry", () => {
     }
   });
 
-  it("gives every plugin a locked hue row on the reserved knob:9", () => {
+  it("gives every plugin a locked opacity row on the reserved knob:9", () => {
     seedParamBindings();
     for (const plugin of plugins.all()) {
-      const hue = paramBindings.get(`hue:${plugin.id}`);
-      expect(hue, `hue row for ${plugin.id}`).toMatchObject({ widgetId: "knob:9", locked: true });
+      const opacity = paramBindings.get(`opacity:${plugin.id}`);
+      expect(opacity, `opacity row for ${plugin.id}`).toMatchObject({ widgetId: "knob:9", locked: true });
     }
   });
 
   it("covers every registered plugin with a factory layout", () => {
-    // A new plugin without a DEFAULT_LAYOUTS entry still works (params exist, hue bound) but ships
+    // A new plugin without a DEFAULT_LAYOUTS entry still works (params exist, opacity bound) but ships
     // with no widget layout — flag it here so the omission is a decision, not an accident.
     for (const plugin of plugins.all()) {
       expect(DEFAULT_LAYOUTS[plugin.id], `DEFAULT_LAYOUTS["${plugin.id}"]`).toBeDefined();

@@ -86,7 +86,7 @@ export class MidiManager {
     // Coalesce concurrent calls: a second enable() while the first is still awaiting
     // requestMIDIAccess must NOT start its own request. Two requests yield two *distinct* access
     // objects for the same physical port, and binding onmidimessage on both makes every message
-    // fire twice — which silently no-ops toggle actions (browseMode flips twice → back to start).
+    // fire twice — which silently no-ops toggle actions (a toggle flips twice → back to start).
     // This is exactly what React StrictMode's mount→unmount→mount double-invoke triggers.
     if (this.enabling) return this.enabling;
     if (!this.supported) {

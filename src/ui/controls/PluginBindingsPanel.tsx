@@ -60,8 +60,11 @@ export function PluginBindingsPanel() {
   const managed = stage.managed();
   const pluginId = managed?.id ?? "";
 
-  const rows = useTable(params, (t) => [...t.by("plugin", pluginId)].sort((a, b) => a.order - b.order));
-  const bound = useTable(paramBindings, (t) => new Map(t.by("plugin", pluginId).map((r) => [r.paramId, r])));
+  // pluginId is a selector input: without it in deps the memoised selection would go stale when
+  // focus moves (or the first plugin loads) without a table mutation — the "panel needs reopening"
+  // bug.
+  const rows = useTable(params, (t) => [...t.by("plugin", pluginId)].sort((a, b) => a.order - b.order), [pluginId]);
+  const bound = useTable(paramBindings, (t) => new Map(t.by("plugin", pluginId).map((r) => [r.paramId, r])), [pluginId]);
 
   if (!managed) {
     return (
@@ -79,17 +82,8 @@ export function PluginBindingsPanel() {
         <div className="mb-2 flex items-center justify-between">
           <span className="text-[10px] uppercase tracking-wide text-ink-dim">
             {managed.constructor.name.replace(/Layer$/, "")}
+            {stage.focusPart === "shader" && <span className="ml-1 rounded bg-accent/15 px-1 text-accent">fx</span>}
           </span>
-          <button
-            onClick={() => {
-              for (const r of paramBindings.by("plugin", pluginId)) if (!r.locked) paramBindings.delete(r.id);
-              seedPluginBindings(pluginId);
-            }}
-            title="Reset this plugin's bindings to the factory layout"
-            className="flex items-center gap-1 rounded border border-edge px-1.5 py-0.5 text-[10px] text-ink-dim hover:text-accent"
-          >
-            <RotateCcw className="h-3 w-3" /> reset
-          </button>
         </div>
         <div className="space-y-3">
           {rows.map((row) => (
@@ -164,15 +158,6 @@ function BindingChip({ row, binding }: { row: ParamRow; binding?: ParamBindingRo
             <option key={a} value={a}>{a}</option>
           ))}
         </select>
-      )}
-      {binding && (
-        <button
-          onClick={() => setParamBinding(row.pluginId, row.id, null)}
-          className="px-0.5 text-[10px] text-ink-dim/60 hover:text-red-400"
-          title="Unbind"
-        >
-          ✕
-        </button>
       )}
     </span>
   );

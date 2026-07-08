@@ -78,6 +78,23 @@ function LiveShell() {
   // by a ResizeObserver on its host) re-fits to the narrower area automatically.
   const [controlsOpen, setControlsOpen] = useState(false);
 
+  // The controller tab auto-opens the controls drawer (params are what you tweak there), then puts
+  // it back how it was: closed again if it was closed before, kept open if it was open.
+  const controllerTabShown = controllerOpen && tab === "controller";
+  const controlsBefore = useRef(false);
+  const prevShown = useRef(false);
+  useEffect(() => {
+    if (controllerTabShown === prevShown.current) return;
+    prevShown.current = controllerTabShown;
+    if (controllerTabShown) {
+      controlsBefore.current = controlsOpen;
+      setControlsOpen(true);
+    } else {
+      setControlsOpen(controlsBefore.current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- controlsOpen is only sampled on the transition
+  }, [controllerTabShown]);
+
   // Space loads the browsed plugin onto the stage (replaces the old play/pause transport toggle).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -86,7 +103,7 @@ function LiveShell() {
       if (typing) return;
       if (e.code === "Space") {
         e.preventDefault();
-        load("A");
+        load();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -110,12 +127,18 @@ function LiveShell() {
             {controlsOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </button>
         {controllerOpen && (
-          <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
+          <div
+            className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center"
+            style={{ containerType: "size" }}
+          >
+            {/* Contain a true 16:9 box in the stage area (container-query units): on screens wider
+                than 16:9 the height caps the width, so the mask never stretches and the header
+                stays inside it. */}
             <div
-              className="pointer-events-auto relative w-full overflow-hidden bg-panel/10 backdrop-blur-xs"
+              className="pointer-events-auto relative overflow-hidden bg-panel/10 backdrop-blur-xs"
               style={{
+                width: "min(100cqw, calc(100cqh * 16 / 9))",
                 aspectRatio: "16 / 9",
-                maxHeight: "100%",
                 maskImage: `url(${asset("/masks/16x9/1.svg")})`,
                 maskSize: "100% 100%",
                 maskPosition: "0 0",

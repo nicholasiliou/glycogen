@@ -42,6 +42,17 @@ class Fx extends Plugin {
   }
 }
 
+/** An effect that records the host it was attached to. */
+class Adoptive extends Plugin {
+  host: Plugin | null = null;
+  override onAttach(host: Plugin): void {
+    this.host = host;
+  }
+  render(): HTMLCanvasElement {
+    return this.canvas;
+  }
+}
+
 /** Stamp the id + param names the registry would, so db binding rows resolve. */
 function make<T extends Plugin>(ctor: new () => T, id: string): T {
   const p = new ctor();
@@ -80,51 +91,45 @@ beforeEach(() => {
 
   bus = new ControlBus();
   stage = new Stage(bus, stubCanvas());
-  // jsdom canvases have no 2D backend, so give the internal composite buffer and per-deck
-  // compositor canvases working (fake) contexts.
-  const internals = stage as unknown as {
-    bctx: CanvasRenderingContext2D;
-    deckCtx: Record<"A" | "B", CanvasRenderingContext2D>;
-  };
-  internals.bctx = fakeCtx();
-  internals.deckCtx = { A: fakeCtx(), B: fakeCtx() };
+  // jsdom canvases have no 2D backend, so give the internal composite buffer a working (fake) context.
+  (stage as unknown as { bctx: CanvasRenderingContext2D }).bctx = fakeCtx();
 });
 
-describe("Stage decks/banks", () => {
+describe("Stage banks", () => {
   it("loadBank places a plugin in a bank and makes it active + managed", () => {
     const gen = make(Gen, "gen");
-    stage.loadBank("A", 1, gen);
-    expect(stage.decks.A.active).toBe(1);
-    expect(stage.active("A")).toBe(gen);
-    expect(stage.managed()).toBe(gen); // focus defaults to A
+    stage.loadBank(1, gen);
+    expect(stage.active).toBe(1);
+    expect(stage.banks[1].plugin).toBe(gen);
+    expect(stage.managed()).toBe(gen);
   });
 
   it("selectBank only switches to a loaded bank; clearBank empties the active one", () => {
     const gen = make(Gen, "gen");
-    stage.loadBank("A", 0, gen);
-    stage.selectBank("A", 2); // bank 2 is empty → ignored
-    expect(stage.decks.A.active).toBe(0);
-    stage.clearBank("A");
-    expect(stage.active("A")).toBeNull();
+    stage.loadBank(0, gen);
+    stage.selectBank(2); // bank 2 is empty → ignored
+    expect(stage.active).toBe(0);
+    stage.clearBank();
+    expect(stage.banks[0].plugin).toBeNull();
   });
 
-  it("drives only the focused deck's active bank from the bus", () => {
+  it("drives only the active bank's plugin from the bus", () => {
     // The controller drives one layer at a time. Param state is retained per instance, so a setting
     // made while focused persists after focus moves — text interaction doesn't need live tracking.
     const a = make(Gen, "gen");
     const b = make(Gen, "gen");
-    stage.loadBank("A", 0, a);
-    stage.loadBank("B", 0, b);
-    stage.focus = "A";
+    stage.loadBank(0, a);
+    stage.loadBank(1, b); // loading focuses bank 1
+    stage.selectBank(0);
     bus.drive("fader:0", { value: 1 });
     stage.tick(1);
     expect(a.level.value).toBe(100);
-    expect(b.level.value).toBe(0); // unfocused deck holds its last value
+    expect(b.level.value).toBe(0); // unfocused bank holds its last value
   });
 
   it("re-resolves drivers when a binding row moves the param to another widget", () => {
     const gen = make(Gen, "gen");
-    stage.loadBank("A", 0, gen);
+    stage.loadBank(0, gen);
     stage.tick(1);
     paramBindings.update("b-gen", { widgetId: "knob:5" });
     bus.drive("knob:5", { value: 0.5 });
@@ -134,56 +139,69 @@ describe("Stage decks/banks", () => {
 });
 
 describe("Stage text field", () => {
-  it("threads a TextLayer's field to a sim in the OTHER deck (stage-wide)", () => {
-    stage.loadBank("A", 0, make(Text, "text"));
+  it("threads a TextLayer's field to a sim in any other bank (stage-wide)", () => {
+    stage.loadBank(3, make(Text, "text"));
     const sim = make(Sim, "sim");
-    stage.loadBank("B", 0, sim);
-    stage.tick(1);
-    expect(sim.sawField).not.toBeNull();
-  });
-
-  it("threads a TextLayer's field to a sim in a different bank of the same deck", () => {
-    stage.loadBank("A", 0, make(Text, "text"));
-    const sim = make(Sim, "sim");
-    stage.loadBank("A", 1, sim);
+    stage.loadBank(0, sim);
     stage.tick(1);
     expect(sim.sawField).not.toBeNull();
   });
 
   it("leaves textField null when no TextLayer is loaded", () => {
     const sim = make(Sim, "sim");
-    stage.loadBank("A", 0, sim);
+    stage.loadBank(0, sim);
     stage.tick(1);
     expect(sim.sawField).toBeNull();
   });
 });
 
-describe("Stage shader slot", () => {
-  it("feeds the composited decks into the shader as input", () => {
-    stage.loadBank("A", 0, make(Gen, "gen"));
+describe("Stage per-bank shaders", () => {
+  it("feeds the bank plugin's output into its shader as input", () => {
+    const gen = make(Gen, "gen");
+    stage.loadBank(0, gen);
     const fx = make(Fx, "fx");
-    stage.setShader(fx);
+    stage.setShader(0, fx);
     stage.tick(1);
-    expect(fx.sawInput).toBe((stage as unknown as { buffer: HTMLCanvasElement }).buffer);
+    expect(fx.sawInput).toBe((gen as unknown as { canvas: HTMLCanvasElement }).canvas);
   });
 
-  it("drives the shader's params when it is focused", () => {
+  it("drives the shader's params when the shader half is focused", () => {
+    stage.loadBank(0, make(Gen, "gen"));
     const fx = make(Fx, "fx");
-    stage.setShader(fx);
-    stage.focus = "shader";
+    stage.setShader(0, fx);
+    stage.focusPart = "shader";
     bus.drive("knob:0", { value: 0.5 });
     stage.tick(1);
     expect(fx.amount.value).toBe(50);
   });
 
-  it("editing the focused shader does not touch deck plugins", () => {
-    // With the shader focused, only the shader's drivers run — the deck plugin below holds its value.
+  it("editing the focused shader does not touch the plugin below", () => {
     const gen = make(Gen, "gen"); // level on fader:0
-    stage.loadBank("A", 0, gen);
-    stage.setShader(make(Fx, "fx")); // amount on knob:0
-    stage.focus = "shader";
-    bus.drive("fader:0", { value: 1 }); // the deck plugin's widget
+    stage.loadBank(0, gen);
+    stage.setShader(0, make(Fx, "fx")); // amount on knob:0
+    stage.focusPart = "shader";
+    bus.drive("fader:0", { value: 1 }); // the plugin's widget
     stage.tick(1);
-    expect(gen.level.value).toBe(0); // unfocused deck plugin unchanged
+    expect(gen.level.value).toBe(0); // unfocused plugin unchanged
+  });
+
+  it("hands the host plugin to the shader's onAttach (and re-attaches on load)", () => {
+    const gen = make(Gen, "gen");
+    stage.loadBank(0, gen);
+    const fx = make(Adoptive, "fx");
+    stage.setShader(0, fx);
+    expect(fx.host).toBe(gen);
+    const gen2 = make(Gen, "gen");
+    stage.loadBank(0, gen2); // shader survives a plugin swap and re-adopts
+    expect(stage.banks[0].shader).toBe(fx);
+    expect(fx.host).toBe(gen2);
+  });
+
+  it("clearBank clears the shader with the plugin", () => {
+    stage.loadBank(0, make(Gen, "gen"));
+    stage.setShader(0, make(Fx, "fx"));
+    stage.clearBank(0);
+    expect(stage.banks[0].plugin).toBeNull();
+    expect(stage.banks[0].shader).toBeNull();
   });
 });

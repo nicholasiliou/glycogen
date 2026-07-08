@@ -63,14 +63,6 @@ describe("attachMidiRouter (db-driven)", () => {
     expect(bus.get("knob:3").value).toBe(0.75);
   });
 
-  it("inverts the crossfader by default (it reports backwards)", () => {
-    const emit = attach();
-    emit(ctl("cc:0:8"));
-    setHardwareBinding("cc:0:8", { type: "widget", widgetId: "crossfader:0" });
-    emit(ctl("cc:0:8", { value: 0.2 }));
-    expect(bus.get("crossfader:0").value).toBeCloseTo(0.8);
-  });
-
   it("routes button presses into the slot's pressed state", () => {
     const emit = attach();
     emit(ctl("note:0:36", { continuous: false }));
@@ -83,24 +75,24 @@ describe("attachMidiRouter (db-driven)", () => {
   it("runs momentary app actions on press only", () => {
     const emit = attach();
     emit(ctl("note:0:1", { continuous: false }));
-    setHardwareBinding("note:0:1", { type: "action", actionId: "loadA" });
+    setHardwareBinding("note:0:1", { type: "action", actionId: "load" });
     emit(ctl("note:0:1", { continuous: false, pressed: false }));
     expect(handlers.run).not.toHaveBeenCalled();
     emit(ctl("note:0:1", { continuous: false, pressed: true }));
-    expect(handlers.run).toHaveBeenCalledWith("loadA");
+    expect(handlers.run).toHaveBeenCalledWith("load");
   });
 
   it("browse steps by delta sign from a relative control and +1 from a button", () => {
     const emit = attach();
     emit(ctl("cc:0:20", { relative: true }));
-    setHardwareBinding("cc:0:20", { type: "action", actionId: "browse" });
+    setHardwareBinding("cc:0:20", { type: "action", actionId: "browsePlugin" });
     emit(ctl("cc:0:20", { relative: true, delta: -3 }));
-    expect(handlers.step).toHaveBeenCalledWith(-1);
+    expect(handlers.step).toHaveBeenCalledWith("plugin", -1);
 
     emit(ctl("note:0:2", { continuous: false }));
-    setHardwareBinding("note:0:2", { type: "action", actionId: "browse" });
+    setHardwareBinding("note:0:2", { type: "action", actionId: "browseShader" });
     emit(ctl("note:0:2", { continuous: false, pressed: true }));
-    expect(handlers.step).toHaveBeenCalledWith(1);
+    expect(handlers.step).toHaveBeenCalledWith("shader", 1);
   });
 
   it("routes nothing for disabled controls", () => {

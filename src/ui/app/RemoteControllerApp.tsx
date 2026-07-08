@@ -38,7 +38,7 @@ class RemoteBus extends ControlBus {
 }
 
 /** The pop-out controller: renders only the surface, relaying input to the host window. */
-const EMPTY_BANKS = { A: { loaded: [], active: -1 }, B: { loaded: [], active: -1 } };
+const EMPTY_BANKS = { loaded: [], active: -1 };
 
 export function RemoteControllerApp() {
   const [snapshot, setSnapshot] = useState<RemoteSnapshot>({ labels: {}, banks: EMPTY_BANKS });
@@ -67,13 +67,14 @@ export function RemoteControllerApp() {
     };
   }, []);
 
-  const step = (delta: number) => chanRef.current?.postMessage({ kind: "step", delta } satisfies RemoteMessage);
+  const step = (target: "plugin" | "shader", delta: number) =>
+    chanRef.current?.postMessage({ kind: "step", target, delta } satisfies RemoteMessage);
 
   const bankControl = useMemo<BankControl>(
     () => ({
-      state: (deck) => snapRef.current.banks[deck],
-      select: (deck, bank) => chanRef.current?.postMessage({ kind: "bankSelect", deck, bank } satisfies RemoteMessage),
-      clear: (deck) => chanRef.current?.postMessage({ kind: "bankClear", deck } satisfies RemoteMessage),
+      state: () => snapRef.current.banks,
+      select: (bank) => chanRef.current?.postMessage({ kind: "bankSelect", bank } satisfies RemoteMessage),
+      clear: () => chanRef.current?.postMessage({ kind: "bankClear" } satisfies RemoteMessage),
     }),
     [],
   );
@@ -100,7 +101,12 @@ export function RemoteControllerApp() {
             <LearnSlotContext.Provider value={null}>
               <ArmLearnContext.Provider value={() => {}}>
                 <AssignContext.Provider value={assignCtx}>
-                  <Controller browse={{ label: snapshot.browseLabel, onStep: step }} />
+                  <Controller
+                    browse={{
+                      plugin: { label: snapshot.browseLabels?.plugin, onStep: (d) => step("plugin", d) },
+                      shader: { label: snapshot.browseLabels?.shader, onStep: (d) => step("shader", d) },
+                    }}
+                  />
                 </AssignContext.Provider>
               </ArmLearnContext.Provider>
             </LearnSlotContext.Provider>

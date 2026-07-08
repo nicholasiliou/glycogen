@@ -2,7 +2,7 @@
  * Presets: named snapshots of the user-mutable tables (param bindings, hardware bindings, hardware
  * control identities), stored as rows themselves and exportable as JSON files. Loading replaces the
  * mutable tables wholesale, skipping rows whose FKs no longer resolve (a renamed plugin/param),
- * then re-runs the seed pass so locked hue rows and layouts for uncovered plugins come back.
+ * then re-runs the seed pass so locked opacity rows and layouts for uncovered plugins come back.
  */
 import type { RowBase, Table } from "./engine";
 import {
@@ -64,7 +64,7 @@ export function applyPreset(id: string): void {
   insertEach(hardwareControls, preset.data.hardwareControls);
   insertEach(hardwareBindings, preset.data.hardwareBindings);
   insertEach(paramBindings, preset.data.paramBindings);
-  seedParamBindings(); // locked hue rows + factory layouts for plugins the preset doesn't cover
+  seedParamBindings(); // locked opacity rows + factory layouts for plugins the preset doesn't cover
 }
 
 export function deletePreset(id: string): void {

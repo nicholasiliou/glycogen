@@ -7,20 +7,20 @@ import type { AssignCtxType, BankControl } from "@/ui/controller/widgets";
 
 /**
  * Pop-out controller bridge (host side). Applies drives/fires/steps relayed from the popup onto the
- * real bus, and mirrors back a snapshot (slot labels + browse label + banks + any pending param
+ * real bus, and mirrors back a snapshot (slot labels + browse labels + banks + any pending param
  * remap) so the popup can render the surface and complete assignments. The host always owns state;
  * the channel is attached once and reads fresh closures through refs.
  */
 export function useRemoteBridge(opts: {
   bus: ControlBus;
   stage: Stage;
-  step: (delta: number) => void;
+  step: (target: "plugin" | "shader", delta: number) => void;
   bankControl: BankControl;
   slotLabels: Partial<Record<SlotId, string>>;
-  browseLabel: string | undefined;
+  browseLabels: { plugin?: string; shader?: string };
   assign: AssignCtxType;
 }): void {
-  const { bus, stage, slotLabels, browseLabel } = opts;
+  const { bus, stage, slotLabels, browseLabels } = opts;
 
   const stepRef = useRef(opts.step);
   stepRef.current = opts.step;
@@ -29,17 +29,14 @@ export function useRemoteBridge(opts: {
   const assignRef = useRef(opts.assign);
   assignRef.current = opts.assign;
 
-  const banksSnap = {
-    A: { loaded: stage.decks.A.banks.map((b) => !!b), active: stage.decks.A.active },
-    B: { loaded: stage.decks.B.banks.map((b) => !!b), active: stage.decks.B.active },
-  };
+  const banksSnap = { loaded: stage.banks.map((b) => !!b.plugin), active: stage.active };
   const assignSnap = opts.assign.pending
     ? { label: opts.assign.pending.label, widgets: Object.keys(opts.assign.pending.legal) as SlotId[] }
     : null;
   const snapshot = useMemo<RemoteSnapshot>(
-    () => ({ labels: slotLabels, browseLabel, banks: banksSnap, assign: assignSnap }),
+    () => ({ labels: slotLabels, browseLabels, banks: banksSnap, assign: assignSnap }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [JSON.stringify(slotLabels), browseLabel, JSON.stringify(banksSnap), JSON.stringify(assignSnap)],
+    [JSON.stringify(slotLabels), JSON.stringify(browseLabels), JSON.stringify(banksSnap), JSON.stringify(assignSnap)],
   );
   const snapshotRef = useRef(snapshot);
   snapshotRef.current = snapshot;
@@ -53,9 +50,9 @@ export function useRemoteBridge(opts: {
       const m = e.data;
       if (m.kind === "drive") bus.drive(m.slot, m.input);
       else if (m.kind === "fire") bus.fire(m.slot);
-      else if (m.kind === "step") stepRef.current(m.delta);
-      else if (m.kind === "bankSelect") bankRef.current.select(m.deck, m.bank);
-      else if (m.kind === "bankClear") bankRef.current.clear(m.deck);
+      else if (m.kind === "step") stepRef.current(m.target, m.delta);
+      else if (m.kind === "bankSelect") bankRef.current.select(m.bank);
+      else if (m.kind === "bankClear") bankRef.current.clear();
       else if (m.kind === "assignTo") assignRef.current.assignTo(m.slot);
       else if (m.kind === "assignCancel") assignRef.current.cancel();
       else if (m.kind === "hello") chan.postMessage({ kind: "snapshot", snapshot: snapshotRef.current } satisfies RemoteMessage);

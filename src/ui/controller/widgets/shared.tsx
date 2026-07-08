@@ -11,14 +11,14 @@ import type { DriveInput, SlotId } from "@/controls/types";
 export const ControlBusContext = createContext<ControlBus | null>(null);
 
 /**
- * Deck bank state + actions for the top-row Del/Bank buttons. Supplied by the host (LiveProvider)
+ * Bank state + actions for the top-row Del/Bank buttons. Supplied by the host (LiveProvider)
  * and by the pop-out window (over the channel), so the controller surface renders the same in both
  * without depending on the full live context. `loaded[i]` = bank i has a plugin; `active` = current.
  */
 export interface BankControl {
-  state: (deck: "A" | "B") => { loaded: boolean[]; active: number };
-  select: (deck: "A" | "B", bank: number) => void;
-  clear: (deck: "A" | "B") => void;
+  state: () => { loaded: boolean[]; active: number };
+  select: (bank: number) => void;
+  clear: () => void;
 }
 export const BankControlContext = createContext<BankControl | null>(null);
 

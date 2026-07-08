@@ -11,8 +11,8 @@ export const REMOTE_CHANNEL = "marathon-remote";
 /** URL hash that boots the app as a pop-out controller instead of the full editor. */
 export const REMOTE_HASH = "#controller";
 
-/** Per-deck bank state for the top-row Del/Bank buttons. */
-export interface DeckBanks {
+/** Bank state for the top-row Del/Bank buttons. */
+export interface BankSnapshot {
   loaded: boolean[];
   active: number;
 }
@@ -21,10 +21,10 @@ export interface DeckBanks {
 export interface RemoteSnapshot {
   /** slot id → focused plugin's bound param name. */
   labels: Partial<Record<SlotId, string>>;
-  /** The browse-dial label (selected plugin/shader). */
-  browseLabel?: string;
-  /** Bank state per deck. */
-  banks: { A: DeckBanks; B: DeckBanks };
+  /** The two browse-dial labels (selected plugin / selected shader). */
+  browseLabels?: { plugin?: string; shader?: string };
+  /** The unified bank row. */
+  banks: BankSnapshot;
   /**
    * A param remap armed in the host's bindings panel (HTML5 drag can't cross windows, so the popup
    * completes it click-to-assign): legal widgets highlight, clicking one sends `assignTo`.
@@ -35,9 +35,9 @@ export interface RemoteSnapshot {
 export type RemoteMessage =
   | { kind: "drive"; slot: SlotId; input: DriveInput }
   | { kind: "fire"; slot: SlotId }
-  | { kind: "step"; delta: number }
-  | { kind: "bankSelect"; deck: "A" | "B"; bank: number }
-  | { kind: "bankClear"; deck: "A" | "B" }
+  | { kind: "step"; target: "plugin" | "shader"; delta: number }
+  | { kind: "bankSelect"; bank: number }
+  | { kind: "bankClear" }
   | { kind: "assignTo"; slot: SlotId } // remote → host: complete the pending param remap here
   | { kind: "assignCancel" } // remote → host
   | { kind: "hello" } // remote → host: "send me the current snapshot"
