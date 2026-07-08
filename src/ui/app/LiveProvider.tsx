@@ -43,6 +43,8 @@ interface LiveCtx {
   setFocusPart: (p: FocusPart) => void;
   load: (bank?: number) => void;
   selectBank: (bank: number) => void;
+  /** Reorder the bank row (header dot drag) — bank order is composite order. */
+  moveBank: (from: number, to: number) => void;
   clearBank: (bank?: number) => void;
   clearShader: () => void;
   /** Master audio mute — silences the master bus without stopping the engine. */
@@ -269,6 +271,10 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     },
     load,
     selectBank,
+    moveBank: (from, to) => {
+      stage.moveBank(from, to);
+      refresh();
+    },
     clearBank,
     clearShader,
     muted,

@@ -1,9 +1,14 @@
 // ── jog wheel (angular drag → relative delta) ─────────────────────────────────────────────────
 import { useEffect, useRef, useState } from "react";
 import * as React from "react";
+import { isRemoteWindow } from "@/controls/remoteChannel";
 import { slotId } from "@/controls/types";
 import { asset } from "@/lib/asset";
 import { activeRing, dragWith, SlotFrame, useSlot } from "./shared";
+
+/** Angular drag → bus delta gain. The pop-out controller is a dedicated performance surface —
+ *  bigger physical strokes feel right there, so it runs hotter than the inline overlay wheel. */
+const JOG_GAIN = isRemoteWindow() ? 12 : 6;
 
 export function JogWheel({ slot, label, size = 360 }: { slot: number; label?: string; size?: number }) {
   const sid = slotId("jog", slot);
@@ -40,7 +45,7 @@ export function JogWheel({ slot, label, size = 360 }: { slot: number; label?: st
         if (d < -Math.PI) d += 2 * Math.PI;
         last.current = ang;
         setSpin((p) => p + (d * 180) / Math.PI);
-        s.drive({ relative: true, delta: d * 6 });
+        s.drive({ relative: true, delta: d * JOG_GAIN });
       },
       () => { dragging.current = false; lastSeq.current = s.liveSeq; },
     );

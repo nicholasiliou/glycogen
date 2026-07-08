@@ -39,10 +39,11 @@ function MiniDial({ index, count, onStep }: { index: number; count: number; onSt
 
 /** The unified bank strip: one dot per bank — load, activate, or remove the browsed plugin. */
 function BankStrip() {
-  const { banks, activeBank, selectBank, load, clearBank } = useLive();
+  const { banks, activeBank, selectBank, moveBank, load, clearBank } = useLive();
   const layer = banks[activeBank]?.plugin;
   const name = layer ? layer.constructor.name.replace(/Layer$/, "") : "";
   const [removing, setRemoving] = useState<number | null>(null);
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
 
   const onBankClick = (i: number) => {
     if (!banks[i].plugin) return load(i);
@@ -62,12 +63,28 @@ function BankStrip() {
             key={i}
             type="button"
             onClick={() => onBankClick(i)}
-            title={`Bank ${i + 1}${bank.plugin ? (i === activeBank ? " · active (click to remove)" : " · loaded (click to activate)") : " · empty (click to load)"}`}
+            // Dots drag to reorder the row (bank order is composite order).
+            draggable
+            onDragStart={(e) => {
+              setDragFrom(i);
+              e.dataTransfer.effectAllowed = "move";
+            }}
+            onDragOver={(e) => {
+              if (dragFrom !== null) e.preventDefault();
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (dragFrom !== null && dragFrom !== i) moveBank(dragFrom, i);
+              setDragFrom(null);
+            }}
+            onDragEnd={() => setDragFrom(null)}
+            title={`Bank ${i + 1}${bank.plugin ? (i === activeBank ? " · active (click to remove)" : " · loaded (click to activate)") : " · empty (click to load)"} · drag to reorder`}
             // Loaded banks wear their layer's color (the tint, else the plugin's native color).
             style={bank.plugin ? { backgroundColor: bank.plugin.displayColor() } : undefined}
             className={cn(
               "h-3 w-3 cursor-pointer rounded-full transition-colors",
               bank.plugin ? (i === activeBank ? "" : "opacity-50") : "bg-edge",
+              dragFrom === i && "ring-1 ring-ink/60",
             )}
           />
         ))}

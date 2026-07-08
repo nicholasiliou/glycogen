@@ -1,7 +1,10 @@
 import { useLayoutEffect, useRef, useState } from "react";
+import type * as React from "react";
 import { useLive } from "@/ui/app/LiveProvider";
 import { useExportSettings } from "@/ui/export/ExportContext";
 import { masksFor } from "@/runtime/export";
+import { readPngText } from "@/runtime/export/exporters/pngMeta";
+import { applyScene, parseScene, SCENE_PNG_KEYWORD } from "@/runtime/scene";
 import { asset } from "@/lib/asset";
 
 /**
@@ -15,6 +18,30 @@ export function Stage() {
   const ex = useExportSettings();
   const hostRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
+  const [dropNote, setDropNote] = useState<string | null>(null);
+  const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Dropping an exported PNG back on the stage restores the scene baked into its metadata.
+  const flashNote = (msg: string) => {
+    setDropNote(msg);
+    if (noteTimer.current) clearTimeout(noteTimer.current);
+    noteTimer.current = setTimeout(() => setDropNote(null), 2500);
+  };
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    void file.arrayBuffer().then((buf) => {
+      const json = readPngText(new Uint8Array(buf), SCENE_PNG_KEYWORD);
+      const scene = json ? parseScene(json) : null;
+      if (scene) {
+        applyScene(stage, scene);
+        flashNote("Scene restored");
+      } else {
+        flashNote("No marathon scene in this file");
+      }
+    });
+  };
 
   useLayoutEffect(() => {
     const host = hostRef.current;
@@ -60,7 +87,17 @@ export function Stage() {
   }
 
   return (
-    <div ref={hostRef} className="relative h-full w-full touch-none overflow-visible bg-black">
+    <div
+      ref={hostRef}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={onDrop}
+      className="relative h-full w-full touch-none overflow-visible bg-black"
+    >
+      {dropNote && (
+        <div className="pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded bg-black/70 px-3 py-1 text-[11px] text-ink">
+          {dropNote}
+        </div>
+      )}
       <div
         className="pointer-events-none absolute z-5"
         style={{

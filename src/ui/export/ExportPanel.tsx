@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Download, Image as ImageIcon, Video } from "lucide-react";
-import { Exporter, ASPECT_RATIO_LIST, masksFor, VIDEO_QUALITIES, VIDEO_QUALITY_LIST } from "@/runtime/export";
+import { Exporter, ASPECT_RATIO_LIST, masksFor, supportedVideoFormats, VIDEO_QUALITIES, VIDEO_QUALITY_LIST } from "@/runtime/export";
 import { useLive } from "@/ui/app/LiveProvider";
 import { Button } from "@/ui/components/button";
 import { Switch } from "@/ui/components/switch";
@@ -20,6 +20,7 @@ export function ExportPanel() {
   const [error, setError] = useState<string | null>(null);
 
   const variants = masksFor(ex.ratioId);
+  const videoFormats = useMemo(() => supportedVideoFormats(), []);
 
   const run = async (kind: "still" | "video") => {
     if (busy) return;
@@ -139,6 +140,24 @@ export function ExportPanel() {
             })()}
           </div>
         </div>
+
+        {/* video format — only shown when the browser can record more than one container */}
+        {videoFormats.length > 1 && (
+          <div className="space-y-1">
+            <span className="text-ink">Video format</span>
+            <div className="flex gap-1">
+              {videoFormats.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => ex.setVideoFormat(f.id)}
+                  className={`flex-1 rounded border px-1.5 py-0.5 ${ex.videoFormat === f.id ? "border-ink text-ink" : "border-edge text-ink-dim"}`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* actions */}
         <div className="flex gap-1.5 pt-1">

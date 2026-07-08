@@ -1,4 +1,5 @@
 import type { Stage } from "@/runtime/Stage";
+import { SCENE_PNG_KEYWORD, serializeScene } from "@/runtime/scene";
 import { resolveAspectRatio } from "./exporters/aspectRatios";
 import { masksFor } from "./exporters/masks";
 import { loadMaskImage, type ExportFrameOptions } from "./exporters/frameCanvas";
@@ -48,6 +49,8 @@ export class Exporter {
       quality,
       baseName: "marathon",
       frameNumber: this.frameCounter++,
+      // A PNG carries the scene that rendered it — drop it back on the stage to keep editing.
+      meta: { keyword: SCENE_PNG_KEYWORD, text: JSON.stringify(serializeScene(this.stage)) },
     });
   }
 
@@ -58,6 +61,7 @@ export class Exporter {
       source: this.canvas,
       frame,
       quality: settings.videoQuality,
+      format: settings.videoFormat,
       durationSec: settings.videoDurationSec ?? 10,
       baseName: "marathon",
       onProgress: opts?.onProgress,

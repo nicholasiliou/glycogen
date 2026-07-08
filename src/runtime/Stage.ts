@@ -84,6 +84,17 @@ export class Stage {
     }
   }
 
+  /** Reorder banks: move `from` to position `to` (composite order = bank order). The active
+   *  selection follows its content, so the focused layer stays focused wherever it lands. */
+  moveBank(from: number, to: number): void {
+    if (from === to || !this.banks[from] || !this.banks[to]) return;
+    const [bank] = this.banks.splice(from, 1);
+    this.banks.splice(to, 0, bank);
+    if (this.active === from) this.active = to;
+    else if (from < this.active && to >= this.active) this.active--;
+    else if (from > this.active && to <= this.active) this.active++;
+  }
+
   clearBank(index = this.active): void {
     const bank = this.banks[index];
     bank.plugin?.dispose();
