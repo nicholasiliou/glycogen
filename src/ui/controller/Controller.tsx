@@ -4,7 +4,6 @@
 
 import { useEffect, useState } from "react";
 import {
-  BrowsePanel,
   Circle,
   Fader,
   JogWheel,
@@ -29,10 +28,6 @@ function useRaf(): void {
     id = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(id);
   }, []);
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <span className="select-none text-[8px] font-semibold uppercase tracking-[0.18em] text-ink-dim/70">{children}</span>;
 }
 
 /** A side panel. `pad`/`enc` are the slot indices for this side; `jog` is its browse wheel. */
@@ -73,7 +68,7 @@ function SidePanel({ pad, enc, jog, jogLabel }: { pad: number; enc: number; jog:
   );
 }
 
-function MixerPanel({ browse }: { browse?: BrowseProps }) {
+function MixerPanel() {
   return (
     <div className="flex flex-col items-center gap-8 px-8 py-6">
 
@@ -88,7 +83,7 @@ function MixerPanel({ browse }: { browse?: BrowseProps }) {
   <Knob slot={5}/>
 
   <Knob slot={6}/>
-  <BrowsePanel label={browse?.plugin.label} onStep={browse?.plugin.onStep} />
+  <div></div>
   <Knob slot={7}/>
 
   <Circle slot={0}/>
@@ -101,25 +96,11 @@ function MixerPanel({ browse }: { browse?: BrowseProps }) {
   <Fader slot={1}/>
   <Fader slot={2}/>
   </div>
-      <div className="flex flex-col items-center gap-2">
-        <SectionLabel>Shader</SectionLabel>
-        <BrowsePanel label={browse?.shader.label ?? "None"} onStep={browse?.shader.onStep} />
-      </div>
     </div>
   );
 }
 
-interface BrowseDial {
-  label?: string;
-  onStep?: (delta: number) => void;
-}
-
-export interface BrowseProps {
-  plugin: BrowseDial;
-  shader: BrowseDial;
-}
-
-export function Controller({ browse }: { browse?: BrowseProps }) {
+export function Controller() {
   useRaf();
 
   return (
@@ -128,7 +109,7 @@ export function Controller({ browse }: { browse?: BrowseProps }) {
     <div className="relative flex flex-col items-center justify-center">
       <div className="flex items-stretch gap-4 p-4">
         <SidePanel pad={0} enc={0} jog={0} jogLabel="plugins"/>
-        <MixerPanel browse={browse}/>
+        <MixerPanel/>
         <SidePanel pad={13} enc={3} jog={1} jogLabel="shaders"/>
       </div>
     </div>

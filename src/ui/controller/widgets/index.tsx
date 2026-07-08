@@ -12,4 +12,3 @@ export { Fader } from "./Fader";
 export { JogWheel } from "./JogWheel";
 export { Pad } from "./Pad";
 export { Circle } from "./Circle";
-export { BrowsePanel } from "./BrowsePanel";
