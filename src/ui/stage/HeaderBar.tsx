@@ -131,7 +131,7 @@ export function HeaderBar({
   const shaderLoaded = !!banks[activeBank]?.shader;
   // Clicking a preview focuses that half of the active bank (which one the controls drive).
   const focusRing = (part: "plugin" | "shader") =>
-    focusPart === part ? "rounded ring-1 ring-accent/70" : "rounded ring-1 ring-transparent hover:ring-accent/30";
+    focusPart === part ? "rounded opacity-100" : "rounded opacity-40 hover:opacity-60";
 
   return (
     <div className="flex h-14 shrink-0 items-center gap-3 px-3 text-ink">
