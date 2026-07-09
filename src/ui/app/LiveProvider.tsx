@@ -6,6 +6,7 @@ import type { AdapterKind } from "@/controls/adapters";
 import { actionBindings, appActions, bankOf, paramBindings, params, setActionBinding, setParamBinding, type AppAction } from "@/db/schema";
 import { useTable } from "@/db/useDb";
 import type { PluginInfo } from "@/plugins/registry";
+import { create } from "@/plugins/registry";
 import { Stage, type FocusPart } from "@/runtime/Stage";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { LivePerformer } from "@/audio/LivePerformer";
@@ -93,6 +94,13 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   const browse = useBrowse({ stage, refresh });
   const { stepPlugin, stepShader, load, selectBank, clearBank, clearShader } = browse;
   useHardwareSync(midi);
+
+  // Load textlayer into bank 0 with deepglow shader on mount
+  useEffect(() => {
+    stage.loadBank(0, create("text"));
+    stage.setShader(0, create("deepGlow"));
+    refresh();
+  }, [stage, refresh]);
 
   const stepBrowse = (target: "plugin" | "shader", delta: number) =>
     target === "plugin" ? stepPlugin(delta) : stepShader(delta);

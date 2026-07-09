@@ -3,6 +3,7 @@ import type { ControlBus } from "@/controls/ControlBus";
 import { clamp01 } from "@/controls/types";
 import { paramBindings, params } from "@/db/schema";
 import type { FieldFn, Frame, Plugin } from "@/plugins/Plugin";
+import { TextLayer } from "@/plugins/TextLayer";
 
 /** One layer: a generator plugin plus an optional per-layer effect ("shader") on its output. */
 export interface BankState {
