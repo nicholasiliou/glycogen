@@ -98,7 +98,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   // Load textlayer into bank 0 with deepglow shader on mount
   useEffect(() => {
     stage.loadBank(0, create("text"));
-    stage.setShader(0, create("deepGlow"));
+    stage.setShader(0, create("fisheye"));
     refresh();
   }, [stage, refresh]);
 

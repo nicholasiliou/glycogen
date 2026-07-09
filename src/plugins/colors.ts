@@ -16,15 +16,16 @@ export const COLOR_PRESETS: readonly ColorPreset[] = [
   { name: "pink", hex: "#FF006A" },
   { name: "violet", hex: "#9E86E9" },
   { name: "mint", hex: "#49D99E" },
+  { name: "white", hex: "#FFFFFF" },
 ];
 
 export const DEFAULT_COLOR = COLOR_PRESETS[0].hex;
 
-/** The factory `color` cycle's options: "native" (the plugin's own look) then every preset. */
-export const COLOR_CYCLE: readonly string[] = ["native", ...COLOR_PRESETS.map((c) => c.name)];
+/** The factory `color` cycle's options — every preset. */
+export const COLOR_CYCLE: readonly string[] = COLOR_PRESETS.map((c) => c.name);
 
-/** Map a `color` cycle press count to a preset hex — null means "native" (no recolor). */
-export function cycleHex(count: number): string | null {
+/** Map a `color` cycle press count to a preset hex. */
+export function cycleHex(count: number): string {
   const i = count % COLOR_CYCLE.length;
-  return i === 0 ? null : COLOR_PRESETS[i - 1].hex;
+  return COLOR_PRESETS[i].hex;
 }
