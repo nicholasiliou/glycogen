@@ -1,0 +1,5448 @@
+{
+  "paramDefaults": [
+    {
+      "id": "boids/opacity",
+      "pluginId": "boids",
+      "value": 1
+    },
+    {
+      "id": "boids/color",
+      "pluginId": "boids",
+      "value": {
+        "count": 20,
+        "on": false
+      }
+    },
+    {
+      "id": "boids/count",
+      "pluginId": "boids",
+      "value": 2750
+    },
+    {
+      "id": "boids/perception",
+      "pluginId": "boids",
+      "value": 72.1236661585366
+    },
+    {
+      "id": "boids/separationRange",
+      "pluginId": "boids",
+      "value": 77.04030106707317
+    },
+    {
+      "id": "boids/maxSpeed",
+      "pluginId": "boids",
+      "value": 6.371200933689025
+    },
+    {
+      "id": "boids/maxForce",
+      "pluginId": "boids",
+      "value": 0.5838533727134146
+    },
+    {
+      "id": "boids/separation",
+      "pluginId": "boids",
+      "value": 4
+    },
+    {
+      "id": "boids/alignment",
+      "pluginId": "boids",
+      "value": 2.8025914634146343
+    },
+    {
+      "id": "boids/cohesion",
+      "pluginId": "boids",
+      "value": 3.0890815548780486
+    },
+    {
+      "id": "boids/size",
+      "pluginId": "boids",
+      "value": 3.0377286585365857
+    },
+    {
+      "id": "boids/trail",
+      "pluginId": "boids",
+      "value": 86.26619664634147
+    },
+    {
+      "id": "boids/seed",
+      "pluginId": "boids",
+      "value": 1
+    },
+    {
+      "id": "boids/wrap",
+      "pluginId": "boids",
+      "value": {
+        "count": 4,
+        "on": true
+      }
+    },
+    {
+      "id": "boids/dot",
+      "pluginId": "boids",
+      "value": {
+        "count": 2,
+        "on": false
+      }
+    },
+    {
+      "id": "boids/reseed",
+      "pluginId": "boids",
+      "value": {
+        "count": 2,
+        "on": false
+      }
+    },
+    {
+      "id": "contourField/opacity",
+      "pluginId": "contourField",
+      "value": 1
+    },
+    {
+      "id": "contourField/color",
+      "pluginId": "contourField",
+      "value": {
+        "count": 14,
+        "on": false
+      }
+    },
+    {
+      "id": "contourField/resolution",
+      "pluginId": "contourField",
+      "value": 0.282374237804878
+    },
+    {
+      "id": "contourField/scale",
+      "pluginId": "contourField",
+      "value": 6.303091653963414
+    },
+    {
+      "id": "contourField/octaves",
+      "pluginId": "contourField",
+      "value": 4
+    },
+    {
+      "id": "contourField/warp",
+      "pluginId": "contourField",
+      "value": 0
+    },
+    {
+      "id": "contourField/levels",
+      "pluginId": "contourField",
+      "value": 26
+    },
+    {
+      "id": "contourField/evolveSpeed",
+      "pluginId": "contourField",
+      "value": 0.09889481707317073
+    },
+    {
+      "id": "contourField/swirlSpeed",
+      "pluginId": "contourField",
+      "value": 0
+    },
+    {
+      "id": "contourField/lineWidth",
+      "pluginId": "contourField",
+      "value": 1.9210115758384145
+    },
+    {
+      "id": "contourField/seed",
+      "pluginId": "contourField",
+      "value": 15
+    },
+    {
+      "id": "contourField/textStrength",
+      "pluginId": "contourField",
+      "value": 0.7
+    },
+    {
+      "id": "gameOfLife/opacity",
+      "pluginId": "gameOfLife",
+      "value": 1
+    },
+    {
+      "id": "gameOfLife/color",
+      "pluginId": "gameOfLife",
+      "value": {
+        "count": 4,
+        "on": false
+      }
+    },
+    {
+      "id": "gameOfLife/cellSize",
+      "pluginId": "gameOfLife",
+      "value": 7
+    },
+    {
+      "id": "gameOfLife/density",
+      "pluginId": "gameOfLife",
+      "value": 0.20334174923780485
+    },
+    {
+      "id": "gameOfLife/speed",
+      "pluginId": "gameOfLife",
+      "value": 1
+    },
+    {
+      "id": "gameOfLife/trail",
+      "pluginId": "gameOfLife",
+      "value": 93.9334032012195
+    },
+    {
+      "id": "gameOfLife/gap",
+      "pluginId": "gameOfLife",
+      "value": 3
+    },
+    {
+      "id": "gameOfLife/seed",
+      "pluginId": "gameOfLife",
+      "value": 1
+    },
+    {
+      "id": "gameOfLife/wrap",
+      "pluginId": "gameOfLife",
+      "value": {
+        "count": 2,
+        "on": true
+      }
+    },
+    {
+      "id": "gameOfLife/reseed",
+      "pluginId": "gameOfLife",
+      "value": {
+        "count": 3,
+        "on": true
+      }
+    },
+    {
+      "id": "harmonograph/opacity",
+      "pluginId": "harmonograph",
+      "value": 1
+    },
+    {
+      "id": "harmonograph/color",
+      "pluginId": "harmonograph",
+      "value": {
+        "count": 6,
+        "on": false
+      }
+    },
+    {
+      "id": "harmonograph/freqX1",
+      "pluginId": "harmonograph",
+      "value": 1
+    },
+    {
+      "id": "harmonograph/freqY1",
+      "pluginId": "harmonograph",
+      "value": 1
+    },
+    {
+      "id": "harmonograph/freqX2",
+      "pluginId": "harmonograph",
+      "value": 1.9995474466463414
+    },
+    {
+      "id": "harmonograph/freqY2",
+      "pluginId": "harmonograph",
+      "value": 2.9763004954268295
+    },
+    {
+      "id": "harmonograph/phaseSpeed",
+      "pluginId": "harmonograph",
+      "value": 4
+    },
+    {
+      "id": "harmonograph/damping",
+      "pluginId": "harmonograph",
+      "value": 0.6
+    },
+    {
+      "id": "harmonograph/cycles",
+      "pluginId": "harmonograph",
+      "value": 10
+    },
+    {
+      "id": "harmonograph/lineWidth",
+      "pluginId": "harmonograph",
+      "value": 1.309058212652439
+    },
+    {
+      "id": "harmonograph/phase",
+      "pluginId": "harmonograph",
+      "value": 0
+    },
+    {
+      "id": "landscape/opacity",
+      "pluginId": "landscape",
+      "value": 1
+    },
+    {
+      "id": "landscape/color",
+      "pluginId": "landscape",
+      "value": {
+        "count": 3,
+        "on": true
+      }
+    },
+    {
+      "id": "landscape/resolution",
+      "pluginId": "landscape",
+      "value": 33
+    },
+    {
+      "id": "landscape/amplitude",
+      "pluginId": "landscape",
+      "value": 0.39132764862804875
+    },
+    {
+      "id": "landscape/scale",
+      "pluginId": "landscape",
+      "value": 4.641077553353659
+    },
+    {
+      "id": "landscape/octaves",
+      "pluginId": "landscape",
+      "value": 1
+    },
+    {
+      "id": "landscape/terrace",
+      "pluginId": "landscape",
+      "value": 6
+    },
+    {
+      "id": "landscape/radius",
+      "pluginId": "landscape",
+      "value": 1.4
+    },
+    {
+      "id": "landscape/lineWidth",
+      "pluginId": "landscape",
+      "value": 1.4345405392530486
+    },
+    {
+      "id": "landscape/speed",
+      "pluginId": "landscape",
+      "value": 0
+    },
+    {
+      "id": "landscape/tiltX",
+      "pluginId": "landscape",
+      "value": 58
+    },
+    {
+      "id": "landscape/tiltY",
+      "pluginId": "landscape",
+      "value": 0
+    },
+    {
+      "id": "landscape/tiltZ",
+      "pluginId": "landscape",
+      "value": -49.87900152439025
+    },
+    {
+      "id": "landscape/spin",
+      "pluginId": "landscape",
+      "value": 0.3944359756097242
+    },
+    {
+      "id": "landscape/filled",
+      "pluginId": "landscape",
+      "value": {
+        "count": 2,
+        "on": false
+      }
+    },
+    {
+      "id": "landscape/depthShade",
+      "pluginId": "landscape",
+      "value": {
+        "count": 1,
+        "on": false
+      }
+    },
+    {
+      "id": "noise/opacity",
+      "pluginId": "noise",
+      "value": 1
+    },
+    {
+      "id": "noise/color",
+      "pluginId": "noise",
+      "value": {
+        "count": 8,
+        "on": false
+      }
+    },
+    {
+      "id": "noise/detail",
+      "pluginId": "noise",
+      "value": 0.05
+    },
+    {
+      "id": "noise/scale",
+      "pluginId": "noise",
+      "value": 1
+    },
+    {
+      "id": "noise/octaves",
+      "pluginId": "noise",
+      "value": 1
+    },
+    {
+      "id": "noise/persistence",
+      "pluginId": "noise",
+      "value": 0.1
+    },
+    {
+      "id": "noise/lacunarity",
+      "pluginId": "noise",
+      "value": 1
+    },
+    {
+      "id": "noise/contrast",
+      "pluginId": "noise",
+      "value": 0.7720274390243902
+    },
+    {
+      "id": "noise/bands",
+      "pluginId": "noise",
+      "value": 0
+    },
+    {
+      "id": "noise/speed",
+      "pluginId": "noise",
+      "value": 0.3
+    },
+    {
+      "id": "noise/seed",
+      "pluginId": "noise",
+      "value": 1
+    },
+    {
+      "id": "physarum/opacity",
+      "pluginId": "physarum",
+      "value": 1
+    },
+    {
+      "id": "physarum/color",
+      "pluginId": "physarum",
+      "value": {
+        "count": 0,
+        "on": false
+      }
+    },
+    {
+      "id": "physarum/count",
+      "pluginId": "physarum",
+      "value": 5000
+    },
+    {
+      "id": "physarum/sensorDist",
+      "pluginId": "physarum",
+      "value": 9
+    },
+    {
+      "id": "physarum/sensorAngle",
+      "pluginId": "physarum",
+      "value": 22
+    },
+    {
+      "id": "physarum/turnAngle",
+      "pluginId": "physarum",
+      "value": 30
+    },
+    {
+      "id": "physarum/stepSize",
+      "pluginId": "physarum",
+      "value": 1
+    },
+    {
+      "id": "physarum/deposit",
+      "pluginId": "physarum",
+      "value": 1
+    },
+    {
+      "id": "physarum/decay",
+      "pluginId": "physarum",
+      "value": 0.1
+    },
+    {
+      "id": "physarum/gain",
+      "pluginId": "physarum",
+      "value": 0.6
+    },
+    {
+      "id": "physarum/seed",
+      "pluginId": "physarum",
+      "value": 1
+    },
+    {
+      "id": "physarum/speed",
+      "pluginId": "physarum",
+      "value": 1
+    },
+    {
+      "id": "physarum/textStrength",
+      "pluginId": "physarum",
+      "value": 0.8
+    },
+    {
+      "id": "physarum/textMode",
+      "pluginId": "physarum",
+      "value": {
+        "count": 1,
+        "on": true
+      }
+    },
+    {
+      "id": "physarum/reseed",
+      "pluginId": "physarum",
+      "value": {
+        "count": 0,
+        "on": false
+      }
+    },
+    {
+      "id": "plant/opacity",
+      "pluginId": "plant",
+      "value": 1
+    },
+    {
+      "id": "plant/color",
+      "pluginId": "plant",
+      "value": {
+        "count": 11,
+        "on": true
+      }
+    },
+    {
+      "id": "plant/iterations",
+      "pluginId": "plant",
+      "value": 3
+    },
+    {
+      "id": "plant/cameraScale",
+      "pluginId": "plant",
+      "value": 5.319514576981707
+    },
+    {
+      "id": "plant/spinSpeed",
+      "pluginId": "plant",
+      "value": 0.02337795350609756
+    },
+    {
+      "id": "plant/evolutionSpeed",
+      "pluginId": "plant",
+      "value": 0.01
+    },
+    {
+      "id": "plant/seed",
+      "pluginId": "plant",
+      "value": 13
+    },
+    {
+      "id": "plant/autoEvolve",
+      "pluginId": "plant",
+      "value": {
+        "count": 0,
+        "on": false
+      }
+    },
+    {
+      "id": "plant/opaque",
+      "pluginId": "plant",
+      "value": {
+        "count": 0,
+        "on": false
+      }
+    },
+    {
+      "id": "reactionDiffusion/opacity",
+      "pluginId": "reactionDiffusion",
+      "value": 1
+    },
+    {
+      "id": "reactionDiffusion/color",
+      "pluginId": "reactionDiffusion",
+      "value": {
+        "count": 31,
+        "on": true
+      }
+    },
+    {
+      "id": "reactionDiffusion/pattern",
+      "pluginId": "reactionDiffusion",
+      "value": {
+        "count": 3,
+        "on": true
+      }
+    },
+    {
+      "id": "reactionDiffusion/reseed",
+      "pluginId": "reactionDiffusion",
+      "value": {
+        "count": 1,
+        "on": true
+      }
+    },
+    {
+      "id": "reactionDiffusion/textMode",
+      "pluginId": "reactionDiffusion",
+      "value": {
+        "count": 1,
+        "on": true
+      }
+    },
+    {
+      "id": "reactionDiffusion/resolution",
+      "pluginId": "reactionDiffusion",
+      "value": 0.26
+    },
+    {
+      "id": "reactionDiffusion/iterations",
+      "pluginId": "reactionDiffusion",
+      "value": 1
+    },
+    {
+      "id": "reactionDiffusion/gain",
+      "pluginId": "reactionDiffusion",
+      "value": 2.7957674352134143
+    },
+    {
+      "id": "reactionDiffusion/seed",
+      "pluginId": "reactionDiffusion",
+      "value": 1
+    },
+    {
+      "id": "reactionDiffusion/textStrength",
+      "pluginId": "reactionDiffusion",
+      "value": 0.8
+    },
+    {
+      "id": "shape/opacity",
+      "pluginId": "shape",
+      "value": 1
+    },
+    {
+      "id": "shape/color",
+      "pluginId": "shape",
+      "value": {
+        "count": 9,
+        "on": true
+      }
+    },
+    {
+      "id": "shape/shape",
+      "pluginId": "shape",
+      "value": {
+        "count": 8,
+        "on": false
+      }
+    },
+    {
+      "id": "shape/resolution",
+      "pluginId": "shape",
+      "value": 8
+    },
+    {
+      "id": "shape/radius",
+      "pluginId": "shape",
+      "value": 0.7
+    },
+    {
+      "id": "shape/lineWidth",
+      "pluginId": "shape",
+      "value": 1
+    },
+    {
+      "id": "shape/tiltX",
+      "pluginId": "shape",
+      "value": 28
+    },
+    {
+      "id": "shape/tiltY",
+      "pluginId": "shape",
+      "value": 0
+    },
+    {
+      "id": "shape/tiltZ",
+      "pluginId": "shape",
+      "value": 0
+    },
+    {
+      "id": "shape/spin",
+      "pluginId": "shape",
+      "value": 24
+    },
+    {
+      "id": "shape/filled",
+      "pluginId": "shape",
+      "value": {
+        "count": 1,
+        "on": true
+      }
+    },
+    {
+      "id": "shape/depthShade",
+      "pluginId": "shape",
+      "value": {
+        "count": 1,
+        "on": false
+      }
+    },
+    {
+      "id": "shape/cull",
+      "pluginId": "shape",
+      "value": {
+        "count": 0,
+        "on": false
+      }
+    },
+    {
+      "id": "volumetricCloud/opacity",
+      "pluginId": "volumetricCloud",
+      "value": 1
+    },
+    {
+      "id": "volumetricCloud/color",
+      "pluginId": "volumetricCloud",
+      "value": {
+        "count": 20,
+        "on": false
+      }
+    },
+    {
+      "id": "volumetricCloud/detail",
+      "pluginId": "volumetricCloud",
+      "value": 0.22966963605182922
+    },
+    {
+      "id": "volumetricCloud/scale",
+      "pluginId": "volumetricCloud",
+      "value": 8
+    },
+    {
+      "id": "volumetricCloud/octaves",
+      "pluginId": "volumetricCloud",
+      "value": 4
+    },
+    {
+      "id": "volumetricCloud/coverage",
+      "pluginId": "volumetricCloud",
+      "value": 0.4607231326219512
+    },
+    {
+      "id": "volumetricCloud/density",
+      "pluginId": "volumetricCloud",
+      "value": 0.9971703506097562
+    },
+    {
+      "id": "volumetricCloud/steps",
+      "pluginId": "volumetricCloud",
+      "value": 9
+    },
+    {
+      "id": "volumetricCloud/shadow",
+      "pluginId": "volumetricCloud",
+      "value": 1
+    },
+    {
+      "id": "volumetricCloud/speed",
+      "pluginId": "volumetricCloud",
+      "value": 1.5
+    },
+    {
+      "id": "glyph/opacity",
+      "pluginId": "glyph",
+      "value": 1
+    },
+    {
+      "id": "glyph/color",
+      "pluginId": "glyph",
+      "value": {
+        "count": 36,
+        "on": false
+      }
+    },
+    {
+      "id": "glyph/glyph",
+      "pluginId": "glyph",
+      "value": {
+        "count": 14,
+        "on": false
+      }
+    },
+    {
+      "id": "glyph/padding",
+      "pluginId": "glyph",
+      "value": 0.2783155487804878
+    },
+    {
+      "id": "glyph/gap",
+      "pluginId": "glyph",
+      "value": 0
+    },
+    {
+      "id": "glyphScatter/opacity",
+      "pluginId": "glyphScatter",
+      "value": 1
+    },
+    {
+      "id": "glyphScatter/color",
+      "pluginId": "glyphScatter",
+      "value": {
+        "count": 0,
+        "on": false
+      }
+    },
+    {
+      "id": "glyphScatter/cell",
+      "pluginId": "glyphScatter",
+      "value": 30.6312881097561
+    },
+    {
+      "id": "glyphScatter/threshold",
+      "pluginId": "glyphScatter",
+      "value": 0.3717606707317073
+    },
+    {
+      "id": "glyphScatter/scale",
+      "pluginId": "glyphScatter",
+      "value": 0.7967797256097561
+    },
+    {
+      "id": "glyphScatter/noiseScale",
+      "pluginId": "glyphScatter",
+      "value": 0.14892911585365853
+    },
+    {
+      "id": "glyphScatter/speed",
+      "pluginId": "glyphScatter",
+      "value": 0.04476705411585366
+    },
+    {
+      "id": "glyphScatter/jitter",
+      "pluginId": "glyphScatter",
+      "value": 0
+    },
+    {
+      "id": "glyphScatter/seed",
+      "pluginId": "glyphScatter",
+      "value": 0
+    },
+    {
+      "id": "glyphScatter/textStrength",
+      "pluginId": "glyphScatter",
+      "value": 0.8
+    },
+    {
+      "id": "ascii/opacity",
+      "pluginId": "ascii",
+      "value": 1
+    },
+    {
+      "id": "bayer/opacity",
+      "pluginId": "bayer",
+      "value": 1
+    },
+    {
+      "id": "fisheye/opacity",
+      "pluginId": "fisheye",
+      "value": 1
+    },
+    {
+      "id": "pixelSort/opacity",
+      "pluginId": "pixelSort",
+      "value": 1
+    },
+    {
+      "id": "pixelStretch/opacity",
+      "pluginId": "pixelStretch",
+      "value": 1
+    },
+    {
+      "id": "pixelate/opacity",
+      "pluginId": "pixelate",
+      "value": 1
+    },
+    {
+      "id": "text/opacity",
+      "pluginId": "text",
+      "value": 1
+    },
+    {
+      "id": "text/color",
+      "pluginId": "text",
+      "value": {
+        "count": 6,
+        "on": false
+      }
+    },
+    {
+      "id": "text/preset",
+      "pluginId": "text",
+      "value": {
+        "count": 0,
+        "on": false
+      }
+    },
+    {
+      "id": "text/font",
+      "pluginId": "text",
+      "value": {
+        "count": 0,
+        "on": false
+      }
+    },
+    {
+      "id": "text/bold",
+      "pluginId": "text",
+      "value": {
+        "count": 0,
+        "on": false
+      }
+    },
+    {
+      "id": "text/fontSize",
+      "pluginId": "text",
+      "value": 268.5513528963414
+    },
+    {
+      "id": "text/tracking",
+      "pluginId": "text",
+      "value": 0
+    }
+  ],
+  "paramBindings": [
+    {
+      "id": "seed:boids:count",
+      "pluginId": "boids",
+      "widgetId": "knob:0",
+      "paramId": "boids/count",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:boids:perception",
+      "pluginId": "boids",
+      "widgetId": "knob:1",
+      "paramId": "boids/perception",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:boids:separationRange",
+      "pluginId": "boids",
+      "widgetId": "knob:2",
+      "paramId": "boids/separationRange",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:boids:maxSpeed",
+      "pluginId": "boids",
+      "widgetId": "knob:3",
+      "paramId": "boids/maxSpeed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:boids:maxForce",
+      "pluginId": "boids",
+      "widgetId": "knob:4",
+      "paramId": "boids/maxForce",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:boids:separation",
+      "pluginId": "boids",
+      "widgetId": "knob:5",
+      "paramId": "boids/separation",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:boids:alignment",
+      "pluginId": "boids",
+      "widgetId": "knob:6",
+      "paramId": "boids/alignment",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:boids:cohesion",
+      "pluginId": "boids",
+      "widgetId": "knob:7",
+      "paramId": "boids/cohesion",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:boids:size",
+      "pluginId": "boids",
+      "widgetId": "knob:8",
+      "paramId": "boids/size",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:boids:trail",
+      "pluginId": "boids",
+      "widgetId": "fader:0",
+      "paramId": "boids/trail",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:boids:seed",
+      "pluginId": "boids",
+      "widgetId": "fader:1",
+      "paramId": "boids/seed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:boids:wrap",
+      "pluginId": "boids",
+      "widgetId": "pad:4",
+      "paramId": "boids/wrap",
+      "adapter": {
+        "kind": "toggle"
+      }
+    },
+    {
+      "id": "seed:boids:dot",
+      "pluginId": "boids",
+      "widgetId": "pad:5",
+      "paramId": "boids/dot",
+      "adapter": {
+        "kind": "toggle"
+      }
+    },
+    {
+      "id": "seed:boids:reseed",
+      "pluginId": "boids",
+      "widgetId": "pad:6",
+      "paramId": "boids/reseed",
+      "adapter": {
+        "kind": "trigger"
+      }
+    },
+    {
+      "id": "opacity:boids",
+      "pluginId": "boids",
+      "widgetId": "knob:9",
+      "paramId": "boids/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:contourField:resolution",
+      "pluginId": "contourField",
+      "widgetId": "knob:0",
+      "paramId": "contourField/resolution",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:contourField:scale",
+      "pluginId": "contourField",
+      "widgetId": "knob:1",
+      "paramId": "contourField/scale",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:contourField:octaves",
+      "pluginId": "contourField",
+      "widgetId": "knob:2",
+      "paramId": "contourField/octaves",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:contourField:warp",
+      "pluginId": "contourField",
+      "widgetId": "knob:3",
+      "paramId": "contourField/warp",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:contourField:levels",
+      "pluginId": "contourField",
+      "widgetId": "knob:4",
+      "paramId": "contourField/levels",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:contourField:evolveSpeed",
+      "pluginId": "contourField",
+      "widgetId": "knob:5",
+      "paramId": "contourField/evolveSpeed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:contourField:swirlSpeed",
+      "pluginId": "contourField",
+      "widgetId": "knob:6",
+      "paramId": "contourField/swirlSpeed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:contourField:lineWidth",
+      "pluginId": "contourField",
+      "widgetId": "knob:7",
+      "paramId": "contourField/lineWidth",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:contourField:seed",
+      "pluginId": "contourField",
+      "widgetId": "knob:8",
+      "paramId": "contourField/seed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:contourField:textStrength",
+      "pluginId": "contourField",
+      "widgetId": "fader:1",
+      "paramId": "contourField/textStrength",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "opacity:contourField",
+      "pluginId": "contourField",
+      "widgetId": "knob:9",
+      "paramId": "contourField/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:gameOfLife:cellSize",
+      "pluginId": "gameOfLife",
+      "widgetId": "knob:0",
+      "paramId": "gameOfLife/cellSize",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:gameOfLife:density",
+      "pluginId": "gameOfLife",
+      "widgetId": "knob:1",
+      "paramId": "gameOfLife/density",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:gameOfLife:speed",
+      "pluginId": "gameOfLife",
+      "widgetId": "knob:2",
+      "paramId": "gameOfLife/speed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:gameOfLife:trail",
+      "pluginId": "gameOfLife",
+      "widgetId": "knob:3",
+      "paramId": "gameOfLife/trail",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:gameOfLife:gap",
+      "pluginId": "gameOfLife",
+      "widgetId": "knob:4",
+      "paramId": "gameOfLife/gap",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:gameOfLife:seed",
+      "pluginId": "gameOfLife",
+      "widgetId": "knob:5",
+      "paramId": "gameOfLife/seed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:gameOfLife:wrap",
+      "pluginId": "gameOfLife",
+      "widgetId": "pad:4",
+      "paramId": "gameOfLife/wrap",
+      "adapter": {
+        "kind": "toggle"
+      }
+    },
+    {
+      "id": "seed:gameOfLife:reseed",
+      "pluginId": "gameOfLife",
+      "widgetId": "pad:5",
+      "paramId": "gameOfLife/reseed",
+      "adapter": {
+        "kind": "trigger"
+      }
+    },
+    {
+      "id": "opacity:gameOfLife",
+      "pluginId": "gameOfLife",
+      "widgetId": "knob:9",
+      "paramId": "gameOfLife/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:harmonograph:freqX1",
+      "pluginId": "harmonograph",
+      "widgetId": "knob:0",
+      "paramId": "harmonograph/freqX1",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:harmonograph:freqY1",
+      "pluginId": "harmonograph",
+      "widgetId": "knob:1",
+      "paramId": "harmonograph/freqY1",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:harmonograph:freqX2",
+      "pluginId": "harmonograph",
+      "widgetId": "knob:2",
+      "paramId": "harmonograph/freqX2",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:harmonograph:freqY2",
+      "pluginId": "harmonograph",
+      "widgetId": "knob:3",
+      "paramId": "harmonograph/freqY2",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:harmonograph:phaseSpeed",
+      "pluginId": "harmonograph",
+      "widgetId": "knob:4",
+      "paramId": "harmonograph/phaseSpeed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:harmonograph:damping",
+      "pluginId": "harmonograph",
+      "widgetId": "knob:5",
+      "paramId": "harmonograph/damping",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:harmonograph:cycles",
+      "pluginId": "harmonograph",
+      "widgetId": "knob:6",
+      "paramId": "harmonograph/cycles",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:harmonograph:lineWidth",
+      "pluginId": "harmonograph",
+      "widgetId": "knob:7",
+      "paramId": "harmonograph/lineWidth",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:harmonograph:phase",
+      "pluginId": "harmonograph",
+      "widgetId": "fader:0",
+      "paramId": "harmonograph/phase",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "opacity:harmonograph",
+      "pluginId": "harmonograph",
+      "widgetId": "knob:9",
+      "paramId": "harmonograph/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:landscape:resolution",
+      "pluginId": "landscape",
+      "widgetId": "knob:0",
+      "paramId": "landscape/resolution",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:landscape:amplitude",
+      "pluginId": "landscape",
+      "widgetId": "knob:1",
+      "paramId": "landscape/amplitude",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:landscape:scale",
+      "pluginId": "landscape",
+      "widgetId": "knob:2",
+      "paramId": "landscape/scale",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:landscape:octaves",
+      "pluginId": "landscape",
+      "widgetId": "knob:3",
+      "paramId": "landscape/octaves",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:landscape:terrace",
+      "pluginId": "landscape",
+      "widgetId": "knob:4",
+      "paramId": "landscape/terrace",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:landscape:radius",
+      "pluginId": "landscape",
+      "widgetId": "knob:5",
+      "paramId": "landscape/radius",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:landscape:lineWidth",
+      "pluginId": "landscape",
+      "widgetId": "knob:6",
+      "paramId": "landscape/lineWidth",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:landscape:speed",
+      "pluginId": "landscape",
+      "widgetId": "knob:7",
+      "paramId": "landscape/speed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:landscape:tiltX",
+      "pluginId": "landscape",
+      "widgetId": "fader:0",
+      "paramId": "landscape/tiltX",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:landscape:tiltY",
+      "pluginId": "landscape",
+      "widgetId": "fader:1",
+      "paramId": "landscape/tiltY",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:landscape:tiltZ",
+      "pluginId": "landscape",
+      "widgetId": "fader:2",
+      "paramId": "landscape/tiltZ",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:landscape:spin",
+      "pluginId": "landscape",
+      "widgetId": "encoder:0",
+      "paramId": "landscape/spin",
+      "adapter": {
+        "kind": "relative"
+      }
+    },
+    {
+      "id": "seed:landscape:filled",
+      "pluginId": "landscape",
+      "widgetId": "pad:4",
+      "paramId": "landscape/filled",
+      "adapter": {
+        "kind": "toggle"
+      }
+    },
+    {
+      "id": "seed:landscape:depthShade",
+      "pluginId": "landscape",
+      "widgetId": "pad:5",
+      "paramId": "landscape/depthShade",
+      "adapter": {
+        "kind": "toggle"
+      }
+    },
+    {
+      "id": "opacity:landscape",
+      "pluginId": "landscape",
+      "widgetId": "knob:9",
+      "paramId": "landscape/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:noise:detail",
+      "pluginId": "noise",
+      "widgetId": "knob:0",
+      "paramId": "noise/detail",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:noise:scale",
+      "pluginId": "noise",
+      "widgetId": "knob:1",
+      "paramId": "noise/scale",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:noise:octaves",
+      "pluginId": "noise",
+      "widgetId": "knob:2",
+      "paramId": "noise/octaves",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:noise:persistence",
+      "pluginId": "noise",
+      "widgetId": "knob:3",
+      "paramId": "noise/persistence",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:noise:lacunarity",
+      "pluginId": "noise",
+      "widgetId": "knob:4",
+      "paramId": "noise/lacunarity",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:noise:contrast",
+      "pluginId": "noise",
+      "widgetId": "knob:5",
+      "paramId": "noise/contrast",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:noise:bands",
+      "pluginId": "noise",
+      "widgetId": "knob:6",
+      "paramId": "noise/bands",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:noise:speed",
+      "pluginId": "noise",
+      "widgetId": "knob:7",
+      "paramId": "noise/speed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:noise:seed",
+      "pluginId": "noise",
+      "widgetId": "knob:8",
+      "paramId": "noise/seed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "opacity:noise",
+      "pluginId": "noise",
+      "widgetId": "knob:9",
+      "paramId": "noise/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:physarum:count",
+      "pluginId": "physarum",
+      "widgetId": "knob:0",
+      "paramId": "physarum/count",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:physarum:sensorDist",
+      "pluginId": "physarum",
+      "widgetId": "knob:1",
+      "paramId": "physarum/sensorDist",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:physarum:sensorAngle",
+      "pluginId": "physarum",
+      "widgetId": "knob:2",
+      "paramId": "physarum/sensorAngle",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:physarum:turnAngle",
+      "pluginId": "physarum",
+      "widgetId": "knob:3",
+      "paramId": "physarum/turnAngle",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:physarum:stepSize",
+      "pluginId": "physarum",
+      "widgetId": "knob:4",
+      "paramId": "physarum/stepSize",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:physarum:deposit",
+      "pluginId": "physarum",
+      "widgetId": "knob:5",
+      "paramId": "physarum/deposit",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:physarum:decay",
+      "pluginId": "physarum",
+      "widgetId": "knob:6",
+      "paramId": "physarum/decay",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:physarum:gain",
+      "pluginId": "physarum",
+      "widgetId": "knob:7",
+      "paramId": "physarum/gain",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:physarum:seed",
+      "pluginId": "physarum",
+      "widgetId": "knob:8",
+      "paramId": "physarum/seed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:physarum:speed",
+      "pluginId": "physarum",
+      "widgetId": "fader:0",
+      "paramId": "physarum/speed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:physarum:textStrength",
+      "pluginId": "physarum",
+      "widgetId": "fader:1",
+      "paramId": "physarum/textStrength",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:physarum:textMode",
+      "pluginId": "physarum",
+      "widgetId": "pad:4",
+      "paramId": "physarum/textMode",
+      "adapter": {
+        "kind": "cycle"
+      }
+    },
+    {
+      "id": "seed:physarum:reseed",
+      "pluginId": "physarum",
+      "widgetId": "pad:5",
+      "paramId": "physarum/reseed",
+      "adapter": {
+        "kind": "trigger"
+      }
+    },
+    {
+      "id": "opacity:physarum",
+      "pluginId": "physarum",
+      "widgetId": "knob:9",
+      "paramId": "physarum/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:plant:iterations",
+      "pluginId": "plant",
+      "widgetId": "knob:0",
+      "paramId": "plant/iterations",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:plant:cameraScale",
+      "pluginId": "plant",
+      "widgetId": "knob:1",
+      "paramId": "plant/cameraScale",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:plant:spinSpeed",
+      "pluginId": "plant",
+      "widgetId": "knob:2",
+      "paramId": "plant/spinSpeed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:plant:evolutionSpeed",
+      "pluginId": "plant",
+      "widgetId": "knob:3",
+      "paramId": "plant/evolutionSpeed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:plant:seed",
+      "pluginId": "plant",
+      "widgetId": "fader:0",
+      "paramId": "plant/seed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:plant:autoEvolve",
+      "pluginId": "plant",
+      "widgetId": "pad:4",
+      "paramId": "plant/autoEvolve",
+      "adapter": {
+        "kind": "toggle"
+      }
+    },
+    {
+      "id": "seed:plant:opaque",
+      "pluginId": "plant",
+      "widgetId": "pad:5",
+      "paramId": "plant/opaque",
+      "adapter": {
+        "kind": "toggle"
+      }
+    },
+    {
+      "id": "opacity:plant",
+      "pluginId": "plant",
+      "widgetId": "knob:9",
+      "paramId": "plant/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:reactionDiffusion:pattern",
+      "pluginId": "reactionDiffusion",
+      "widgetId": "pad:4",
+      "paramId": "reactionDiffusion/pattern",
+      "adapter": {
+        "kind": "cycle"
+      }
+    },
+    {
+      "id": "seed:reactionDiffusion:reseed",
+      "pluginId": "reactionDiffusion",
+      "widgetId": "pad:5",
+      "paramId": "reactionDiffusion/reseed",
+      "adapter": {
+        "kind": "trigger"
+      }
+    },
+    {
+      "id": "seed:reactionDiffusion:textMode",
+      "pluginId": "reactionDiffusion",
+      "widgetId": "pad:6",
+      "paramId": "reactionDiffusion/textMode",
+      "adapter": {
+        "kind": "cycle"
+      }
+    },
+    {
+      "id": "seed:reactionDiffusion:resolution",
+      "pluginId": "reactionDiffusion",
+      "widgetId": "knob:0",
+      "paramId": "reactionDiffusion/resolution",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:reactionDiffusion:iterations",
+      "pluginId": "reactionDiffusion",
+      "widgetId": "knob:1",
+      "paramId": "reactionDiffusion/iterations",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:reactionDiffusion:gain",
+      "pluginId": "reactionDiffusion",
+      "widgetId": "knob:2",
+      "paramId": "reactionDiffusion/gain",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:reactionDiffusion:seed",
+      "pluginId": "reactionDiffusion",
+      "widgetId": "knob:3",
+      "paramId": "reactionDiffusion/seed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:reactionDiffusion:textStrength",
+      "pluginId": "reactionDiffusion",
+      "widgetId": "fader:1",
+      "paramId": "reactionDiffusion/textStrength",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "opacity:reactionDiffusion",
+      "pluginId": "reactionDiffusion",
+      "widgetId": "knob:9",
+      "paramId": "reactionDiffusion/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:shape:shape",
+      "pluginId": "shape",
+      "widgetId": "pad:4",
+      "paramId": "shape/shape",
+      "adapter": {
+        "kind": "cycle"
+      }
+    },
+    {
+      "id": "seed:shape:resolution",
+      "pluginId": "shape",
+      "widgetId": "knob:0",
+      "paramId": "shape/resolution",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:shape:radius",
+      "pluginId": "shape",
+      "widgetId": "knob:1",
+      "paramId": "shape/radius",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:shape:lineWidth",
+      "pluginId": "shape",
+      "widgetId": "knob:2",
+      "paramId": "shape/lineWidth",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:shape:tiltX",
+      "pluginId": "shape",
+      "widgetId": "fader:0",
+      "paramId": "shape/tiltX",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:shape:tiltY",
+      "pluginId": "shape",
+      "widgetId": "fader:1",
+      "paramId": "shape/tiltY",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:shape:tiltZ",
+      "pluginId": "shape",
+      "widgetId": "fader:2",
+      "paramId": "shape/tiltZ",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:shape:spin",
+      "pluginId": "shape",
+      "widgetId": "encoder:0",
+      "paramId": "shape/spin",
+      "adapter": {
+        "kind": "relative"
+      }
+    },
+    {
+      "id": "seed:shape:filled",
+      "pluginId": "shape",
+      "widgetId": "pad:5",
+      "paramId": "shape/filled",
+      "adapter": {
+        "kind": "toggle"
+      }
+    },
+    {
+      "id": "seed:shape:depthShade",
+      "pluginId": "shape",
+      "widgetId": "pad:6",
+      "paramId": "shape/depthShade",
+      "adapter": {
+        "kind": "toggle"
+      }
+    },
+    {
+      "id": "seed:shape:cull",
+      "pluginId": "shape",
+      "widgetId": "pad:7",
+      "paramId": "shape/cull",
+      "adapter": {
+        "kind": "toggle"
+      }
+    },
+    {
+      "id": "opacity:shape",
+      "pluginId": "shape",
+      "widgetId": "knob:9",
+      "paramId": "shape/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:text:preset",
+      "pluginId": "text",
+      "widgetId": "pad:4",
+      "paramId": "text/preset",
+      "adapter": {
+        "kind": "cycle"
+      }
+    },
+    {
+      "id": "seed:text:font",
+      "pluginId": "text",
+      "widgetId": "pad:5",
+      "paramId": "text/font",
+      "adapter": {
+        "kind": "cycle"
+      }
+    },
+    {
+      "id": "seed:text:bold",
+      "pluginId": "text",
+      "widgetId": "pad:6",
+      "paramId": "text/bold",
+      "adapter": {
+        "kind": "toggle"
+      }
+    },
+    {
+      "id": "seed:text:fontSize",
+      "pluginId": "text",
+      "widgetId": "knob:0",
+      "paramId": "text/fontSize",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:text:tracking",
+      "pluginId": "text",
+      "widgetId": "knob:1",
+      "paramId": "text/tracking",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "opacity:text",
+      "pluginId": "text",
+      "widgetId": "knob:9",
+      "paramId": "text/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:volumetricCloud:detail",
+      "pluginId": "volumetricCloud",
+      "widgetId": "knob:0",
+      "paramId": "volumetricCloud/detail",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:volumetricCloud:scale",
+      "pluginId": "volumetricCloud",
+      "widgetId": "knob:1",
+      "paramId": "volumetricCloud/scale",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:volumetricCloud:octaves",
+      "pluginId": "volumetricCloud",
+      "widgetId": "knob:2",
+      "paramId": "volumetricCloud/octaves",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:volumetricCloud:coverage",
+      "pluginId": "volumetricCloud",
+      "widgetId": "knob:3",
+      "paramId": "volumetricCloud/coverage",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:volumetricCloud:density",
+      "pluginId": "volumetricCloud",
+      "widgetId": "knob:4",
+      "paramId": "volumetricCloud/density",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:volumetricCloud:steps",
+      "pluginId": "volumetricCloud",
+      "widgetId": "knob:5",
+      "paramId": "volumetricCloud/steps",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:volumetricCloud:shadow",
+      "pluginId": "volumetricCloud",
+      "widgetId": "knob:6",
+      "paramId": "volumetricCloud/shadow",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:volumetricCloud:speed",
+      "pluginId": "volumetricCloud",
+      "widgetId": "knob:7",
+      "paramId": "volumetricCloud/speed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "opacity:volumetricCloud",
+      "pluginId": "volumetricCloud",
+      "widgetId": "knob:9",
+      "paramId": "volumetricCloud/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:glyph:glyph",
+      "pluginId": "glyph",
+      "widgetId": "pad:4",
+      "paramId": "glyph/glyph",
+      "adapter": {
+        "kind": "cycle"
+      }
+    },
+    {
+      "id": "seed:glyph:padding",
+      "pluginId": "glyph",
+      "widgetId": "knob:0",
+      "paramId": "glyph/padding",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:glyph:gap",
+      "pluginId": "glyph",
+      "widgetId": "knob:1",
+      "paramId": "glyph/gap",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "opacity:glyph",
+      "pluginId": "glyph",
+      "widgetId": "knob:9",
+      "paramId": "glyph/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:glyphScatter:cell",
+      "pluginId": "glyphScatter",
+      "widgetId": "knob:0",
+      "paramId": "glyphScatter/cell",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:glyphScatter:threshold",
+      "pluginId": "glyphScatter",
+      "widgetId": "knob:1",
+      "paramId": "glyphScatter/threshold",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:glyphScatter:scale",
+      "pluginId": "glyphScatter",
+      "widgetId": "knob:2",
+      "paramId": "glyphScatter/scale",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:glyphScatter:noiseScale",
+      "pluginId": "glyphScatter",
+      "widgetId": "knob:3",
+      "paramId": "glyphScatter/noiseScale",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:glyphScatter:speed",
+      "pluginId": "glyphScatter",
+      "widgetId": "knob:4",
+      "paramId": "glyphScatter/speed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:glyphScatter:jitter",
+      "pluginId": "glyphScatter",
+      "widgetId": "knob:5",
+      "paramId": "glyphScatter/jitter",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:glyphScatter:seed",
+      "pluginId": "glyphScatter",
+      "widgetId": "knob:6",
+      "paramId": "glyphScatter/seed",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:glyphScatter:textStrength",
+      "pluginId": "glyphScatter",
+      "widgetId": "fader:1",
+      "paramId": "glyphScatter/textStrength",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "opacity:glyphScatter",
+      "pluginId": "glyphScatter",
+      "widgetId": "knob:9",
+      "paramId": "glyphScatter/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:ascii:cell",
+      "pluginId": "ascii",
+      "widgetId": "knob:0",
+      "paramId": "ascii/cell",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:ascii:colored",
+      "pluginId": "ascii",
+      "widgetId": "pad:4",
+      "paramId": "ascii/colored",
+      "adapter": {
+        "kind": "toggle"
+      }
+    },
+    {
+      "id": "opacity:ascii",
+      "pluginId": "ascii",
+      "widgetId": "knob:9",
+      "paramId": "ascii/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:bayer:levels",
+      "pluginId": "bayer",
+      "widgetId": "knob:0",
+      "paramId": "bayer/levels",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:bayer:scale",
+      "pluginId": "bayer",
+      "widgetId": "knob:1",
+      "paramId": "bayer/scale",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:bayer:colored",
+      "pluginId": "bayer",
+      "widgetId": "pad:4",
+      "paramId": "bayer/colored",
+      "adapter": {
+        "kind": "toggle"
+      }
+    },
+    {
+      "id": "opacity:bayer",
+      "pluginId": "bayer",
+      "widgetId": "knob:9",
+      "paramId": "bayer/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:colorLookup:count",
+      "pluginId": "colorLookup",
+      "widgetId": "knob:0",
+      "paramId": "colorLookup/count",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:colorLookup:amount",
+      "pluginId": "colorLookup",
+      "widgetId": "knob:1",
+      "paramId": "colorLookup/amount",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "opacity:colorLookup",
+      "pluginId": "colorLookup",
+      "widgetId": "knob:9",
+      "paramId": "colorLookup/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:deepGlow:radius0",
+      "pluginId": "deepGlow",
+      "widgetId": "knob:0",
+      "paramId": "deepGlow/radius0",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:deepGlow:radius1",
+      "pluginId": "deepGlow",
+      "widgetId": "knob:1",
+      "paramId": "deepGlow/radius1",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:deepGlow:radius2",
+      "pluginId": "deepGlow",
+      "widgetId": "knob:2",
+      "paramId": "deepGlow/radius2",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:deepGlow:str0",
+      "pluginId": "deepGlow",
+      "widgetId": "knob:3",
+      "paramId": "deepGlow/str0",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:deepGlow:str1",
+      "pluginId": "deepGlow",
+      "widgetId": "knob:4",
+      "paramId": "deepGlow/str1",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:deepGlow:str2",
+      "pluginId": "deepGlow",
+      "widgetId": "knob:5",
+      "paramId": "deepGlow/str2",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:deepGlow:mix",
+      "pluginId": "deepGlow",
+      "widgetId": "knob:6",
+      "paramId": "deepGlow/mix",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "opacity:deepGlow",
+      "pluginId": "deepGlow",
+      "widgetId": "knob:9",
+      "paramId": "deepGlow/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:fisheye:strength",
+      "pluginId": "fisheye",
+      "widgetId": "knob:0",
+      "paramId": "fisheye/strength",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:fisheye:zoom",
+      "pluginId": "fisheye",
+      "widgetId": "knob:1",
+      "paramId": "fisheye/zoom",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "opacity:fisheye",
+      "pluginId": "fisheye",
+      "widgetId": "knob:9",
+      "paramId": "fisheye/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "opacity:none",
+      "pluginId": "none",
+      "widgetId": "knob:9",
+      "paramId": "none/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:pixelSort:threshold",
+      "pluginId": "pixelSort",
+      "widgetId": "knob:0",
+      "paramId": "pixelSort/threshold",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:pixelSort:horizontal",
+      "pluginId": "pixelSort",
+      "widgetId": "pad:4",
+      "paramId": "pixelSort/horizontal",
+      "adapter": {
+        "kind": "toggle"
+      }
+    },
+    {
+      "id": "seed:pixelSort:reverse",
+      "pluginId": "pixelSort",
+      "widgetId": "pad:5",
+      "paramId": "pixelSort/reverse",
+      "adapter": {
+        "kind": "toggle"
+      }
+    },
+    {
+      "id": "opacity:pixelSort",
+      "pluginId": "pixelSort",
+      "widgetId": "knob:9",
+      "paramId": "pixelSort/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:pixelStretch:threshold",
+      "pluginId": "pixelStretch",
+      "widgetId": "knob:0",
+      "paramId": "pixelStretch/threshold",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:pixelStretch:amount",
+      "pluginId": "pixelStretch",
+      "widgetId": "knob:1",
+      "paramId": "pixelStretch/amount",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:pixelStretch:horizontal",
+      "pluginId": "pixelStretch",
+      "widgetId": "pad:4",
+      "paramId": "pixelStretch/horizontal",
+      "adapter": {
+        "kind": "toggle"
+      }
+    },
+    {
+      "id": "opacity:pixelStretch",
+      "pluginId": "pixelStretch",
+      "widgetId": "knob:9",
+      "paramId": "pixelStretch/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:pixelate:size",
+      "pluginId": "pixelate",
+      "widgetId": "knob:0",
+      "paramId": "pixelate/size",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "opacity:pixelate",
+      "pluginId": "pixelate",
+      "widgetId": "knob:9",
+      "paramId": "pixelate/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:tracker:count",
+      "pluginId": "tracker",
+      "widgetId": "knob:0",
+      "paramId": "tracker/count",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:tracker:grid",
+      "pluginId": "tracker",
+      "widgetId": "knob:1",
+      "paramId": "tracker/grid",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:tracker:smoothing",
+      "pluginId": "tracker",
+      "widgetId": "knob:2",
+      "paramId": "tracker/smoothing",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:tracker:sampleRate",
+      "pluginId": "tracker",
+      "widgetId": "knob:3",
+      "paramId": "tracker/sampleRate",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:tracker:lineLength",
+      "pluginId": "tracker",
+      "widgetId": "knob:4",
+      "paramId": "tracker/lineLength",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:tracker:dashLength",
+      "pluginId": "tracker",
+      "widgetId": "knob:5",
+      "paramId": "tracker/dashLength",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:tracker:boxThickness",
+      "pluginId": "tracker",
+      "widgetId": "knob:6",
+      "paramId": "tracker/boxThickness",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:tracker:lineThickness",
+      "pluginId": "tracker",
+      "widgetId": "knob:7",
+      "paramId": "tracker/lineThickness",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:tracker:direction",
+      "pluginId": "tracker",
+      "widgetId": "pad:4",
+      "paramId": "tracker/direction",
+      "adapter": {
+        "kind": "cycle"
+      }
+    },
+    {
+      "id": "seed:tracker:showBackdrop",
+      "pluginId": "tracker",
+      "widgetId": "pad:5",
+      "paramId": "tracker/showBackdrop",
+      "adapter": {
+        "kind": "toggle"
+      }
+    },
+    {
+      "id": "opacity:tracker",
+      "pluginId": "tracker",
+      "widgetId": "knob:9",
+      "paramId": "tracker/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "seed:venetianBlinds:bands",
+      "pluginId": "venetianBlinds",
+      "widgetId": "knob:0",
+      "paramId": "venetianBlinds/bands",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:venetianBlinds:offset",
+      "pluginId": "venetianBlinds",
+      "widgetId": "knob:1",
+      "paramId": "venetianBlinds/offset",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:venetianBlinds:angle",
+      "pluginId": "venetianBlinds",
+      "widgetId": "fader:0",
+      "paramId": "venetianBlinds/angle",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "seed:venetianBlinds:fade",
+      "pluginId": "venetianBlinds",
+      "widgetId": "knob:2",
+      "paramId": "venetianBlinds/fade",
+      "adapter": {
+        "kind": "absolute"
+      }
+    },
+    {
+      "id": "opacity:venetianBlinds",
+      "pluginId": "venetianBlinds",
+      "widgetId": "knob:9",
+      "paramId": "venetianBlinds/opacity",
+      "adapter": {
+        "kind": "absolute"
+      },
+      "locked": true
+    },
+    {
+      "id": "284a28fa-64d9-4f3d-bd52-1e275138b320",
+      "pluginId": "physarum",
+      "widgetId": "pad:6",
+      "paramId": "physarum/color",
+      "adapter": {
+        "kind": "cycle"
+      }
+    },
+    {
+      "id": "022c8ec5-b8d2-43fc-8d5d-1d9da64d4923",
+      "pluginId": "boids",
+      "widgetId": "pad:27",
+      "paramId": "boids/color",
+      "adapter": {
+        "kind": "cycle"
+      }
+    }
+  ],
+  "actionBindings": [
+    {
+      "id": "2900264b-74a2-4cb5-808f-52409ad97a8b",
+      "widgetId": "pad:0",
+      "actionId": "clear"
+    },
+    {
+      "id": "eaeb2cba-fbde-4d7b-8530-202c69a4f619",
+      "widgetId": "pad:1",
+      "actionId": "bank0"
+    },
+    {
+      "id": "6f542ba4-c602-4341-b0eb-bbe4d6e2083e",
+      "widgetId": "pad:2",
+      "actionId": "bank1"
+    },
+    {
+      "id": "2320de95-5a27-422a-89a1-5b017d6a6f09",
+      "widgetId": "pad:3",
+      "actionId": "bank2"
+    },
+    {
+      "id": "8b194623-3b89-4dcf-9fa4-6a0f5de33d11",
+      "widgetId": "pad:14",
+      "actionId": "bank3"
+    },
+    {
+      "id": "3ddeb16c-770b-47f0-b68f-5ef42e95adbd",
+      "widgetId": "pad:15",
+      "actionId": "bank4"
+    },
+    {
+      "id": "96ff85fd-874e-49f4-baac-9640b82a6c71",
+      "widgetId": "pad:16",
+      "actionId": "bank5"
+    }
+  ],
+  "hardwareBindings": [
+    {
+      "id": "28716cd8-8604-4c65-be03-60da2973d2a5",
+      "controlId": "cc:0:14",
+      "widgetId": "knob:6"
+    },
+    {
+      "id": "b8a8dfd2-af4d-4a70-9304-957d25a15391",
+      "controlId": "cc:0:8",
+      "widgetId": "knob:7"
+    },
+    {
+      "id": "71e75f6f-efda-4002-b664-ad14fcf42c91",
+      "controlId": "note:0:98",
+      "widgetId": "pad:18"
+    },
+    {
+      "id": "e21ac910-2388-4c17-8b54-5195dda5524a",
+      "controlId": "note:0:86",
+      "widgetId": "pad:19"
+    },
+    {
+      "id": "3e8e53e3-1ec6-45c4-929c-7e9928bb4cb6",
+      "controlId": "note:0:87",
+      "widgetId": "pad:20"
+    },
+    {
+      "id": "273437ec-6127-4d44-b18c-8406e84f88ce",
+      "controlId": "note:0:88",
+      "widgetId": "pad:21"
+    },
+    {
+      "id": "742927a1-0e38-4074-bcf5-2a99211a96ea",
+      "controlId": "note:0:100",
+      "widgetId": "pad:17"
+    },
+    {
+      "id": "415910a6-e329-4a32-a15d-ab6d78b052d0",
+      "controlId": "note:0:71",
+      "widgetId": "pad:22"
+    },
+    {
+      "id": "1ca532c0-05c6-4ed6-8a5f-db7e22132e1c",
+      "controlId": "note:0:60",
+      "widgetId": "pad:23"
+    },
+    {
+      "id": "2bdc12e9-c448-453f-a102-9296d827468c",
+      "controlId": "note:0:66",
+      "widgetId": "pad:24"
+    },
+    {
+      "id": "f18eb9f9-8fe4-44f4-9ddd-e1e267af9d57",
+      "controlId": "note:0:76",
+      "widgetId": "pad:25"
+    },
+    {
+      "id": "42f43fab-3414-46d0-9be6-30c9e3c4cad3",
+      "controlId": "note:0:74",
+      "widgetId": "pad:12"
+    },
+    {
+      "id": "09e4ec74-aee3-43b8-ac5c-a56a25dc7a08",
+      "controlId": "note:0:59",
+      "widgetId": "pad:11"
+    },
+    {
+      "id": "fd3e08d1-acf7-492a-b59b-0761ad0da74a",
+      "controlId": "note:0:51",
+      "widgetId": "pad:10"
+    },
+    {
+      "id": "d9298714-4671-4e6f-9853-c9bcc83b72db",
+      "controlId": "note:0:64",
+      "widgetId": "pad:9"
+    },
+    {
+      "id": "e27b2a95-e4ea-4519-a698-5bd7d4eb3996",
+      "controlId": "cc:0:16",
+      "widgetId": "knob:0"
+    },
+    {
+      "id": "44f8d477-413e-41a0-bfc1-4b2a6fc88630",
+      "controlId": "cc:0:11",
+      "widgetId": "knob:1"
+    },
+    {
+      "id": "74cbb969-3a91-4fe5-9169-ee5385507402",
+      "controlId": "cc:0:17",
+      "widgetId": "knob:2"
+    },
+    {
+      "id": "fd6c1d27-6d29-4ce8-87fd-e535f564027f",
+      "controlId": "cc:0:19",
+      "widgetId": "knob:5"
+    },
+    {
+      "id": "aa3e81f1-2564-454d-9600-7479f0fc9a50",
+      "controlId": "cc:0:21",
+      "widgetId": "knob:7"
+    },
+    {
+      "id": "a1ab959a-b7dc-4965-bdea-06810f589e0b",
+      "controlId": "cc:0:12",
+      "widgetId": "knob:4"
+    },
+    {
+      "id": "3b07b355-833a-4492-a92a-474a39c9b129",
+      "controlId": "cc:0:18",
+      "widgetId": "knob:3"
+    },
+    {
+      "id": "31fe4045-d05e-4df3-9733-59f5b9d21c05",
+      "controlId": "cc:0:20",
+      "widgetId": "knob:6"
+    },
+    {
+      "id": "f6265f69-72ff-4606-9939-ffcfe0bd8b0f",
+      "controlId": "cc:0:32",
+      "widgetId": "encoder:5"
+    },
+    {
+      "id": "6cb3032a-f8c1-4de4-88d7-f3ae2c311ce7",
+      "controlId": "cc:0:31",
+      "widgetId": "encoder:4"
+    },
+    {
+      "id": "d4776ac9-06b7-4d13-a5ec-14c292f24292",
+      "controlId": "cc:0:30",
+      "widgetId": "encoder:3"
+    },
+    {
+      "id": "c5ab579d-5dd9-4752-a408-6951122a469e",
+      "controlId": "note:0:77",
+      "widgetId": "jog:1"
+    },
+    {
+      "id": "fb94f425-ee4a-4377-a8f6-7945056e6aa0",
+      "controlId": "cc:0:25",
+      "widgetId": "jog:0"
+    },
+    {
+      "id": "fd2fe492-d5ce-4b13-b60f-da59d3d90a7a",
+      "controlId": "cc:0:24",
+      "widgetId": "jog:1"
+    },
+    {
+      "id": "3dc7ae2c-b202-42f3-b22a-e6c96e983647",
+      "controlId": "note:0:83",
+      "widgetId": "pad:6"
+    }
+  ],
+  "hardwareControls": [
+    {
+      "id": "note:0:77",
+      "name": "Note 77",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:78",
+      "name": "Note 78",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:20",
+      "name": "CC 20",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:18",
+      "name": "CC 18",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:16",
+      "name": "CC 16",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:21",
+      "name": "CC 21",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:19",
+      "name": "CC 19",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:17",
+      "name": "CC 17",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:14",
+      "name": "CC 14",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:8",
+      "name": "CC 8",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:13",
+      "name": "CC 13",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:23",
+      "name": "CC 23",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:28",
+      "name": "CC 28",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:31",
+      "name": "CC 31",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:12",
+      "name": "CC 12",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:11",
+      "name": "CC 11",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:10",
+      "name": "CC 10",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:32",
+      "name": "CC 32",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:29",
+      "name": "CC 29",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:24",
+      "name": "CC 24",
+      "kind": "jog",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:25",
+      "name": "CC 25",
+      "kind": "jog",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:98",
+      "name": "Note 98",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:86",
+      "name": "Note 86",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:87",
+      "name": "Note 87",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:88",
+      "name": "Note 88",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:100",
+      "name": "Note 100",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:93",
+      "name": "Note 93",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:94",
+      "name": "Note 94",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:95",
+      "name": "Note 95",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:96",
+      "name": "Note 96",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:71",
+      "name": "Note 71",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:60",
+      "name": "Note 60",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:66",
+      "name": "Note 66",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:76",
+      "name": "Note 76",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:74",
+      "name": "Note 74",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:59",
+      "name": "Note 59",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:51",
+      "name": "Note 51",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:64",
+      "name": "Note 64",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:30",
+      "name": "CC 30",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:105",
+      "name": "Note 105",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "cc:0:26",
+      "name": "CC 26",
+      "kind": "knob",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:79",
+      "name": "Note 79",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:52",
+      "name": "Note 52",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:75",
+      "name": "Note 75",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:83",
+      "name": "Note 83",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:89",
+      "name": "Note 89",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:90",
+      "name": "Note 90",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:91",
+      "name": "Note 91",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    },
+    {
+      "id": "note:0:92",
+      "name": "Note 92",
+      "kind": "button",
+      "disabled": false,
+      "deviceName": "MixTrack Pro"
+    }
+  ],
+  "presets": [
+    {
+      "id": "7b916c49-0c6d-4f7e-aced-008cd1f1322b",
+      "name": "Main",
+      "createdAt": 1783527994765,
+      "updatedAt": 1783527994765,
+      "data": {
+        "paramBindings": [
+          {
+            "id": "seed:boids:perception",
+            "pluginId": "boids",
+            "widgetId": "knob:1",
+            "paramId": "boids/perception",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:boids:separationRange",
+            "pluginId": "boids",
+            "widgetId": "knob:2",
+            "paramId": "boids/separationRange",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:boids:maxSpeed",
+            "pluginId": "boids",
+            "widgetId": "knob:3",
+            "paramId": "boids/maxSpeed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:boids:maxForce",
+            "pluginId": "boids",
+            "widgetId": "knob:4",
+            "paramId": "boids/maxForce",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:boids:separation",
+            "pluginId": "boids",
+            "widgetId": "knob:5",
+            "paramId": "boids/separation",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:boids:alignment",
+            "pluginId": "boids",
+            "widgetId": "knob:6",
+            "paramId": "boids/alignment",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:boids:cohesion",
+            "pluginId": "boids",
+            "widgetId": "knob:7",
+            "paramId": "boids/cohesion",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:boids:size",
+            "pluginId": "boids",
+            "widgetId": "knob:8",
+            "paramId": "boids/size",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:boids:trail",
+            "pluginId": "boids",
+            "widgetId": "fader:0",
+            "paramId": "boids/trail",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:boids:seed",
+            "pluginId": "boids",
+            "widgetId": "fader:1",
+            "paramId": "boids/seed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:boids:wrap",
+            "pluginId": "boids",
+            "widgetId": "pad:4",
+            "paramId": "boids/wrap",
+            "adapter": {
+              "kind": "toggle"
+            }
+          },
+          {
+            "id": "seed:boids:dot",
+            "pluginId": "boids",
+            "widgetId": "pad:5",
+            "paramId": "boids/dot",
+            "adapter": {
+              "kind": "toggle"
+            }
+          },
+          {
+            "id": "seed:boids:reseed",
+            "pluginId": "boids",
+            "widgetId": "pad:6",
+            "paramId": "boids/reseed",
+            "adapter": {
+              "kind": "trigger"
+            }
+          },
+          {
+            "id": "seed:contourField:resolution",
+            "pluginId": "contourField",
+            "widgetId": "knob:0",
+            "paramId": "contourField/resolution",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:contourField:scale",
+            "pluginId": "contourField",
+            "widgetId": "knob:1",
+            "paramId": "contourField/scale",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:contourField:warp",
+            "pluginId": "contourField",
+            "widgetId": "knob:3",
+            "paramId": "contourField/warp",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:contourField:levels",
+            "pluginId": "contourField",
+            "widgetId": "knob:4",
+            "paramId": "contourField/levels",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:contourField:evolveSpeed",
+            "pluginId": "contourField",
+            "widgetId": "knob:5",
+            "paramId": "contourField/evolveSpeed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:contourField:swirlSpeed",
+            "pluginId": "contourField",
+            "widgetId": "knob:6",
+            "paramId": "contourField/swirlSpeed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:contourField:lineWidth",
+            "pluginId": "contourField",
+            "widgetId": "knob:7",
+            "paramId": "contourField/lineWidth",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:contourField:textStrength",
+            "pluginId": "contourField",
+            "widgetId": "fader:1",
+            "paramId": "contourField/textStrength",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:harmonograph:freqX1",
+            "pluginId": "harmonograph",
+            "widgetId": "knob:0",
+            "paramId": "harmonograph/freqX1",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:harmonograph:freqY1",
+            "pluginId": "harmonograph",
+            "widgetId": "knob:1",
+            "paramId": "harmonograph/freqY1",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:harmonograph:freqX2",
+            "pluginId": "harmonograph",
+            "widgetId": "knob:2",
+            "paramId": "harmonograph/freqX2",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:harmonograph:freqY2",
+            "pluginId": "harmonograph",
+            "widgetId": "knob:3",
+            "paramId": "harmonograph/freqY2",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:harmonograph:phaseSpeed",
+            "pluginId": "harmonograph",
+            "widgetId": "knob:4",
+            "paramId": "harmonograph/phaseSpeed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:harmonograph:damping",
+            "pluginId": "harmonograph",
+            "widgetId": "knob:5",
+            "paramId": "harmonograph/damping",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:harmonograph:cycles",
+            "pluginId": "harmonograph",
+            "widgetId": "knob:6",
+            "paramId": "harmonograph/cycles",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:harmonograph:lineWidth",
+            "pluginId": "harmonograph",
+            "widgetId": "knob:7",
+            "paramId": "harmonograph/lineWidth",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:harmonograph:phase",
+            "pluginId": "harmonograph",
+            "widgetId": "fader:0",
+            "paramId": "harmonograph/phase",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:landscape:resolution",
+            "pluginId": "landscape",
+            "widgetId": "knob:0",
+            "paramId": "landscape/resolution",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:landscape:amplitude",
+            "pluginId": "landscape",
+            "widgetId": "knob:1",
+            "paramId": "landscape/amplitude",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:landscape:scale",
+            "pluginId": "landscape",
+            "widgetId": "knob:2",
+            "paramId": "landscape/scale",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:landscape:octaves",
+            "pluginId": "landscape",
+            "widgetId": "knob:3",
+            "paramId": "landscape/octaves",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:landscape:terrace",
+            "pluginId": "landscape",
+            "widgetId": "knob:4",
+            "paramId": "landscape/terrace",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:landscape:radius",
+            "pluginId": "landscape",
+            "widgetId": "knob:5",
+            "paramId": "landscape/radius",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:landscape:lineWidth",
+            "pluginId": "landscape",
+            "widgetId": "knob:6",
+            "paramId": "landscape/lineWidth",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:landscape:speed",
+            "pluginId": "landscape",
+            "widgetId": "knob:7",
+            "paramId": "landscape/speed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:landscape:tiltX",
+            "pluginId": "landscape",
+            "widgetId": "fader:0",
+            "paramId": "landscape/tiltX",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:landscape:tiltY",
+            "pluginId": "landscape",
+            "widgetId": "fader:1",
+            "paramId": "landscape/tiltY",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:landscape:tiltZ",
+            "pluginId": "landscape",
+            "widgetId": "fader:2",
+            "paramId": "landscape/tiltZ",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:landscape:spin",
+            "pluginId": "landscape",
+            "widgetId": "encoder:0",
+            "paramId": "landscape/spin",
+            "adapter": {
+              "kind": "relative"
+            }
+          },
+          {
+            "id": "seed:landscape:filled",
+            "pluginId": "landscape",
+            "widgetId": "pad:4",
+            "paramId": "landscape/filled",
+            "adapter": {
+              "kind": "toggle"
+            }
+          },
+          {
+            "id": "seed:landscape:depthShade",
+            "pluginId": "landscape",
+            "widgetId": "pad:5",
+            "paramId": "landscape/depthShade",
+            "adapter": {
+              "kind": "toggle"
+            }
+          },
+          {
+            "id": "seed:noise:detail",
+            "pluginId": "noise",
+            "widgetId": "knob:0",
+            "paramId": "noise/detail",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:noise:scale",
+            "pluginId": "noise",
+            "widgetId": "knob:1",
+            "paramId": "noise/scale",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:noise:octaves",
+            "pluginId": "noise",
+            "widgetId": "knob:2",
+            "paramId": "noise/octaves",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:noise:persistence",
+            "pluginId": "noise",
+            "widgetId": "knob:3",
+            "paramId": "noise/persistence",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:noise:lacunarity",
+            "pluginId": "noise",
+            "widgetId": "knob:4",
+            "paramId": "noise/lacunarity",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:noise:contrast",
+            "pluginId": "noise",
+            "widgetId": "knob:5",
+            "paramId": "noise/contrast",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:noise:bands",
+            "pluginId": "noise",
+            "widgetId": "knob:6",
+            "paramId": "noise/bands",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:noise:speed",
+            "pluginId": "noise",
+            "widgetId": "knob:7",
+            "paramId": "noise/speed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:noise:seed",
+            "pluginId": "noise",
+            "widgetId": "knob:8",
+            "paramId": "noise/seed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:physarum:count",
+            "pluginId": "physarum",
+            "widgetId": "knob:0",
+            "paramId": "physarum/count",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:physarum:sensorDist",
+            "pluginId": "physarum",
+            "widgetId": "knob:1",
+            "paramId": "physarum/sensorDist",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:physarum:sensorAngle",
+            "pluginId": "physarum",
+            "widgetId": "knob:2",
+            "paramId": "physarum/sensorAngle",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:physarum:turnAngle",
+            "pluginId": "physarum",
+            "widgetId": "knob:3",
+            "paramId": "physarum/turnAngle",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:physarum:stepSize",
+            "pluginId": "physarum",
+            "widgetId": "knob:4",
+            "paramId": "physarum/stepSize",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:physarum:deposit",
+            "pluginId": "physarum",
+            "widgetId": "knob:5",
+            "paramId": "physarum/deposit",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:physarum:decay",
+            "pluginId": "physarum",
+            "widgetId": "knob:6",
+            "paramId": "physarum/decay",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:physarum:gain",
+            "pluginId": "physarum",
+            "widgetId": "knob:7",
+            "paramId": "physarum/gain",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:physarum:seed",
+            "pluginId": "physarum",
+            "widgetId": "knob:8",
+            "paramId": "physarum/seed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:physarum:speed",
+            "pluginId": "physarum",
+            "widgetId": "fader:0",
+            "paramId": "physarum/speed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:physarum:textStrength",
+            "pluginId": "physarum",
+            "widgetId": "fader:1",
+            "paramId": "physarum/textStrength",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:physarum:textMode",
+            "pluginId": "physarum",
+            "widgetId": "pad:4",
+            "paramId": "physarum/textMode",
+            "adapter": {
+              "kind": "cycle"
+            }
+          },
+          {
+            "id": "seed:physarum:reseed",
+            "pluginId": "physarum",
+            "widgetId": "pad:5",
+            "paramId": "physarum/reseed",
+            "adapter": {
+              "kind": "trigger"
+            }
+          },
+          {
+            "id": "seed:plant:iterations",
+            "pluginId": "plant",
+            "widgetId": "knob:0",
+            "paramId": "plant/iterations",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:plant:cameraScale",
+            "pluginId": "plant",
+            "widgetId": "knob:1",
+            "paramId": "plant/cameraScale",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:plant:spinSpeed",
+            "pluginId": "plant",
+            "widgetId": "knob:2",
+            "paramId": "plant/spinSpeed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:plant:evolutionSpeed",
+            "pluginId": "plant",
+            "widgetId": "knob:3",
+            "paramId": "plant/evolutionSpeed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:plant:seed",
+            "pluginId": "plant",
+            "widgetId": "fader:0",
+            "paramId": "plant/seed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:plant:autoEvolve",
+            "pluginId": "plant",
+            "widgetId": "pad:4",
+            "paramId": "plant/autoEvolve",
+            "adapter": {
+              "kind": "toggle"
+            }
+          },
+          {
+            "id": "seed:plant:opaque",
+            "pluginId": "plant",
+            "widgetId": "pad:5",
+            "paramId": "plant/opaque",
+            "adapter": {
+              "kind": "toggle"
+            }
+          },
+          {
+            "id": "seed:reactionDiffusion:pattern",
+            "pluginId": "reactionDiffusion",
+            "widgetId": "pad:4",
+            "paramId": "reactionDiffusion/pattern",
+            "adapter": {
+              "kind": "cycle"
+            }
+          },
+          {
+            "id": "seed:reactionDiffusion:reseed",
+            "pluginId": "reactionDiffusion",
+            "widgetId": "pad:5",
+            "paramId": "reactionDiffusion/reseed",
+            "adapter": {
+              "kind": "trigger"
+            }
+          },
+          {
+            "id": "seed:reactionDiffusion:textMode",
+            "pluginId": "reactionDiffusion",
+            "widgetId": "pad:6",
+            "paramId": "reactionDiffusion/textMode",
+            "adapter": {
+              "kind": "cycle"
+            }
+          },
+          {
+            "id": "seed:reactionDiffusion:resolution",
+            "pluginId": "reactionDiffusion",
+            "widgetId": "knob:0",
+            "paramId": "reactionDiffusion/resolution",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:reactionDiffusion:iterations",
+            "pluginId": "reactionDiffusion",
+            "widgetId": "knob:1",
+            "paramId": "reactionDiffusion/iterations",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:reactionDiffusion:gain",
+            "pluginId": "reactionDiffusion",
+            "widgetId": "knob:2",
+            "paramId": "reactionDiffusion/gain",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:reactionDiffusion:seed",
+            "pluginId": "reactionDiffusion",
+            "widgetId": "knob:3",
+            "paramId": "reactionDiffusion/seed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:reactionDiffusion:textStrength",
+            "pluginId": "reactionDiffusion",
+            "widgetId": "fader:1",
+            "paramId": "reactionDiffusion/textStrength",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:shape:shape",
+            "pluginId": "shape",
+            "widgetId": "pad:4",
+            "paramId": "shape/shape",
+            "adapter": {
+              "kind": "cycle"
+            }
+          },
+          {
+            "id": "seed:shape:resolution",
+            "pluginId": "shape",
+            "widgetId": "knob:0",
+            "paramId": "shape/resolution",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:shape:radius",
+            "pluginId": "shape",
+            "widgetId": "knob:1",
+            "paramId": "shape/radius",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:shape:lineWidth",
+            "pluginId": "shape",
+            "widgetId": "knob:2",
+            "paramId": "shape/lineWidth",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:shape:tiltX",
+            "pluginId": "shape",
+            "widgetId": "fader:0",
+            "paramId": "shape/tiltX",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:shape:tiltY",
+            "pluginId": "shape",
+            "widgetId": "fader:1",
+            "paramId": "shape/tiltY",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:shape:tiltZ",
+            "pluginId": "shape",
+            "widgetId": "fader:2",
+            "paramId": "shape/tiltZ",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:shape:spin",
+            "pluginId": "shape",
+            "widgetId": "encoder:0",
+            "paramId": "shape/spin",
+            "adapter": {
+              "kind": "relative"
+            }
+          },
+          {
+            "id": "seed:shape:filled",
+            "pluginId": "shape",
+            "widgetId": "pad:5",
+            "paramId": "shape/filled",
+            "adapter": {
+              "kind": "toggle"
+            }
+          },
+          {
+            "id": "seed:shape:depthShade",
+            "pluginId": "shape",
+            "widgetId": "pad:6",
+            "paramId": "shape/depthShade",
+            "adapter": {
+              "kind": "toggle"
+            }
+          },
+          {
+            "id": "seed:shape:cull",
+            "pluginId": "shape",
+            "widgetId": "pad:7",
+            "paramId": "shape/cull",
+            "adapter": {
+              "kind": "toggle"
+            }
+          },
+          {
+            "id": "seed:text:preset",
+            "pluginId": "text",
+            "widgetId": "pad:4",
+            "paramId": "text/preset",
+            "adapter": {
+              "kind": "cycle"
+            }
+          },
+          {
+            "id": "seed:text:font",
+            "pluginId": "text",
+            "widgetId": "pad:5",
+            "paramId": "text/font",
+            "adapter": {
+              "kind": "cycle"
+            }
+          },
+          {
+            "id": "seed:text:bold",
+            "pluginId": "text",
+            "widgetId": "pad:6",
+            "paramId": "text/bold",
+            "adapter": {
+              "kind": "toggle"
+            }
+          },
+          {
+            "id": "seed:text:fontSize",
+            "pluginId": "text",
+            "widgetId": "knob:0",
+            "paramId": "text/fontSize",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:text:tracking",
+            "pluginId": "text",
+            "widgetId": "knob:1",
+            "paramId": "text/tracking",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:volumetricCloud:detail",
+            "pluginId": "volumetricCloud",
+            "widgetId": "knob:0",
+            "paramId": "volumetricCloud/detail",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:volumetricCloud:scale",
+            "pluginId": "volumetricCloud",
+            "widgetId": "knob:1",
+            "paramId": "volumetricCloud/scale",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:volumetricCloud:octaves",
+            "pluginId": "volumetricCloud",
+            "widgetId": "knob:2",
+            "paramId": "volumetricCloud/octaves",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:volumetricCloud:coverage",
+            "pluginId": "volumetricCloud",
+            "widgetId": "knob:3",
+            "paramId": "volumetricCloud/coverage",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:volumetricCloud:density",
+            "pluginId": "volumetricCloud",
+            "widgetId": "knob:4",
+            "paramId": "volumetricCloud/density",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:volumetricCloud:steps",
+            "pluginId": "volumetricCloud",
+            "widgetId": "knob:5",
+            "paramId": "volumetricCloud/steps",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:volumetricCloud:shadow",
+            "pluginId": "volumetricCloud",
+            "widgetId": "knob:6",
+            "paramId": "volumetricCloud/shadow",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:volumetricCloud:speed",
+            "pluginId": "volumetricCloud",
+            "widgetId": "knob:7",
+            "paramId": "volumetricCloud/speed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:glyph:glyph",
+            "pluginId": "glyph",
+            "widgetId": "pad:4",
+            "paramId": "glyph/glyph",
+            "adapter": {
+              "kind": "cycle"
+            }
+          },
+          {
+            "id": "seed:glyph:padding",
+            "pluginId": "glyph",
+            "widgetId": "knob:0",
+            "paramId": "glyph/padding",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:glyph:gap",
+            "pluginId": "glyph",
+            "widgetId": "knob:1",
+            "paramId": "glyph/gap",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:glyphScatter:cell",
+            "pluginId": "glyphScatter",
+            "widgetId": "knob:0",
+            "paramId": "glyphScatter/cell",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:glyphScatter:threshold",
+            "pluginId": "glyphScatter",
+            "widgetId": "knob:1",
+            "paramId": "glyphScatter/threshold",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:glyphScatter:scale",
+            "pluginId": "glyphScatter",
+            "widgetId": "knob:2",
+            "paramId": "glyphScatter/scale",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:glyphScatter:noiseScale",
+            "pluginId": "glyphScatter",
+            "widgetId": "knob:3",
+            "paramId": "glyphScatter/noiseScale",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:glyphScatter:speed",
+            "pluginId": "glyphScatter",
+            "widgetId": "knob:4",
+            "paramId": "glyphScatter/speed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:glyphScatter:jitter",
+            "pluginId": "glyphScatter",
+            "widgetId": "knob:5",
+            "paramId": "glyphScatter/jitter",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:glyphScatter:seed",
+            "pluginId": "glyphScatter",
+            "widgetId": "knob:6",
+            "paramId": "glyphScatter/seed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:glyphScatter:textStrength",
+            "pluginId": "glyphScatter",
+            "widgetId": "fader:1",
+            "paramId": "glyphScatter/textStrength",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:bayer:levels",
+            "pluginId": "bayer",
+            "widgetId": "knob:0",
+            "paramId": "bayer/levels",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:bayer:scale",
+            "pluginId": "bayer",
+            "widgetId": "knob:1",
+            "paramId": "bayer/scale",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:bayer:colored",
+            "pluginId": "bayer",
+            "widgetId": "pad:4",
+            "paramId": "bayer/colored",
+            "adapter": {
+              "kind": "toggle"
+            }
+          },
+          {
+            "id": "seed:colorLookup:count",
+            "pluginId": "colorLookup",
+            "widgetId": "knob:0",
+            "paramId": "colorLookup/count",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:colorLookup:amount",
+            "pluginId": "colorLookup",
+            "widgetId": "knob:1",
+            "paramId": "colorLookup/amount",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:deepGlow:radius0",
+            "pluginId": "deepGlow",
+            "widgetId": "knob:0",
+            "paramId": "deepGlow/radius0",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:deepGlow:radius1",
+            "pluginId": "deepGlow",
+            "widgetId": "knob:1",
+            "paramId": "deepGlow/radius1",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:deepGlow:radius2",
+            "pluginId": "deepGlow",
+            "widgetId": "knob:2",
+            "paramId": "deepGlow/radius2",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:deepGlow:str0",
+            "pluginId": "deepGlow",
+            "widgetId": "knob:3",
+            "paramId": "deepGlow/str0",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:deepGlow:str1",
+            "pluginId": "deepGlow",
+            "widgetId": "knob:4",
+            "paramId": "deepGlow/str1",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:deepGlow:str2",
+            "pluginId": "deepGlow",
+            "widgetId": "knob:5",
+            "paramId": "deepGlow/str2",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:deepGlow:mix",
+            "pluginId": "deepGlow",
+            "widgetId": "knob:6",
+            "paramId": "deepGlow/mix",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:fisheye:strength",
+            "pluginId": "fisheye",
+            "widgetId": "knob:0",
+            "paramId": "fisheye/strength",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:fisheye:zoom",
+            "pluginId": "fisheye",
+            "widgetId": "knob:1",
+            "paramId": "fisheye/zoom",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:pixelSort:threshold",
+            "pluginId": "pixelSort",
+            "widgetId": "knob:0",
+            "paramId": "pixelSort/threshold",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:pixelSort:horizontal",
+            "pluginId": "pixelSort",
+            "widgetId": "pad:4",
+            "paramId": "pixelSort/horizontal",
+            "adapter": {
+              "kind": "toggle"
+            }
+          },
+          {
+            "id": "seed:pixelSort:reverse",
+            "pluginId": "pixelSort",
+            "widgetId": "pad:5",
+            "paramId": "pixelSort/reverse",
+            "adapter": {
+              "kind": "toggle"
+            }
+          },
+          {
+            "id": "seed:pixelStretch:threshold",
+            "pluginId": "pixelStretch",
+            "widgetId": "knob:0",
+            "paramId": "pixelStretch/threshold",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:pixelStretch:amount",
+            "pluginId": "pixelStretch",
+            "widgetId": "knob:1",
+            "paramId": "pixelStretch/amount",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:pixelStretch:horizontal",
+            "pluginId": "pixelStretch",
+            "widgetId": "pad:4",
+            "paramId": "pixelStretch/horizontal",
+            "adapter": {
+              "kind": "toggle"
+            }
+          },
+          {
+            "id": "seed:pixelate:size",
+            "pluginId": "pixelate",
+            "widgetId": "knob:0",
+            "paramId": "pixelate/size",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:tracker:count",
+            "pluginId": "tracker",
+            "widgetId": "knob:0",
+            "paramId": "tracker/count",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:tracker:grid",
+            "pluginId": "tracker",
+            "widgetId": "knob:1",
+            "paramId": "tracker/grid",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:tracker:smoothing",
+            "pluginId": "tracker",
+            "widgetId": "knob:2",
+            "paramId": "tracker/smoothing",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:tracker:sampleRate",
+            "pluginId": "tracker",
+            "widgetId": "knob:3",
+            "paramId": "tracker/sampleRate",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:tracker:lineLength",
+            "pluginId": "tracker",
+            "widgetId": "knob:4",
+            "paramId": "tracker/lineLength",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:tracker:dashLength",
+            "pluginId": "tracker",
+            "widgetId": "knob:5",
+            "paramId": "tracker/dashLength",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:tracker:boxThickness",
+            "pluginId": "tracker",
+            "widgetId": "knob:6",
+            "paramId": "tracker/boxThickness",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:tracker:lineThickness",
+            "pluginId": "tracker",
+            "widgetId": "knob:7",
+            "paramId": "tracker/lineThickness",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:tracker:direction",
+            "pluginId": "tracker",
+            "widgetId": "pad:4",
+            "paramId": "tracker/direction",
+            "adapter": {
+              "kind": "cycle"
+            }
+          },
+          {
+            "id": "seed:tracker:showBackdrop",
+            "pluginId": "tracker",
+            "widgetId": "pad:5",
+            "paramId": "tracker/showBackdrop",
+            "adapter": {
+              "kind": "toggle"
+            }
+          },
+          {
+            "id": "seed:venetianBlinds:bands",
+            "pluginId": "venetianBlinds",
+            "widgetId": "knob:0",
+            "paramId": "venetianBlinds/bands",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:venetianBlinds:offset",
+            "pluginId": "venetianBlinds",
+            "widgetId": "knob:1",
+            "paramId": "venetianBlinds/offset",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:venetianBlinds:angle",
+            "pluginId": "venetianBlinds",
+            "widgetId": "fader:0",
+            "paramId": "venetianBlinds/angle",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:venetianBlinds:fade",
+            "pluginId": "venetianBlinds",
+            "widgetId": "knob:2",
+            "paramId": "venetianBlinds/fade",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "91c06d53-8e5c-40d2-bb38-9168e1eca410",
+            "pluginId": "contourField",
+            "widgetId": "encoder:3",
+            "paramId": "contourField/seed",
+            "adapter": {
+              "kind": "relative"
+            }
+          },
+          {
+            "id": "fefa1e3d-4ed3-44c6-a803-345237992cf1",
+            "pluginId": "boids",
+            "widgetId": "knob:0",
+            "paramId": "boids/count",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:ascii:cell",
+            "pluginId": "ascii",
+            "widgetId": "knob:0",
+            "paramId": "ascii/cell",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:ascii:colored",
+            "pluginId": "ascii",
+            "widgetId": "pad:4",
+            "paramId": "ascii/colored",
+            "adapter": {
+              "kind": "toggle"
+            }
+          },
+          {
+            "id": "seed:gameOfLife:cellSize",
+            "pluginId": "gameOfLife",
+            "widgetId": "knob:0",
+            "paramId": "gameOfLife/cellSize",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:gameOfLife:density",
+            "pluginId": "gameOfLife",
+            "widgetId": "knob:1",
+            "paramId": "gameOfLife/density",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:gameOfLife:speed",
+            "pluginId": "gameOfLife",
+            "widgetId": "knob:2",
+            "paramId": "gameOfLife/speed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:gameOfLife:trail",
+            "pluginId": "gameOfLife",
+            "widgetId": "knob:3",
+            "paramId": "gameOfLife/trail",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:gameOfLife:gap",
+            "pluginId": "gameOfLife",
+            "widgetId": "knob:4",
+            "paramId": "gameOfLife/gap",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:gameOfLife:seed",
+            "pluginId": "gameOfLife",
+            "widgetId": "knob:5",
+            "paramId": "gameOfLife/seed",
+            "adapter": {
+              "kind": "absolute"
+            }
+          },
+          {
+            "id": "seed:gameOfLife:wrap",
+            "pluginId": "gameOfLife",
+            "widgetId": "pad:4",
+            "paramId": "gameOfLife/wrap",
+            "adapter": {
+              "kind": "toggle"
+            }
+          },
+          {
+            "id": "seed:gameOfLife:reseed",
+            "pluginId": "gameOfLife",
+            "widgetId": "pad:5",
+            "paramId": "gameOfLife/reseed",
+            "adapter": {
+              "kind": "trigger"
+            }
+          },
+          {
+            "id": "seed:color:preset",
+            "pluginId": "color",
+            "widgetId": "pad:4",
+            "paramId": "color/preset",
+            "adapter": {
+              "kind": "cycle"
+            }
+          },
+          {
+            "id": "opacity:boids",
+            "pluginId": "boids",
+            "widgetId": "knob:9",
+            "paramId": "boids/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:contourField",
+            "pluginId": "contourField",
+            "widgetId": "knob:9",
+            "paramId": "contourField/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:gameOfLife",
+            "pluginId": "gameOfLife",
+            "widgetId": "knob:9",
+            "paramId": "gameOfLife/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:harmonograph",
+            "pluginId": "harmonograph",
+            "widgetId": "knob:9",
+            "paramId": "harmonograph/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:landscape",
+            "pluginId": "landscape",
+            "widgetId": "knob:9",
+            "paramId": "landscape/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:noise",
+            "pluginId": "noise",
+            "widgetId": "knob:9",
+            "paramId": "noise/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:physarum",
+            "pluginId": "physarum",
+            "widgetId": "knob:9",
+            "paramId": "physarum/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:plant",
+            "pluginId": "plant",
+            "widgetId": "knob:9",
+            "paramId": "plant/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:reactionDiffusion",
+            "pluginId": "reactionDiffusion",
+            "widgetId": "knob:9",
+            "paramId": "reactionDiffusion/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:shape",
+            "pluginId": "shape",
+            "widgetId": "knob:9",
+            "paramId": "shape/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:text",
+            "pluginId": "text",
+            "widgetId": "knob:9",
+            "paramId": "text/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:volumetricCloud",
+            "pluginId": "volumetricCloud",
+            "widgetId": "knob:9",
+            "paramId": "volumetricCloud/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:glyph",
+            "pluginId": "glyph",
+            "widgetId": "knob:9",
+            "paramId": "glyph/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:glyphScatter",
+            "pluginId": "glyphScatter",
+            "widgetId": "knob:9",
+            "paramId": "glyphScatter/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:ascii",
+            "pluginId": "ascii",
+            "widgetId": "knob:9",
+            "paramId": "ascii/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:bayer",
+            "pluginId": "bayer",
+            "widgetId": "knob:9",
+            "paramId": "bayer/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:color",
+            "pluginId": "color",
+            "widgetId": "knob:9",
+            "paramId": "color/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:colorLookup",
+            "pluginId": "colorLookup",
+            "widgetId": "knob:9",
+            "paramId": "colorLookup/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:deepGlow",
+            "pluginId": "deepGlow",
+            "widgetId": "knob:9",
+            "paramId": "deepGlow/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:fisheye",
+            "pluginId": "fisheye",
+            "widgetId": "knob:9",
+            "paramId": "fisheye/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:none",
+            "pluginId": "none",
+            "widgetId": "knob:9",
+            "paramId": "none/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:pixelSort",
+            "pluginId": "pixelSort",
+            "widgetId": "knob:9",
+            "paramId": "pixelSort/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:pixelStretch",
+            "pluginId": "pixelStretch",
+            "widgetId": "knob:9",
+            "paramId": "pixelStretch/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:pixelate",
+            "pluginId": "pixelate",
+            "widgetId": "knob:9",
+            "paramId": "pixelate/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:tracker",
+            "pluginId": "tracker",
+            "widgetId": "knob:9",
+            "paramId": "tracker/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "opacity:venetianBlinds",
+            "pluginId": "venetianBlinds",
+            "widgetId": "knob:9",
+            "paramId": "venetianBlinds/opacity",
+            "adapter": {
+              "kind": "absolute"
+            },
+            "locked": true
+          },
+          {
+            "id": "52098dde-4ea9-4ba9-aeca-e625d0b6698c",
+            "pluginId": "contourField",
+            "widgetId": "knob:2",
+            "paramId": "contourField/octaves",
+            "adapter": {
+              "kind": "absolute"
+            }
+          }
+        ],
+        "actionBindings": [
+          {
+            "id": "2900264b-74a2-4cb5-808f-52409ad97a8b",
+            "widgetId": "pad:0",
+            "actionId": "clear"
+          },
+          {
+            "id": "eaeb2cba-fbde-4d7b-8530-202c69a4f619",
+            "widgetId": "pad:1",
+            "actionId": "bank0"
+          },
+          {
+            "id": "6f542ba4-c602-4341-b0eb-bbe4d6e2083e",
+            "widgetId": "pad:2",
+            "actionId": "bank1"
+          },
+          {
+            "id": "2320de95-5a27-422a-89a1-5b017d6a6f09",
+            "widgetId": "pad:3",
+            "actionId": "bank2"
+          },
+          {
+            "id": "cadbc1f5-42cf-4e5a-991c-aee9ae1a3be9",
+            "widgetId": "pad:15",
+            "actionId": "bank4"
+          },
+          {
+            "id": "cef9d3e3-6cf7-465a-bd1a-4855e4ccd0f5",
+            "widgetId": "pad:16",
+            "actionId": "bank5"
+          },
+          {
+            "id": "158b1195-1a19-43d4-9468-bf62c1276a1a",
+            "widgetId": "pad:14",
+            "actionId": "bank3"
+          }
+        ],
+        "hardwareBindings": [
+          {
+            "id": "28716cd8-8604-4c65-be03-60da2973d2a5",
+            "controlId": "cc:0:14",
+            "widgetId": "knob:6"
+          },
+          {
+            "id": "b8a8dfd2-af4d-4a70-9304-957d25a15391",
+            "controlId": "cc:0:8",
+            "widgetId": "knob:7"
+          },
+          {
+            "id": "71e75f6f-efda-4002-b664-ad14fcf42c91",
+            "controlId": "note:0:98",
+            "widgetId": "pad:18"
+          },
+          {
+            "id": "e21ac910-2388-4c17-8b54-5195dda5524a",
+            "controlId": "note:0:86",
+            "widgetId": "pad:19"
+          },
+          {
+            "id": "3e8e53e3-1ec6-45c4-929c-7e9928bb4cb6",
+            "controlId": "note:0:87",
+            "widgetId": "pad:20"
+          },
+          {
+            "id": "273437ec-6127-4d44-b18c-8406e84f88ce",
+            "controlId": "note:0:88",
+            "widgetId": "pad:21"
+          },
+          {
+            "id": "742927a1-0e38-4074-bcf5-2a99211a96ea",
+            "controlId": "note:0:100",
+            "widgetId": "pad:17"
+          },
+          {
+            "id": "415910a6-e329-4a32-a15d-ab6d78b052d0",
+            "controlId": "note:0:71",
+            "widgetId": "pad:22"
+          },
+          {
+            "id": "1ca532c0-05c6-4ed6-8a5f-db7e22132e1c",
+            "controlId": "note:0:60",
+            "widgetId": "pad:23"
+          },
+          {
+            "id": "2bdc12e9-c448-453f-a102-9296d827468c",
+            "controlId": "note:0:66",
+            "widgetId": "pad:24"
+          },
+          {
+            "id": "f18eb9f9-8fe4-44f4-9ddd-e1e267af9d57",
+            "controlId": "note:0:76",
+            "widgetId": "pad:25"
+          },
+          {
+            "id": "42f43fab-3414-46d0-9be6-30c9e3c4cad3",
+            "controlId": "note:0:74",
+            "widgetId": "pad:12"
+          },
+          {
+            "id": "09e4ec74-aee3-43b8-ac5c-a56a25dc7a08",
+            "controlId": "note:0:59",
+            "widgetId": "pad:11"
+          },
+          {
+            "id": "fd3e08d1-acf7-492a-b59b-0761ad0da74a",
+            "controlId": "note:0:51",
+            "widgetId": "pad:10"
+          },
+          {
+            "id": "d9298714-4671-4e6f-9853-c9bcc83b72db",
+            "controlId": "note:0:64",
+            "widgetId": "pad:9"
+          },
+          {
+            "id": "e27b2a95-e4ea-4519-a698-5bd7d4eb3996",
+            "controlId": "cc:0:16",
+            "widgetId": "knob:0"
+          },
+          {
+            "id": "44f8d477-413e-41a0-bfc1-4b2a6fc88630",
+            "controlId": "cc:0:11",
+            "widgetId": "knob:1"
+          },
+          {
+            "id": "74cbb969-3a91-4fe5-9169-ee5385507402",
+            "controlId": "cc:0:17",
+            "widgetId": "knob:2"
+          },
+          {
+            "id": "fd6c1d27-6d29-4ce8-87fd-e535f564027f",
+            "controlId": "cc:0:19",
+            "widgetId": "knob:5"
+          },
+          {
+            "id": "aa3e81f1-2564-454d-9600-7479f0fc9a50",
+            "controlId": "cc:0:21",
+            "widgetId": "knob:7"
+          },
+          {
+            "id": "a1ab959a-b7dc-4965-bdea-06810f589e0b",
+            "controlId": "cc:0:12",
+            "widgetId": "knob:4"
+          },
+          {
+            "id": "3b07b355-833a-4492-a92a-474a39c9b129",
+            "controlId": "cc:0:18",
+            "widgetId": "knob:3"
+          },
+          {
+            "id": "31fe4045-d05e-4df3-9733-59f5b9d21c05",
+            "controlId": "cc:0:20",
+            "widgetId": "knob:6"
+          },
+          {
+            "id": "f6265f69-72ff-4606-9939-ffcfe0bd8b0f",
+            "controlId": "cc:0:32",
+            "widgetId": "encoder:5"
+          },
+          {
+            "id": "6cb3032a-f8c1-4de4-88d7-f3ae2c311ce7",
+            "controlId": "cc:0:31",
+            "widgetId": "encoder:4"
+          },
+          {
+            "id": "d4776ac9-06b7-4d13-a5ec-14c292f24292",
+            "controlId": "cc:0:30",
+            "widgetId": "encoder:3"
+          },
+          {
+            "id": "c5ab579d-5dd9-4752-a408-6951122a469e",
+            "controlId": "note:0:77",
+            "widgetId": "jog:1"
+          },
+          {
+            "id": "fb94f425-ee4a-4377-a8f6-7945056e6aa0",
+            "controlId": "cc:0:25",
+            "widgetId": "jog:0"
+          },
+          {
+            "id": "fd2fe492-d5ce-4b13-b60f-da59d3d90a7a",
+            "controlId": "cc:0:24",
+            "widgetId": "jog:1"
+          }
+        ],
+        "hardwareControls": [
+          {
+            "id": "note:0:77",
+            "name": "Note 77",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:78",
+            "name": "Note 78",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:20",
+            "name": "CC 20",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:18",
+            "name": "CC 18",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:16",
+            "name": "CC 16",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:21",
+            "name": "CC 21",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:19",
+            "name": "CC 19",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:17",
+            "name": "CC 17",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:14",
+            "name": "CC 14",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:8",
+            "name": "CC 8",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:13",
+            "name": "CC 13",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:23",
+            "name": "CC 23",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:28",
+            "name": "CC 28",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:31",
+            "name": "CC 31",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:12",
+            "name": "CC 12",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:11",
+            "name": "CC 11",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:10",
+            "name": "CC 10",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:32",
+            "name": "CC 32",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:29",
+            "name": "CC 29",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:24",
+            "name": "CC 24",
+            "kind": "jog",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:25",
+            "name": "CC 25",
+            "kind": "jog",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:98",
+            "name": "Note 98",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:86",
+            "name": "Note 86",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:87",
+            "name": "Note 87",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:88",
+            "name": "Note 88",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:100",
+            "name": "Note 100",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:93",
+            "name": "Note 93",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:94",
+            "name": "Note 94",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:95",
+            "name": "Note 95",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:96",
+            "name": "Note 96",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:71",
+            "name": "Note 71",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:60",
+            "name": "Note 60",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:66",
+            "name": "Note 66",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:76",
+            "name": "Note 76",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:74",
+            "name": "Note 74",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:59",
+            "name": "Note 59",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:51",
+            "name": "Note 51",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:64",
+            "name": "Note 64",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:30",
+            "name": "CC 30",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:105",
+            "name": "Note 105",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "cc:0:26",
+            "name": "CC 26",
+            "kind": "knob",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:79",
+            "name": "Note 79",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:52",
+            "name": "Note 52",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          },
+          {
+            "id": "note:0:75",
+            "name": "Note 75",
+            "kind": "button",
+            "disabled": false,
+            "deviceName": "MixTrack Pro"
+          }
+        ]
+      }
+    }
+  ]
+}

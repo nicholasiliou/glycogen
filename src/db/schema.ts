@@ -256,7 +256,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 const MIDI_KINDS: MidiControlKind[] = ["fader", "knob", "encoder", "jog", "button"];
 
-function sanitizeHardwareControl(raw: unknown): HardwareControlRow | null {
+export function sanitizeHardwareControl(raw: unknown): HardwareControlRow | null {
   if (!isRecord(raw) || typeof raw.id !== "string" || !raw.id) return null;
   return {
     id: raw.id,
@@ -267,7 +267,7 @@ function sanitizeHardwareControl(raw: unknown): HardwareControlRow | null {
   };
 }
 
-function sanitizeHardwareBinding(raw: unknown): HardwareBindingRow | null {
+export function sanitizeHardwareBinding(raw: unknown): HardwareBindingRow | null {
   if (!isRecord(raw) || typeof raw.id !== "string" || typeof raw.controlId !== "string") return null;
   // Accept the old `{ target: { type: "widget", widgetId } }` shape; action-target rows are dropped
   // (an app function reaches hardware through the widget it sits on now).
@@ -277,13 +277,13 @@ function sanitizeHardwareBinding(raw: unknown): HardwareBindingRow | null {
   return { id: raw.id, controlId: raw.controlId, widgetId: widgetId as SlotId, ...(raw.invert === true ? { invert: true } : {}) };
 }
 
-function sanitizeActionBinding(raw: unknown): ActionBindingRow | null {
+export function sanitizeActionBinding(raw: unknown): ActionBindingRow | null {
   if (!isRecord(raw) || typeof raw.id !== "string") return null;
   if (typeof raw.widgetId !== "string" || typeof raw.actionId !== "string") return null;
   return { id: raw.id, widgetId: raw.widgetId as SlotId, actionId: raw.actionId as AppAction };
 }
 
-function sanitizeParamDefault(raw: unknown): ParamDefaultRow | null {
+export function sanitizeParamDefault(raw: unknown): ParamDefaultRow | null {
   if (!isRecord(raw) || typeof raw.id !== "string" || typeof raw.pluginId !== "string") return null;
   const v = raw.value;
   if (typeof v === "number" && Number.isFinite(v)) return { id: raw.id, pluginId: raw.pluginId, value: v };

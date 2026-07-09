@@ -10,6 +10,8 @@
  */
 import { db, params, plugins, type ParamRow, type PluginRow } from "./schema";
 import { seedActionBindings, seedCodeTables, seedParamBindings } from "./seeds";
+import committedSnapshot from "./seed.snapshot.json";
+import { seedSnapshot, type DbSnapshot } from "./snapshot";
 
 export interface CodeRegistration {
   plugins: PluginRow[];
@@ -24,7 +26,8 @@ export function bootDb(code: CodeRegistration): void {
   seedCodeTables();
   plugins.replaceAll(code.plugins);
   params.replaceAll(code.params);
-  db.load();
+  db.load(); // localStorage rows in first — a visitor's own tweaks win over the committed baseline
+  seedSnapshot(committedSnapshot as DbSnapshot); // fill only ids localStorage didn't provide
   seedActionBindings(); // before params: an action on a widget blocks param rows there
   seedParamBindings();
   purgeLegacyKeys();

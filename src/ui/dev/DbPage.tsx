@@ -13,6 +13,7 @@ import {
   widgets,
 } from "@/db/schema";
 import { useTable } from "@/db/useDb";
+import { exportSnapshotJson } from "@/db/snapshot";
 import { MidiManager } from "@/midi/MidiManager";
 import { CONTROL_KINDS, type ControlKind } from "@/midi/types";
 
@@ -63,6 +64,40 @@ function DeviceStatus() {
             ? "no device"
             : devices.map((d) => d.name).join(", ")}
     </span>
+  );
+}
+
+/**
+ * Export the whole user-mutable db as the committed baseline. Under the dev server this POSTs to the
+ * `snapshot-writer` plugin, which writes `src/db/seed.snapshot.json` directly — just commit after.
+ * On the static build that endpoint is absent, so it falls back to copying the JSON to the clipboard.
+ */
+function SnapshotExport() {
+  const [status, setStatus] = useState<"written" | "copied" | null>(null);
+  const flash = (s: "written" | "copied") => {
+    setStatus(s);
+    setTimeout(() => setStatus((cur) => (cur === s ? null : cur)), 1500);
+  };
+  const onClick = async () => {
+    const json = exportSnapshotJson();
+    try {
+      const res = await fetch("/__write-snapshot", { method: "POST", body: json });
+      if (res.ok) return flash("written");
+    } catch {
+      /* no dev endpoint (static build) — fall back to clipboard */
+    }
+    void navigator.clipboard?.writeText(json);
+    flash("copied");
+  };
+  const label = status === "written" ? "written to seed file ✓" : status === "copied" ? "copied ✓" : "Export snapshot → seed file";
+  return (
+    <button
+      onClick={() => void onClick()}
+      title="Write the whole db to src/db/seed.snapshot.json (dev), or copy it to the clipboard (static build). Commit after."
+      style={{ background: "#1a1a1a", color: status ? "#6c6" : "#ccc", border: "1px solid #333", borderRadius: 3, cursor: "pointer", fontSize: 12, padding: "3px 10px" }}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -143,6 +178,9 @@ export function DbPage() {
       <div style={{ padding: "16px 24px 12px", borderBottom: "1px solid #222", display: "flex", alignItems: "baseline", gap: 16 }}>
         <h1 style={{ margin: 0, fontSize: 18 }}>DB</h1>
         <DeviceStatus />
+        <div style={{ marginLeft: "auto" }}>
+          <SnapshotExport />
+        </div>
       </div>
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", padding: "8px 24px", borderBottom: "1px solid #222" }}>
         {(Object.keys(TABLES) as TableName[]).map((n) => (

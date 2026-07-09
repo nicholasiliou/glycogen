@@ -17,6 +17,7 @@ export const COLOR_PRESETS: readonly ColorPreset[] = [
   { name: "violet", hex: "#9E86E9" },
   { name: "mint", hex: "#49D99E" },
   { name: "white", hex: "#FFFFFF" },
+  { name: "red", hex: "#B30001" },
 ];
 
 export const DEFAULT_COLOR = COLOR_PRESETS[0].hex;
