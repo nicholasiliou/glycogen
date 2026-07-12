@@ -173,11 +173,11 @@ export const appActions = db.table<AppActionRow>("appActions");
 // user-mutable (persisted to localStorage)
 
 export const hardwareControls = db.table<HardwareControlRow>("hardwareControls", {
-  persist: { key: "marathon.db.hardwareControls.v1", sanitize: sanitizeHardwareControl },
+  persist: { key: "glycogen.db.hardwareControls.v1", sanitize: sanitizeHardwareControl },
 });
 
 export const hardwareBindings = db.table<HardwareBindingRow>("hardwareBindings", {
-  persist: { key: "marathon.db.hardwareBindings.v1", sanitize: sanitizeHardwareBinding },
+  persist: { key: "glycogen.db.hardwareBindings.v1", sanitize: sanitizeHardwareBinding },
   fks: [
     { table: () => hardwareControls, ids: (r) => [r.controlId], onDelete: "cascade" },
     { table: () => widgets, ids: (r) => [r.widgetId], onDelete: "cascade" },
@@ -187,7 +187,7 @@ export const hardwareBindings = db.table<HardwareBindingRow>("hardwareBindings",
 });
 
 export const actionBindings = db.table<ActionBindingRow>("actionBindings", {
-  persist: { key: "marathon.db.actionBindings.v1", sanitize: sanitizeActionBinding },
+  persist: { key: "glycogen.db.actionBindings.v1", sanitize: sanitizeActionBinding },
   fks: [
     { table: () => widgets, ids: (r) => [r.widgetId], onDelete: "cascade" },
     { table: () => appActions, ids: (r) => [r.actionId], onDelete: "cascade" },
@@ -204,7 +204,7 @@ export const actionBindings = db.table<ActionBindingRow>("actionBindings", {
 });
 
 export const paramBindings = db.table<ParamBindingRow>("paramBindings", {
-  persist: { key: "marathon.db.paramBindings.v1", sanitize: sanitizeParamBinding },
+  persist: { key: "glycogen.db.paramBindings.v1", sanitize: sanitizeParamBinding },
   fks: [
     { table: () => plugins, ids: (r) => [r.pluginId], onDelete: "cascade" },
     { table: () => params, ids: (r) => [r.paramId], onDelete: "cascade" },
@@ -228,7 +228,7 @@ export const paramBindings = db.table<ParamBindingRow>("paramBindings", {
 });
 
 export const paramDefaults = db.table<ParamDefaultRow>("paramDefaults", {
-  persist: { key: "marathon.db.paramDefaults.v1", sanitize: sanitizeParamDefault },
+  persist: { key: "glycogen.db.paramDefaults.v1", sanitize: sanitizeParamDefault },
   fks: [
     { table: () => plugins, ids: (r) => [r.pluginId], onDelete: "cascade" },
     { table: () => params, ids: (r) => [r.id], onDelete: "cascade" },
@@ -245,7 +245,7 @@ export const paramDefaults = db.table<ParamDefaultRow>("paramDefaults", {
 });
 
 export const presets = db.table<PresetRow>("presets", {
-  persist: { key: "marathon.db.presets.v1", sanitize: sanitizePreset },
+  persist: { key: "glycogen.db.presets.v1", sanitize: sanitizePreset },
 });
 
 // ── stored-row sanitizers (never trust localStorage) ────────────────────────────────────────────

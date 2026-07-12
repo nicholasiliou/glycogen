@@ -5,9 +5,9 @@ import { asset } from "@/lib/asset";
 export const AVAILABLE_FONTS = ["Maratype", "NuCore", "Sekgen", "UESC"] as const;
 
 export const TEXT_PRESETS = [
-  "Marathon", "Runner", "Tau Ceti IV", "UESC Marathon", "New Cascadia", "Cryo Archive",
-  "Perimeter", "Dire Marsh", "Outpost", "CyberAcme", "NuCaloric", "Traxus", "MIDA",
-  "Arachne", "Sekiguchi Genetics", "Contract", "Exfil", "Shell", "Colony", "Colony Ship",
+  "Glycogen", "Pathfinder", "Epsilon Krios IV", "ISC Wayfarer", "North Meridian", "Frost Repository",
+  "Boundary Zone", "Black Fen", "Forward Station", "Synaptic Forge", "Vital Harvest", "Iron Meridian", "VANTA Collective",
+  "Silk Covenant", "Kisaragi Bioworks", "Assignment", "Extraction", "Frame", "Settlement", "Settlement Ark",
 ] as const;
 
 // Load every custom font and block on all of them so ctx.font can pick any of the four.

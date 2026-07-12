@@ -12,16 +12,16 @@ function tinyPng(): Uint8Array {
 
 describe("pngMeta", () => {
   it("round-trips text through an embedded iTXt chunk", () => {
-    const text = JSON.stringify({ app: "marathon", v: 1, note: "ünïcode ✓" });
-    const data = embedPngTextBytes(tinyPng(), "marathon:scene", text);
+    const text = JSON.stringify({ app: "glycogen", v: 1, note: "ünïcode ✓" });
+    const data = embedPngTextBytes(tinyPng(), "glycogen:scene", text);
     expect(data).not.toBeNull();
-    expect(readPngText(data!, "marathon:scene")).toBe(text);
+    expect(readPngText(data!, "glycogen:scene")).toBe(text);
   });
 
   it("returns null for a missing keyword and for non-PNG data", () => {
-    const data = embedPngTextBytes(tinyPng(), "marathon:scene", "x")!;
+    const data = embedPngTextBytes(tinyPng(), "glycogen:scene", "x")!;
     expect(readPngText(data, "other")).toBeNull();
-    expect(readPngText(new Uint8Array([1, 2, 3]), "marathon:scene")).toBeNull();
+    expect(readPngText(new Uint8Array([1, 2, 3]), "glycogen:scene")).toBeNull();
   });
 
   it("refuses to embed into non-PNG bytes", () => {

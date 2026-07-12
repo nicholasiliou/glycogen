@@ -53,7 +53,7 @@ export type AssignPending =
 export const SlotOccupantContext = createContext<Partial<Record<SlotId, AssignPending>>>({});
 
 /** dataTransfer type for a dragged occupant/function; payload = JSON-serialised AssignPending. */
-export const ASSIGN_MIME = "application/x-marathon-assign";
+export const ASSIGN_MIME = "application/x-glycogen-assign";
 export interface AssignCtxType {
   pending: AssignPending | null;
   begin: (p: AssignPending) => void;

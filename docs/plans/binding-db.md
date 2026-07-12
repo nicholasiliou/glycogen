@@ -38,7 +38,7 @@ widgets:    { id: SlotId /*"knob:0" — keeps format so ControlBus/remoteChannel
 appActions: { id: AppAction, label, momentary }
 ```
 
-**User-mutable tables** (persisted to `localStorage["marathon.db.<table>.v1"]`):
+**User-mutable tables** (persisted to `localStorage["glycogen.db.<table>.v1"]`):
 
 ```ts
 hardwareControls: { id /*"cc:0:7"*/, name, kind, disabled, deviceName? }   // learned identity + corrections
@@ -116,7 +116,7 @@ Stage takes `db` (or a narrow `BindingSource` interface for its test). `LiveProv
 ## Control panel redesign
 
 - **`src/ui/controls/PluginBindingsPanel.tsx`** (replaces ControlsPanel content): for the focused plugin, one row per param — name, live value editor (drives params *directly*: `param.set` / `param.press`), a binding chip (bound widget + adapter, live via `useTable`), drag handle.
-- **Drag-and-drop remap**: HTML5 dnd (`application/x-marathon-param`). `SlotFrame` in [widgets/shared.tsx](src/ui/controller/widgets/shared.tsx) gains drop handling via a new `AssignContext`: highlight legal targets on dragover; one legal adapter → upsert (replacing the existing row for that `(pluginId, widgetId)`); several → adapter popover; none → reject flash.
+- **Drag-and-drop remap**: HTML5 dnd (`application/x-glycogen-param`). `SlotFrame` in [widgets/shared.tsx](src/ui/controller/widgets/shared.tsx) gains drop handling via a new `AssignContext`: highlight legal targets on dragover; one legal adapter → upsert (replacing the existing row for that `(pluginId, widgetId)`); several → adapter popover; none → reject flash.
 - **Click-to-assign fallback** (and the only path in the pop-out, since HTML5 dnd can't cross windows): clicking a binding chip arms assign mode (same pattern as `LearnSlotContext`); clicking any widget completes. New `RemoteMessage` kinds in [remoteChannel.ts](src/controls/remoteChannel.ts): `assignArm {paramId, legalWidgets}` / `assignCancel` / `assignTo {widgetId}`; [useRemoteBridge.ts](src/ui/app/useRemoteBridge.ts) relays.
 - **MIDI learn**: unchanged gesture (right-click widget), now writing `hardwareBindings`. App-action learn moves to a settings "App actions" section listing `appActions` rows.
 - **Presets**: panel footer — dropdown, Save/Load, Export/Import JSON (reuse `exportKeymap` download pattern).
@@ -132,7 +132,7 @@ Stage takes `db` (or a narrow `BindingSource` interface for its test). `LiveProv
 | KeymapTab + `KeymapCtx`/`LiveCtx.keymap` | Hardware tab; exported `db` singleton |
 | Slot literal types + slot factories in Plugin.ts | new param API |
 | `Param.pull`/`relative`, `ButtonParam.pull` press-diffing | `ParamDriver` |
-| `marathon.midi.keymaps.v1` / `activeKeymap.v1` keys | `marathon.db.*.v1` (boot deletes stale keys, no migration) |
+| `glycogen.midi.keymaps.v1` / `activeKeymap.v1` keys | `glycogen.db.*.v1` (boot deletes stale keys, no migration) |
 
 ## Milestones (app runnable at each, except mid-M3)
 

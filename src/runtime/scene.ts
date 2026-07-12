@@ -12,7 +12,18 @@ import { BANK_COUNT, type FocusPart, type Stage } from "@/runtime/Stage";
  */
 
 /** The PNG text-chunk keyword scene JSON is stored under. */
-export const SCENE_PNG_KEYWORD = "marathon:scene";
+export const SCENE_PNG_KEYWORD = "glycogen:scene";
+
+/**
+ * Read-side compatibility with stills exported before the glycogen rename — the ONLY place the
+ * old app name may appear. Cycle params (e.g. the text presets) store a press count, not the
+ * option text, so an old scene simply lands on whichever option now sits at that index.
+ */
+const LEGACY_PNG_KEYWORD = "marathon:scene";
+const LEGACY_APP_TAG = "marathon";
+
+/** Every keyword a dropped PNG may carry scene JSON under, newest first. */
+export const SCENE_PNG_READ_KEYWORDS = [SCENE_PNG_KEYWORD, LEGACY_PNG_KEYWORD] as const;
 
 interface SceneParam {
   name: string;
@@ -34,7 +45,7 @@ interface SceneBank {
 }
 
 export interface SceneData {
-  app: "marathon";
+  app: "glycogen";
   v: 1;
   banks: SceneBank[];
   active: number;
@@ -50,7 +61,7 @@ function snapshotPlugin(plugin: Plugin): ScenePlugin {
 
 export function serializeScene(stage: Stage): SceneData {
   return {
-    app: "marathon",
+    app: "glycogen",
     v: 1,
     banks: stage.banks.map((bank) => ({
       plugin: bank.plugin ? snapshotPlugin(bank.plugin) : null,
@@ -111,6 +122,7 @@ export function parseScene(json: string): SceneData | null {
     return null;
   }
   const s = raw as Partial<SceneData> | null;
-  if (!s || s.app !== "marathon" || s.v !== 1 || !Array.isArray(s.banks)) return null;
+  const app = s?.app as string | undefined;
+  if (!s || (app !== "glycogen" && app !== LEGACY_APP_TAG) || s.v !== 1 || !Array.isArray(s.banks)) return null;
   return s as SceneData;
 }

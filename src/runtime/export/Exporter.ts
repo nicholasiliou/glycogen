@@ -47,7 +47,7 @@ export class Exporter {
       frame,
       format,
       quality,
-      baseName: "marathon",
+      baseName: "glycogen",
       frameNumber: this.frameCounter++,
       // A PNG carries the scene that rendered it — drop it back on the stage to keep editing.
       meta: { keyword: SCENE_PNG_KEYWORD, text: JSON.stringify(serializeScene(this.stage)) },
@@ -63,7 +63,7 @@ export class Exporter {
       quality: settings.videoQuality,
       format: settings.videoFormat,
       durationSec: settings.videoDurationSec ?? 10,
-      baseName: "marathon",
+      baseName: "glycogen",
       onProgress: opts?.onProgress,
     });
   }

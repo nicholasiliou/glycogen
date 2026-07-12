@@ -41,7 +41,7 @@ export function MidiSettingsDialog() {
         </div>
         <div className="flex-1" />
         <button
-          onClick={() => window.open(`${location.origin}${location.pathname}${REMOTE_HASH}`, "marathon-controller", "width=1100,height=620")}
+          onClick={() => window.open(`${location.origin}${location.pathname}${REMOTE_HASH}`, "glycogen-controller", "width=1100,height=620")}
           className="ml-1 flex items-center gap-1 px-2 py-1.5 text-xs text-ink-dim transition-colors hover:text-ink"
           title="Pop out the live controller into a separate window"
         >

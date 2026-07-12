@@ -8,7 +8,7 @@
 import type { DriveInput, SlotId } from "./types";
 import type { SlotAction } from "@/ui/controller/widgets/shared";
 
-export const REMOTE_CHANNEL = "marathon-remote";
+export const REMOTE_CHANNEL = "glycogen-remote";
 /** URL hash that boots the app as a pop-out controller instead of the full editor. */
 export const REMOTE_HASH = "#controller";
 

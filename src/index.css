@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * Marathon editor — intentionally minimal / "unstyled" theme.
+ * Glycogen editor — intentionally minimal / "unstyled" theme.
  * A small set of neutral CSS variables so Shadcn-style primitives have
  * semantic tokens to hang off, without imposing a heavy design system.
  */

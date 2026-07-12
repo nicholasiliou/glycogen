@@ -30,17 +30,4 @@ export function bootDb(code: CodeRegistration): void {
   seedSnapshot(committedSnapshot as DbSnapshot); // fill only ids localStorage didn't provide
   seedActionBindings(); // before params: an action on a widget blocks param rows there
   seedParamBindings();
-  purgeLegacyKeys();
-}
-
-/** Superseded storage — the pre-db keymap system and the boot-scene take on app defaults. */
-function purgeLegacyKeys(): void {
-  try {
-    localStorage.removeItem("marathon.midi.keymaps.v1");
-    localStorage.removeItem("marathon.midi.activeKeymap.v1");
-    localStorage.removeItem("marathon.appDefaults.plugins.v1");
-    localStorage.removeItem("marathon.appDefaults.shaders.v1");
-  } catch {
-    /* ignore */
-  }
 }

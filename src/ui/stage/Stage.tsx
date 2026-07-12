@@ -4,7 +4,7 @@ import { useLive } from "@/ui/app/LiveProvider";
 import { useExportSettings } from "@/ui/export/ExportContext";
 import { masksFor } from "@/runtime/export";
 import { readPngText } from "@/runtime/export/exporters/pngMeta";
-import { applyScene, parseScene, SCENE_PNG_KEYWORD } from "@/runtime/scene";
+import { applyScene, parseScene, SCENE_PNG_READ_KEYWORDS } from "@/runtime/scene";
 import { asset } from "@/lib/asset";
 
 /**
@@ -32,13 +32,14 @@ export function Stage() {
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
     void file.arrayBuffer().then((buf) => {
-      const json = readPngText(new Uint8Array(buf), SCENE_PNG_KEYWORD);
+      const bytes = new Uint8Array(buf);
+      const json = SCENE_PNG_READ_KEYWORDS.reduce<string | null>((found, kw) => found ?? readPngText(bytes, kw), null);
       const scene = json ? parseScene(json) : null;
       if (scene) {
         applyScene(stage, scene);
         flashNote("Scene restored");
       } else {
-        flashNote("No marathon scene in this file");
+        flashNote("No glycogen scene in this file");
       }
     });
   };
