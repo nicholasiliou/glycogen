@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Power, Sliders } from "lucide-react";
 import { LiveProvider, useLive } from "@/ui/app/LiveProvider";
 import { ExportProvider } from "@/ui/export/ExportContext";
 import { asset } from "@/lib/asset";
+import { cn } from "@/ui/lib/cn";
 import { HeaderBar } from "@/ui/stage/HeaderBar";
 import { Stage } from "@/ui/stage/Stage";
 import { ControlsPanel } from "@/ui/controls/ControlsPanel";
@@ -70,7 +71,7 @@ function LearnToast() {
 }
 
 function LiveShell() {
-  const { load, midi, remoteConnected } = useLive();
+  const { load, midi, remoteConnected, controllerConnected } = useLive();
   const [controllerOpen, setControllerOpen] = useState(false);
   // Right-side controls drawer. When open it takes width from the stage row, so the canvas (sized
   // by a ResizeObserver on its host) re-fits to the narrower area automatically.
@@ -146,7 +147,12 @@ function LiveShell() {
                 than 16:9 the height caps the width, so the mask never stretches and the header
                 stays inside it. */}
             <div
-              className="animate-overlay-in pointer-events-auto relative overflow-hidden bg-black/80 backdrop-blur-xs"
+              // While assignment is locked the live canvas is fully blacked out (an opaque
+              // backdrop) — translucency + the locked surface's own blur reads as clutter.
+              className={cn(
+                "animate-overlay-in pointer-events-auto relative overflow-hidden",
+                controllerConnected ? "bg-black/80 backdrop-blur-xs" : "bg-black",
+              )}
               style={{
                 width: "min(100cqw, calc(100cqh * 16 / 9))",
                 aspectRatio: "16 / 9",

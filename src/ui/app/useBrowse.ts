@@ -70,6 +70,13 @@ export function useBrowse({ stage, refresh }: { stage: Stage; refresh: () => voi
 
   const selectBank = (bank: number) => {
     stage.selectBank(bank);
+    // Sync the dials/previews to what the newly active bank actually holds — otherwise the header
+    // keeps showing whatever was browsed on the previous bank.
+    const state = stage.banks[stage.active];
+    const pIdx = state?.plugin ? generators.findIndex((g) => g.id === state.plugin!.id) : -1;
+    if (pIdx >= 0) setSelPlugin(pIdx);
+    const sIdx = state?.shader ? effects.findIndex((e) => e.id === state.shader!.id) : 0; // no shader → "None"
+    if (sIdx >= 0) setSelShader(sIdx);
     refresh();
   };
 

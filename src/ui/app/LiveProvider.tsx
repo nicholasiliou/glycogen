@@ -66,6 +66,8 @@ interface LiveCtx {
   lastMidi: { control: string; target: string } | null;
   /** A pop-out controller window (the on-screen emulator) is currently connected. */
   remoteConnected: boolean;
+  /** Something can play the surface: a hardware MIDI device or the emulator. Gates assignment. */
+  controllerConnected: boolean;
 }
 
 const Ctx = createContext<LiveCtx | null>(null);
@@ -97,12 +99,14 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   const { stepPlugin, stepShader, load, selectBank, clearBank, clearShader } = browse;
   useHardwareSync(midi);
 
-  // Load textlayer into bank 0 with deepglow shader on mount
+  // Load textlayer into bank 0 with the fisheye shader on mount. Selecting the bank afterwards
+  // syncs the browse dials/previews to the boot scene (and refreshes).
   useEffect(() => {
     stage.loadBank(0, create("text"));
-    stage.setShader(0, create("deepGlow"));
-    refresh();
-  }, [stage, refresh]);
+    stage.setShader(0, create("fisheye"));
+    selectBank(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- boot once; selectBank is stable enough here
+  }, [stage]);
 
   const stepBrowse = (target: "plugin" | "shader", delta: number) =>
     target === "plugin" ? stepPlugin(delta) : stepShader(delta);
@@ -297,6 +301,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     cancelLearn,
     lastMidi,
     remoteConnected,
+    controllerConnected: remoteConnected || midi.devices().length > 0,
   };
 
   return (

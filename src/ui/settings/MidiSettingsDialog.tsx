@@ -16,10 +16,10 @@ import { SurfaceModeContext } from "@/ui/controller/widgets";
  * MIDI device or the pop-out emulator.
  */
 export function MidiSettingsDialog() {
-  const { midi, remoteConnected } = useLive();
+  const { midi, remoteConnected, controllerConnected } = useLive();
   const status = midi.status;
   const devices = midi.devices();
-  const unlocked = devices.length > 0 || remoteConnected;
+  const unlocked = controllerConnected;
 
   const openEmulator = () =>
     window.open(`${location.origin}${location.pathname}${REMOTE_HASH}`, "glycogen-controller", "width=1100,height=620");
