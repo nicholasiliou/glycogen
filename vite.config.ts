@@ -40,7 +40,7 @@ function snapshotWriter(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: "/marathon/",
+  base: "/glycogen/",
   plugins: [react(), tailwindcss(), snapshotWriter()],
   resolve: {
     alias: {
