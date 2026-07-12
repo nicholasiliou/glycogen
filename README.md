@@ -1,64 +1,32 @@
+# Glycogen
 
-# [Live Page](nicholasiliou.github.io/glycogen/)
-# Gallery
-<img width="1920" height="1080" alt="glycogen_00000 (7)" src="https://github.com/user-attachments/assets/bb191d72-ce90-42d9-9356-8db680ac40ad" />
-<img width="1920" height="1080" alt="glycogen_00000 (5)" src="https://github.com/user-attachments/assets/e1e34cd4-fed9-4953-8c9d-14d1beae6663" />
-<img width="1920" height="1080" alt="glycogen_00003 (1)" src="https://github.com/user-attachments/assets/c54dc92a-832e-4ef1-a58d-8ef87845d84f" />
-<img width="1920" height="1080" alt="glycogen_00006" src="https://github.com/user-attachments/assets/911ea0dc-1c83-4afe-9a05-891c0384ccaa" />
-<img width="1920" height="1080" alt="glycogen_00001 (2) (1)" src="https://github.com/user-attachments/assets/77c969e0-6cd0-4823-bc5a-fa1d6f3589e7" />
-<img width="1920" height="1080" alt="glycogen_00001 (1) (1)" src="https://github.com/user-attachments/assets/f1e99656-8c31-46d5-b5e2-e562c0f36186" />
+Glycogen is a generative design tool for creating compositions inspired by **Marathon**.
 
-# Manual
-## UI Controls
-### Header
-#### Preview Dials
-On the left hand side of the header there are `preview dials`, they can be used to discover `plugins` and `shaders`.
-#### Plugin preview
-`Plugins` can generate visuals from nothing
-- Click it's dial to iterate through available `plugins`
-- Click this preview to `focus` the plugins
-#### Shader preview
-`Shaders` modify existing visuals
-- Click it's dial to iterate through available `shaders`
-- Click this preview to `focus` the shaders
-#### Banks
-On the right hand side of the header there are `bank slots`, they automatically store your current plugin and shader parameters.
-- Click on an `empty` bank to `load` and `activate` a plugin
-- Banks stack visuals vertically, the leftmost element is at the top, like a staircase, click and drag to rearrange the order.
+<img width="1920" height="1080" src="https://github.com/user-attachments/assets/b0131d56-9b41-4771-9ce7-e6cca76e4557" />
 
-### Control Panel
-Click the little arrow on the right side of the screen to open the `controls`, they allow you to edit the parameters of the focused plugin
-- Sliders adjust continuous values
-- Buttons trigger actions (e.g., randomize, reset)
-- Parameters are saved with each bank
+## Links
 
-### Controller
-The `assign` tab wires plugin parameters and app functions to your controller.
-- Drag a parameter onto a `widget` on the controller overlay to map it
-- Drag a mapped parameter back to the assign panel to remove the binding
+* **Live Demo:** https://nicholasiliou.github.io/glycogen/
+* **Gallery:** https://github.com/nicholasiliou/glycogen/discussions/categories/gallery
+* **Manual:** https://github.com/nicholasiliou/glycogen/wiki/Manual
 
-If you have a MIDI controller connected:
-- Click on a `widget` to learn the MIDI mapping
-If you don't have a MIDI controller, you can emulate one via `pop out`.
+## Local Development
 
-## Export / Import
-Click the download icon in the header to export stills or videos.
-- **Still**: Snapshots the current live frame as PNG
-- **Video**: Records the next N seconds of live playback
+### Prerequisites
 
-Hint: Stills include `Metadata`. If you or a friend saved a still and want to edit it again, simply drag and drop it onto the Canvas.
+* Node.js
 
-# Dev
-## Setup
-Prerequisites: node
-```
-npm i
+### Installation
+
+```bash
+git clone <repo-url>
+npm install
 npm run dev
 ```
-## Debug functions
 
-Add #db to the URL to inspect all the database entries
-Add #admin to the URL to unlock a default override button inside the `Control Panel`
+## Debug Features
 
+Append the following URL fragments to enable additional functionality:
 
-
+* `#db` - Inspect all database entries.
+* `#admin` - Unlock the default override button in the **Control Panel**.
