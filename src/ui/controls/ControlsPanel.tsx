@@ -171,8 +171,6 @@ export function ValueEditor({ row, live }: { row: ParamRow; live: Param | Button
 /** A horizontal skeuomorphic fader (same look as the controller) driving a plugin {@link Param}. */
 function ParamFader({ param }: { param: Param }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const active = param.value !== param.default;
-
   const onDown = (e: ReactPointerEvent) => {
     e.preventDefault();
     const apply = (clientX: number) => {
@@ -187,7 +185,7 @@ function ParamFader({ param }: { param: Param }) {
 
   return (
     <div className="min-w-0 flex-1">
-      <FaderVisual norm={param.norm} orient="horizontal" length={200} active={active} trackRef={trackRef} onPointerDown={onDown} />
+      <FaderVisual norm={param.norm} orient="horizontal" length={200} trackRef={trackRef} onPointerDown={onDown} />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import * as React from "react";
 import { isRemoteWindow } from "@/controls/remoteChannel";
 import { slotId } from "@/controls/types";
 import { asset } from "@/lib/asset";
-import { activeRing, dragWith, SlotFrame, useSlot } from "./shared";
+import { dragWith, SlotFrame, useSlot } from "./shared";
 
 /** Angular drag → bus delta gain. The pop-out controller is a dedicated performance surface —
  *  bigger physical strokes feel right there, so it runs hotter than the inline overlay wheel. */
@@ -52,13 +52,13 @@ export function JogWheel({ slot, label, size = 360 }: { slot: number; label?: st
   };
 
   return (
-    <SlotFrame slot={sid} label={s.label ?? label} active={s.active} armed={s.armed}>
+    <SlotFrame slot={sid} label={s.label ?? label} armed={s.armed}>
       <div
         ref={ref}
         onPointerDown={onDown}
         onClick={() => s.arm()}
-        className="relative touch-none cursor-grab active:cursor-grabbing rounded-full"
-        style={{ width: size, height: size, ...activeRing(s.active) }}
+        className="relative touch-none cursor-grab active:cursor-grabbing rounded-full select-none"
+        style={{ width: size, height: size }}
       >
         {/* outer rim – image sequence (5 frames, ~3° per frame) */}
         {(() => {

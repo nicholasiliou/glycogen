@@ -11,7 +11,7 @@
   --color-edge: #2a2a2a;
   --color-ink: #e6e6e6;
   --color-ink-dim: #8a8a8a;
-  --color-accent: #c0fc04; /* echoes the sketch's EGA palette */
+  --color-accent: #ffffff; /* echoes the sketch's EGA palette */
 }
 
 :root {

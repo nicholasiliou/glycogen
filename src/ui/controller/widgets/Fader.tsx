@@ -35,7 +35,6 @@ export function Fader({ slot, label, height = 160 }: { slot: number; label?: str
         norm={local}
         orient="vertical"
         length={height}
-        active={s.active}
         trackRef={trackRef}
         onPointerDown={onDown}
         onClick={() => s.arm()}

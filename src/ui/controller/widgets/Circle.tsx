@@ -31,12 +31,10 @@ export function Circle({ slot, label, size = 20 }: { slot: number; label?: strin
           width: size,
           height: size,
           background: lit
-            ? "radial-gradient(circle at 40% 35%, #1c2a00, #0e1500)"
+            ? "radial-gradient(circle at 40% 35%, #232426, #131416)"
             : "radial-gradient(circle at 40% 35%, #303236, #1a1b1d 60%, #131416)",
           border: lit ? "1px solid var(--color-accent)" : "1px solid #050505",
-          boxShadow: lit
-            ? "inset 0 0 8px rgba(192,252,4,.5), 0 0 8px -1px var(--color-accent)"
-            : "inset 0 1px 1px rgba(255,255,255,.16), 0 2px 3px rgba(0,0,0,.55)",
+          boxShadow: lit ? "none" : "inset 0 1px 1px rgba(255,255,255,.16), 0 2px 3px rgba(0,0,0,.55)",
           ...activeRing(s.active),
         }}
       >

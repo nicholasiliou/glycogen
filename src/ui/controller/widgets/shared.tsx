@@ -199,8 +199,8 @@ export function SlotFrame({
 
   return (
     <div
-      className={"relative flex flex-col items-center gap-1" + (pending && !legal ? " opacity-30" : "")}
-      style={armed || legal ? { filter: "drop-shadow(0 0 3px var(--color-accent))" } : undefined}
+      className={"relative flex flex-col items-center gap-1 select-none" + (pending && !legal ? " opacity-30" : "")}
+      style={armed || legal ? { outline: "1px solid var(--color-accent)", borderRadius: "4px" } : undefined}
       onPointerDownCapture={pending ? capture : mode === "assign" ? inertCapture : undefined}
       onDragOver={legal ? (e) => e.preventDefault() : undefined}
       onDrop={legal ? capture : undefined}

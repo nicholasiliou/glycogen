@@ -1,6 +1,5 @@
 // ── fader — presentation only (no slot / bus) ─────────────────────────────────────────────────
 import * as React from "react";
-import { activeRing } from "./shared";
 
 /**
  * The raw skeuomorphic fader look (recessed slot + sliding cap), with no control-bus logic. Both
@@ -14,7 +13,6 @@ export function FaderVisual({
   norm,
   orient = "vertical",
   length = 160,
-  active = false,
   trackRef,
   onPointerDown,
   onClick,
@@ -22,7 +20,6 @@ export function FaderVisual({
   norm: number;
   orient?: "vertical" | "horizontal";
   length?: number;
-  active?: boolean;
   trackRef?: React.Ref<HTMLDivElement>;
   onPointerDown?: (e: React.PointerEvent) => void;
   onClick?: (e: React.MouseEvent) => void;
@@ -62,7 +59,6 @@ export function FaderVisual({
           background: "linear-gradient(#54575c, #2a2c2f 55%, #171819)",
           border: "1px solid #050505",
           boxShadow: "inset 0 1px 1px rgba(255,255,255,.22), 0 2px 3px rgba(0,0,0,.6)",
-          ...activeRing(active),
         }}
       >
         <div
