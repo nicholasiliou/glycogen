@@ -23,7 +23,14 @@ const PRESETS: [string, number, number][] = [
   ["solitons", 0.03, 0.062],
   ["worms", 0.054, 0.063],
   ["spots", 0.025, 0.06],
+  ["drip", 0.032, 0.0615],
 ];
+
+// "drip" only: gravity flux for V. Below DRIP_HOLD surface tension wins and the film sticks;
+// above it slime flows down quadratically, so blobs sag, necks thin out and the kill term
+// severs them into falling drops. Vertical wrap re-seeds fallen drips at the top.
+const DRIP_G = 0.35;
+const DRIP_HOLD = 0.2;
 
 const LOW = [8, 10, 14, 0];
 const HIGH = [192, 252, 4, 255];
@@ -125,6 +132,26 @@ export class ReactionDiffusionLayer extends Plugin {
     this.u = u2; this.v = v2; this.u2 = u; this.v2 = v;
   }
 
+  /** Downward mass-conserving flux of V: what leaves a cell arrives in the one below. */
+  private dripFlow(): void {
+    const { cols, rows, v, v2 } = this;
+    for (let y = 0; y < rows; y++) {
+      const yc = y * cols;
+      const yu = (y === 0 ? rows - 1 : y - 1) * cols;
+      for (let x = 0; x < cols; x++) {
+        const c = yc + x;
+        const b = v[c];
+        const above = v[yu + x];
+        const inflow = above > DRIP_HOLD ? DRIP_G * (above - DRIP_HOLD) * (above - DRIP_HOLD) : 0;
+        const outflow = b > DRIP_HOLD ? DRIP_G * (b - DRIP_HOLD) * (b - DRIP_HOLD) : 0;
+        const nb = b + inflow - outflow;
+        v2[c] = nb < 0 ? 0 : nb > 1 ? 1 : nb;
+      }
+    }
+    this.v = v2;
+    this.v2 = v;
+  }
+
   render(f: Frame): HTMLCanvasElement {
     const resolution = Math.max(0.08, Math.min(0.6, this.resolution.value));
     const [cols, rows] = this.gridSize(resolution);
@@ -159,10 +186,11 @@ export class ReactionDiffusionLayer extends Plugin {
       }
     }
 
-    const [, feed, kill] = PRESETS[this.pattern.count % PRESETS.length];
+    const [name, feed, kill] = PRESETS[this.pattern.count % PRESETS.length];
     const iters = Math.max(1, Math.round(this.iterations.value));
     for (let s = 0; s < iters; s++) {
       this.step(feed, kill);
+      if (name === "drip") this.dripFlow();
       if (mode !== "off" && f.textField && this.mask.length === n && strength > 0) {
         if (mode === "fill") rdConfine(this.u, this.v, this.mask, n, strength * 0.05);
         else rdAttract(this.v, this.mask, n, strength);
