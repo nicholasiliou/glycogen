@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Download, Image as ImageIcon, Video } from "lucide-react";
 import { Exporter, ASPECT_RATIO_LIST, masksFor, supportedVideoFormats, VIDEO_QUALITIES, VIDEO_QUALITY_LIST } from "@/runtime/export";
 import { useLive } from "@/ui/app/LiveProvider";
@@ -21,6 +21,12 @@ export function ExportPanel() {
 
   const variants = masksFor(ex.ratioId);
   const videoFormats = useMemo(() => supportedVideoFormats(), []);
+
+  // The watermark is baked into the live canvas (that's what makes it export by default), so the
+  // switch drives the Stage directly — stills and recorded video simply see what the canvas shows.
+  useEffect(() => {
+    stage.watermark = ex.watermarkEnabled;
+  }, [stage, ex.watermarkEnabled]);
 
   const run = async (kind: "still" | "video") => {
     if (busy) return;
@@ -106,6 +112,12 @@ export function ExportPanel() {
             </select>
           )}
           {variants.length === 0 && <div className="text-ink-dim/60">No mask for this ratio</div>}
+        </div>
+
+        {/* watermark toggle */}
+        <div className="flex items-center justify-between">
+          <span className="text-ink">Watermark</span>
+          <Switch checked={ex.watermarkEnabled} onCheckedChange={ex.setWatermarkEnabled} />
         </div>
 
         {/* video duration slider */}

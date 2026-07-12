@@ -14,6 +14,8 @@ interface ExportContextValue {
   setMaskEnabled: (b: boolean) => void;
   maskVariant: number;
   setMaskVariant: (i: number) => void;
+  watermarkEnabled: boolean;
+  setWatermarkEnabled: (b: boolean) => void;
   videoQuality: VideoQualityId;
   setVideoQuality: (q: VideoQualityId) => void;
   videoFormat: VideoFormatId;
@@ -31,6 +33,7 @@ export function ExportProvider({ children }: { children: ReactNode }) {
   const [custom, setCustom] = useState({ width: 1080, height: 1080 });
   const [maskEnabled, setMaskEnabled] = useState(true);
   const [maskVariant, setMaskVariant] = useState(0);
+  const [watermarkEnabled, setWatermarkEnabled] = useState(true);
   const [videoQuality, setVideoQuality] = useState<VideoQualityId>("high");
   const [videoFormat, setVideoFormat] = useState<VideoFormatId>("webm");
 
@@ -48,6 +51,8 @@ export function ExportProvider({ children }: { children: ReactNode }) {
     setMaskEnabled,
     maskVariant,
     setMaskVariant,
+    watermarkEnabled,
+    setWatermarkEnabled,
     videoQuality,
     setVideoQuality,
     videoFormat,

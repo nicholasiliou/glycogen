@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Gamepad, Volume2, VolumeX } from "lucide-react";
+import { Gamepad, Github, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/ui/components/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/ui/components/dialog";
 import { cn } from "@/ui/lib/cn";
@@ -91,7 +91,7 @@ function BankStrip() {
       </div>
 
       <Dialog open={removing !== null} onOpenChange={(o: boolean) => !o && setRemoving(null)}>
-        <DialogContent className="w-[min(360px,90vw)] bg-panel/10 backdrop-blur-sm shadow-2xl">
+        <DialogContent className="w-[min(360px,90vw)]">
           <DialogHeader>
             <DialogTitle>Remove plugin</DialogTitle>
             <DialogDescription>
@@ -198,6 +198,11 @@ export function HeaderBar({
         className={cn(muted && "text-red-400/70")}
       >
         {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+      </Button>
+      <Button size="icon-sm" variant="ghost" asChild title="Open source repo">
+        <a href="https://github.com/nicholasiliou/glycogen" target="_blank" rel="noreferrer">
+          <Github className="h-4 w-4" />
+        </a>
       </Button>
     </div>
   );

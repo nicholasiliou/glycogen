@@ -132,7 +132,7 @@ function LiveShell() {
                 than 16:9 the height caps the width, so the mask never stretches and the header
                 stays inside it. */}
             <div
-              className="pointer-events-auto relative overflow-hidden bg-panel/10 backdrop-blur-xs"
+              className="pointer-events-auto relative overflow-hidden bg-black/80 backdrop-blur-xs"
               style={{
                 width: "min(100cqw, calc(100cqh * 16 / 9))",
                 aspectRatio: "16 / 9",

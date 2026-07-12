@@ -6,6 +6,7 @@ import { masksFor } from "@/runtime/export";
 import { readPngText } from "@/runtime/export/exporters/pngMeta";
 import { applyScene, parseScene, SCENE_PNG_READ_KEYWORDS } from "@/runtime/scene";
 import { asset } from "@/lib/asset";
+import { watermarkHitRect } from "@/runtime/watermark";
 
 /**
  * The stage viewport. Mounts the runtime {@link Stage}'s canvas into a 16:9-masked host and overlays
@@ -42,6 +43,23 @@ export function Stage() {
         flashNote("No glycogen scene in this file");
       }
     });
+  };
+
+  const onHostClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const host = hostRef.current;
+    if (!host) return;
+    const rect = host.getBoundingClientRect();
+    // Canvas pixel dims may differ from CSS dims — scale the click into canvas space.
+    const scaleX = stage.canvas.width / rect.width;
+    const scaleY = stage.canvas.height / rect.height;
+    const cx = (e.clientX - rect.left) * scaleX;
+    const cy = (e.clientY - rect.top) * scaleY;
+    const hit = watermarkHitRect(stage.canvas.width, stage.canvas.height);
+    if (hit && cx >= hit.x && cx <= hit.x + hit.w && cy >= hit.y && cy <= hit.y + hit.h) {
+      const next = !ex.watermarkEnabled;
+      ex.setWatermarkEnabled(next);
+      ex.setMaskEnabled(next);
+    }
   };
 
   useLayoutEffect(() => {
@@ -90,6 +108,7 @@ export function Stage() {
   return (
     <div
       ref={hostRef}
+      onClick={onHostClick}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
       className="relative h-full w-full touch-none overflow-visible bg-black"
