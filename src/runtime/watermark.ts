@@ -135,19 +135,38 @@ export function getBarcode(): HTMLCanvasElement | null {
 }
 
 /**
- * Returns the bounding box of the entire watermark strip (QR + barcode) in canvas coordinates,
- * matching the geometry used when drawing in Stage. Returns null if the barcode isn't built yet
- * (call after getWatermark() has resolved).
+ * The centered cover-crop of the export ratio inside the canvas — the region the framing guide
+ * outlines, the mask preview covers, and an export captures. The watermark anchors inside THIS
+ * frame (not the arbitrary-aspect stage host), so it hugs the previewed mask and lands in exports.
  */
-export function watermarkHitRect(canvasW: number, canvasH: number): { x: number; y: number; w: number; h: number } | null {
-  if (!builtBarcode) return null;
-  const cornerPad = Math.ceil((72 / 1920) * canvasW) + WATERMARK_PAD;
-  const bcW = WATERMARK_SIZE * (builtBarcode.width / builtBarcode.height);
-  const totalW = WATERMARK_SIZE + WATERMARK_PAD + bcW;
+export function cropRect(canvasW: number, canvasH: number, ratioWH: number): { x: number; y: number; w: number; h: number } {
+  const canvasWH = canvasW / canvasH;
+  const w = ratioWH > canvasWH ? canvasW : canvasH * ratioWH;
+  const h = ratioWH > canvasWH ? canvasW / ratioWH : canvasH;
+  return { x: (canvasW - w) / 2, y: (canvasH - h) / 2, w, h };
+}
+
+/**
+ * Anchor of the watermark strip within a mask-shaped frame. The mask is stretched 100%×100%, so
+ * its features scale per-axis: the bottom notch plateau sits at 1050/1080 of the frame HEIGHT and
+ * starts (past the corner + step) at 135/1920 of the frame WIDTH.
+ */
+export function watermarkOrigin(frameW: number, frameH: number): { x: number; y: number } {
   return {
-    x: cornerPad,
-    y: canvasH - WATERMARK_SIZE - cornerPad,
-    w: totalW,
-    h: WATERMARK_SIZE,
+    x: Math.ceil((12 / 1920) * frameW) + WATERMARK_PAD,
+    y: Math.round((1050 / 1080) * frameH) - WATERMARK_SIZE - WATERMARK_PAD,
   };
+}
+
+/**
+ * Returns the bounding box of the entire watermark strip (QR + barcode) in canvas coordinates —
+ * anchored inside the export crop, matching the geometry used when drawing in Stage. Returns null
+ * if the barcode isn't built yet (call after getWatermark() has resolved).
+ */
+export function watermarkHitRect(canvasW: number, canvasH: number, ratioWH: number): { x: number; y: number; w: number; h: number } | null {
+  if (!builtBarcode) return null;
+  const bcW = WATERMARK_SIZE * (builtBarcode.width / builtBarcode.height);
+  const crop = cropRect(canvasW, canvasH, ratioWH);
+  const { x, y } = watermarkOrigin(crop.w, crop.h);
+  return { x: crop.x + x, y: crop.y + y, w: WATERMARK_SIZE + WATERMARK_PAD + bcW, h: WATERMARK_SIZE };
 }

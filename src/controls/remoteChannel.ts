@@ -26,7 +26,9 @@ export type RemoteMessage =
   | { kind: "drive"; slot: SlotId; input: DriveInput }
   | { kind: "fire"; slot: SlotId }
   | { kind: "step"; target: "plugin" | "shader"; delta: number }
-  | { kind: "hello" } // remote → host: "send me the current snapshot"
+  | { kind: "hello" } // remote → host: "send me the current snapshot" (also marks presence)
+  | { kind: "ping" } // host → remote: "anyone out there?" — an open pop-out answers with hello
+  | { kind: "bye" } // remote → host: the pop-out is closing
   | { kind: "snapshot"; snapshot: RemoteSnapshot };
 
 export function openRemoteChannel(): BroadcastChannel | null {

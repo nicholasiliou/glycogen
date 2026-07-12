@@ -145,10 +145,13 @@ export function useSlot(slot: SlotId): SlotView {
 // ── chrome ───────────────────────────────────────────────────────────────────────────────────
 
 function Label({ children, lit }: { children: React.ReactNode; lit?: boolean }) {
+  // Absolutely positioned inside a fixed-height spacer: label text never contributes to the
+  // frame's intrinsic size, so changing labels can't re-trigger the FitBox scale (the surface
+  // would visibly resize). Long labels truncate instead of pushing the grid apart.
   return (
     <span
       className={
-        "select-none text-[8px] font-semibold uppercase leading-none tracking-[0.12em] " +
+        "absolute left-1/2 top-0 max-w-16 -translate-x-1/2 select-none truncate text-center text-[8px] font-semibold uppercase leading-none tracking-[0.12em] " +
         (lit ? "text-accent" : "text-ink-dim")
       }
     >
@@ -217,9 +220,11 @@ export function SlotFrame({
       onDragEnd={draggable ? () => assign.cancel() : undefined}
     >
       {children}
-      <Label lit={active || armed}>
-        {label ?? (armed ? "LEARN" : " ")}
-      </Label>
+      <div className="relative h-2 w-full">
+        <Label lit={active || armed}>
+          {label ?? (armed ? "LEARN" : " ")}
+        </Label>
+      </div>
     </div>
   );
 }

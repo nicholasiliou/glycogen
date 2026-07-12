@@ -10,6 +10,9 @@ export function FitBox({ children, max = 1, className }: { children: ReactNode; 
   const outer = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  // Content stays invisible until the first measurement so it never paints at the wrong scale
+  // (the visible snap when the surface mounts); later rescales ease instead of jumping.
+  const [ready, setReady] = useState(false);
 
   useLayoutEffect(() => {
     const o = outer.current;
@@ -22,6 +25,7 @@ export function FitBox({ children, max = 1, className }: { children: ReactNode; 
       const ih = i.offsetHeight;
       if (!iw || !ih) return;
       setScale(Math.min(max, cw / iw, ch / ih));
+      setReady(true);
     };
     const ro = new ResizeObserver(measure);
     ro.observe(o);
@@ -32,7 +36,15 @@ export function FitBox({ children, max = 1, className }: { children: ReactNode; 
 
   return (
     <div ref={outer} className={`flex min-h-0 min-w-0 items-center justify-center overflow-hidden ${className ?? ""}`}>
-      <div ref={inner} style={{ transform: `scale(${scale})`, transformOrigin: "center" }}>
+      <div
+        ref={inner}
+        style={{
+          transform: `scale(${scale})`,
+          transformOrigin: "center",
+          opacity: ready ? 1 : 0,
+          transition: ready ? "transform 200ms ease, opacity 200ms ease" : "none",
+        }}
+      >
         {children}
       </div>
     </div>

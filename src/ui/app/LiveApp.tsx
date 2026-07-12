@@ -70,11 +70,25 @@ function LearnToast() {
 }
 
 function LiveShell() {
-  const { load } = useLive();
+  const { load, midi, remoteConnected } = useLive();
   const [controllerOpen, setControllerOpen] = useState(false);
   // Right-side controls drawer. When open it takes width from the stage row, so the canvas (sized
   // by a ResizeObserver on its host) re-fits to the narrower area automatically.
   const [controlsOpen, setControlsOpen] = useState(false);
+
+  // Boot default: without a controller (hardware or emulator) the on-screen sliders are the only
+  // way to play, so open the drawer; with one connected keep it closed. Decided once, shortly
+  // after MIDI enumeration settles — the delay lets an already-open emulator answer the bridge's
+  // presence ping first. After that the toggle is entirely the user's.
+  const remoteConnectedRef = useRef(remoteConnected);
+  remoteConnectedRef.current = remoteConnected;
+  const bootDecided = useRef(false);
+  useEffect(() => {
+    if (bootDecided.current || midi.status === "idle") return;
+    bootDecided.current = true;
+    const t = setTimeout(() => setControlsOpen(midi.devices().length === 0 && !remoteConnectedRef.current), 300);
+    return () => clearTimeout(t);
+  }, [midi, midi.status]);
 
   // The controller overlay auto-opens the drawer (it shows the assign sidebar there), then puts
   // it back how it was: closed again if it was closed before, kept open if it was open.
@@ -132,7 +146,7 @@ function LiveShell() {
                 than 16:9 the height caps the width, so the mask never stretches and the header
                 stays inside it. */}
             <div
-              className="pointer-events-auto relative overflow-hidden bg-black/80 backdrop-blur-xs"
+              className="animate-overlay-in pointer-events-auto relative overflow-hidden bg-black/80 backdrop-blur-xs"
               style={{
                 width: "min(100cqw, calc(100cqh * 16 / 9))",
                 aspectRatio: "16 / 9",

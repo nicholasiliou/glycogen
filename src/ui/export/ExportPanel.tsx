@@ -26,7 +26,8 @@ export function ExportPanel() {
   // switch drives the Stage directly — stills and recorded video simply see what the canvas shows.
   useEffect(() => {
     stage.watermark = ex.watermarkEnabled;
-  }, [stage, ex.watermarkEnabled]);
+    stage.exportRatio = ex.ratio.width / ex.ratio.height;
+  }, [stage, ex.watermarkEnabled, ex.ratio]);
 
   const run = async (kind: "still" | "video") => {
     if (busy) return;

@@ -3,6 +3,7 @@ import { Gamepad, Github, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/ui/components/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/ui/components/dialog";
 import { cn } from "@/ui/lib/cn";
+import { isAdmin } from "@/db/appDefaults";
 import { useLive } from "@/ui/app/LiveProvider";
 import { PluginPreview } from "@/ui/stage/PluginPreview";
 import { ExportPanel } from "@/ui/export/ExportPanel";
@@ -171,7 +172,8 @@ export function HeaderBar({
 
       <div className="flex-1" />
 
-      {lastMidi && (
+      {/* Raw routing readout (e.g. "CC 25 → jog:0") — a dev hint, only on the #admin surface. */}
+      {isAdmin() && lastMidi && (
         <span className="min-w-0 truncate text-[11px] text-ink-dim" title="Last MIDI action">
           {lastMidi.control} → {lastMidi.target}
         </span>

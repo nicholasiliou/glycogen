@@ -54,11 +54,18 @@ export function RemoteControllerApp() {
     if (!chan) return;
     const onMsg = (e: MessageEvent<RemoteMessage>) => {
       if (e.data.kind === "snapshot") setSnapshot(e.data.snapshot);
+      // A reloaded host asks who's here — re-announce so it knows the emulator is still open.
+      else if (e.data.kind === "ping") chan.postMessage({ kind: "hello" } satisfies RemoteMessage);
     };
     chan.addEventListener("message", onMsg);
     chan.postMessage({ kind: "hello" } satisfies RemoteMessage); // ask the host for current state
+    // Tell the host we're gone when the window closes, so it can re-lock assignment.
+    const bye = () => chan.postMessage({ kind: "bye" } satisfies RemoteMessage);
+    window.addEventListener("pagehide", bye);
     return () => {
+      window.removeEventListener("pagehide", bye);
       chan.removeEventListener("message", onMsg);
+      bye();
       chan.close();
       chanRef.current = null;
     };

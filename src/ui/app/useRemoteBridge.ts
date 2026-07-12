@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ControlBus } from "@/controls/ControlBus";
 import { openRemoteChannel, type RemoteMessage, type RemoteSnapshot } from "@/controls/remoteChannel";
 import type { SlotId } from "@/controls/types";
@@ -11,6 +11,9 @@ import type { SlotAction } from "@/ui/controller/widgets";
  * popup can render the live surface. The host always owns state; the channel is attached once and
  * reads fresh closures through refs. App functions need no messages of their own: a relayed pad
  * press lands on the host bus, where the action driver picks it up like any local press.
+ *
+ * Returns whether a pop-out (the on-screen emulator) is currently connected: any remote-origin
+ * message marks it present, its `bye` (posted on close) marks it gone.
  */
 export function useRemoteBridge(opts: {
   bus: ControlBus;
@@ -19,8 +22,9 @@ export function useRemoteBridge(opts: {
   slotLabels: Partial<Record<SlotId, string>>;
   slotActions: Partial<Record<SlotId, SlotAction>>;
   browseLabels: { plugin?: string; shader?: string };
-}): void {
+}): boolean {
   const { bus, slotLabels, slotActions, browseLabels } = opts;
+  const [remoteConnected, setRemoteConnected] = useState(false);
 
   const stepRef = useRef(opts.step);
   stepRef.current = opts.step;
@@ -40,12 +44,18 @@ export function useRemoteBridge(opts: {
     if (!chan) return;
     const onMsg = (e: MessageEvent<RemoteMessage>) => {
       const m = e.data;
+      if (m.kind === "bye") return setRemoteConnected(false);
+      if (m.kind === "snapshot") return; // our own broadcasts echo back — not remote presence
+      setRemoteConnected(true);
       if (m.kind === "drive") bus.drive(m.slot, m.input);
       else if (m.kind === "fire") bus.fire(m.slot);
       else if (m.kind === "step") stepRef.current(m.target, m.delta);
       else if (m.kind === "hello") chan.postMessage({ kind: "snapshot", snapshot: snapshotRef.current } satisfies RemoteMessage);
     };
     chan.addEventListener("message", onMsg);
+    // Ask whether a pop-out is already open (e.g. the host was reloaded under it) — it replies
+    // with a hello, which marks presence above.
+    chan.postMessage({ kind: "ping" } satisfies RemoteMessage);
     return () => {
       chan.removeEventListener("message", onMsg);
       chan.close();
@@ -57,4 +67,6 @@ export function useRemoteBridge(opts: {
   useEffect(() => {
     chanRef.current?.postMessage({ kind: "snapshot", snapshot } satisfies RemoteMessage);
   }, [snapshot]);
+
+  return remoteConnected;
 }

@@ -62,7 +62,7 @@ function SidePanel({ pad, enc, jog, jogLabel }: { pad: number; enc: number; jog:
   );
 
   return (
-    <div className="relative flex flex-col gap-4 rounded-xl p-6">
+    <div className="relative flex flex-col gap-4 rounded-xl px-2 py-6">
       {stack}
     </div>
   );
@@ -70,10 +70,11 @@ function SidePanel({ pad, enc, jog, jogLabel }: { pad: number; enc: number; jog:
 
 function MixerPanel() {
   return (
-    <div className="flex flex-col items-center gap-8 px-8 py-6">
+    <div className="flex flex-col items-center gap-8 px-3 py-6">
 
 
-<div className="grid grid-cols-3 gap-4 gap-x-0 items-top">
+{/* Real column gaps: the 32px knobs need horizontal room for their (truncated) labels. */}
+<div className="grid grid-cols-3 gap-y-4 gap-x-8 items-top">
   <Knob slot={0}/>
   <Knob slot={1}/>
   <Knob slot={2}/>

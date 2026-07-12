@@ -4,7 +4,7 @@ import { clamp01 } from "@/controls/types";
 import { paramBindings, params } from "@/db/schema";
 import type { FieldFn, Frame, Plugin } from "@/plugins/Plugin";
 import { TextLayer } from "@/plugins/TextLayer";
-import { getBarcode, getWatermark, WATERMARK_PAD, WATERMARK_SIZE } from "@/runtime/watermark";
+import { cropRect, getBarcode, getWatermark, WATERMARK_PAD, WATERMARK_SIZE, watermarkOrigin } from "@/runtime/watermark";
 
 /** One layer: a generator plugin plus an optional per-layer effect ("shader") on its output. */
 export interface BankState {
@@ -40,6 +40,8 @@ export class Stage {
   focusPart: FocusPart = "plugin";
   /** Bake the QR watermark into the output canvas (so exports carry it by default). */
   watermark = true;
+  /** Export aspect (w/h), synced from the export panel — the watermark anchors inside its crop. */
+  exportRatio = 16 / 9;
 
   private raf = 0;
   private startT = 0;
@@ -249,16 +251,17 @@ export class Stage {
     this.ctx.drawImage(this.buffer, 0, 0, w, h);
 
     // The watermark lives on the output canvas itself, so stills and video pick it up for free.
-    // The host mask has a 72/1920-fraction corner radius — pad by that fraction so the QR clears it.
+    // Anchored to the mask's bottom edge INSIDE the export crop (the framed region the guide
+    // shows and exports capture) — not the arbitrary-aspect canvas bottom.
     const wm = this.watermark ? getWatermark() : null;
     if (wm) {
-      const cornerPad = Math.ceil((72 / 1920) * w) + WATERMARK_PAD;
-      const y = h - WATERMARK_SIZE - cornerPad;
-      this.ctx.drawImage(wm, cornerPad, y, WATERMARK_SIZE, WATERMARK_SIZE);
+      const crop = cropRect(w, h, this.exportRatio);
+      const { x, y } = watermarkOrigin(crop.w, crop.h);
+      this.ctx.drawImage(wm, crop.x + x, crop.y + y, WATERMARK_SIZE, WATERMARK_SIZE);
       const bc = getBarcode();
       if (bc) {
         const bcW = WATERMARK_SIZE * (bc.width / bc.height);
-        this.ctx.drawImage(bc, cornerPad + WATERMARK_SIZE + WATERMARK_PAD, y, bcW, WATERMARK_SIZE);
+        this.ctx.drawImage(bc, crop.x + x + WATERMARK_SIZE + WATERMARK_PAD, crop.y + y, bcW, WATERMARK_SIZE);
       }
     }
   }

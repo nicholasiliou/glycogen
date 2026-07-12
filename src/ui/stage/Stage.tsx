@@ -54,7 +54,7 @@ export function Stage() {
     const scaleY = stage.canvas.height / rect.height;
     const cx = (e.clientX - rect.left) * scaleX;
     const cy = (e.clientY - rect.top) * scaleY;
-    const hit = watermarkHitRect(stage.canvas.width, stage.canvas.height);
+    const hit = watermarkHitRect(stage.canvas.width, stage.canvas.height, ex.ratio.width / ex.ratio.height);
     if (hit && cx >= hit.x && cx <= hit.x + hit.w && cy >= hit.y && cy <= hit.y + hit.h) {
       const next = !ex.watermarkEnabled;
       ex.setWatermarkEnabled(next);

@@ -64,6 +64,8 @@ interface LiveCtx {
   cancelLearn: () => void;
   /** Last routed hardware MIDI control + the param/action it hit, for the overlay header readout. */
   lastMidi: { control: string; target: string } | null;
+  /** A pop-out controller window (the on-screen emulator) is currently connected. */
+  remoteConnected: boolean;
 }
 
 const Ctx = createContext<LiveCtx | null>(null);
@@ -249,7 +251,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     if (action) slotOccupants[row.widgetId] = pendingForAction(action);
   }
 
-  useRemoteBridge({
+  const remoteConnected = useRemoteBridge({
     bus,
     stage,
     step: stepBrowse,
@@ -294,6 +296,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     armLearn,
     cancelLearn,
     lastMidi,
+    remoteConnected,
   };
 
   return (
