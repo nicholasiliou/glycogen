@@ -24,9 +24,13 @@ npm install
 npm run dev
 ```
 
-## Debug Features
+### Debug Features
 
 Append the following URL fragments to enable additional functionality:
 
 * `#db` - Inspect all database entries.
 * `#admin` - Unlock the default override button in the **Control Panel**.
+
+## Attributions
+
+Fonts by [Artyom Galinov](https://www.behance.net/iamimago) on Behance.
