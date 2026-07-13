@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/glycogen.svg" width="140" alt="glycogen logo">
+[![glycogen logo](public/glycogen.svg)]()
 
 # Glycogen
 
@@ -24,7 +24,9 @@
 
 </div>
 
-<img width="100%" src="https://github.com/user-attachments/assets/082fd5e5-2804-41e9-a26c-c6dcdea97f5b" />
+<a href="https://nicholasiliou.github.io/glycogen/">
+  <img src="https://github.com/user-attachments/assets/082fd5e5-2804-41e9-a26c-c6dcdea97f5b" width="100%" alt="glycogen demo">
+</a>
 
 # Contributors
 
