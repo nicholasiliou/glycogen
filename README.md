@@ -1,6 +1,6 @@
 <div align="center">
 
-[![glycogen logo](public/glycogen.svg)]()
+[![glycogen logo](public/glycogen.svg)](https://github.com/nicholasiliou/glycogen)
 
 # Glycogen
 
