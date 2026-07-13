@@ -4,8 +4,6 @@
 
 # Glycogen
 
-*A generative design tool for creating compositions inspired by Marathon.*
-
 <p>
 <a href="https://nicholasiliou.github.io/glycogen/">Live Demo</a>
 •
