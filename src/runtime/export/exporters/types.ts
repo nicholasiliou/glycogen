@@ -80,7 +80,8 @@ export interface ExportSettings {
   /** Seconds of live footage to capture for a video export (the instrument runs forever, so a
    * video is "record the next N seconds", not a bounded work area). */
   videoDurationSec?: number;
-  /** Quality preset for a video export; defaults to "high". */
+  /** Quality preset; the resolution scale applies to BOTH video and still exports (fps/bitrate
+   * are video-only). Defaults to "high". */
   videoQuality?: VideoQualityId;
   /** Container/codec for a video export; defaults to "webm". */
   videoFormat?: VideoFormatId;

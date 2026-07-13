@@ -39,19 +39,29 @@ export class Exporter {
 
   /** Snapshot the current live frame as a still image (does not pause the runtime). */
   async still(settings: ExportSettings, format: StillFormat = "png", quality = 0.95): Promise<Blob> {
-    // Force one fresh render so the snapshot is current.
-    this.stage.tick();
     const frame = await this.frameOptions(settings);
-    return exportStill({
-      source: this.canvas,
-      frame,
-      format,
-      quality,
-      baseName: "glycogen",
-      frameNumber: this.frameCounter++,
-      // A PNG carries the scene that rendered it — drop it back on the stage to keep editing.
-      meta: { keyword: SCENE_PNG_KEYWORD, text: JSON.stringify(serializeScene(this.stage)) },
-    });
+    // The quality preset applies to stills too: render one frame at the scaled output resolution
+    // and save at that size, instead of upscaling the viewport-sized canvas.
+    const q = VIDEO_QUALITIES[settings.videoQuality ?? "high"];
+    const outW = Math.round(frame.ratio.width * q.scale);
+    const outH = Math.round(frame.ratio.height * q.scale);
+    this.stage.lockRenderSize(outW, outH);
+    try {
+      // Force one fresh render at the export resolution so the snapshot is current.
+      this.stage.tick();
+      return await exportStill({
+        source: this.canvas,
+        frame: { ...frame, ratio: { ...frame.ratio, width: outW, height: outH } },
+        format,
+        quality,
+        baseName: "glycogen",
+        frameNumber: this.frameCounter++,
+        // A PNG carries the scene that rendered it — drop it back on the stage to keep editing.
+        meta: { keyword: SCENE_PNG_KEYWORD, text: JSON.stringify(serializeScene(this.stage)) },
+      });
+    } finally {
+      this.stage.unlockRenderSize();
+    }
   }
 
   /** Record the next `videoDurationSec` seconds of live playback as a WebM video, reframed + masked. */

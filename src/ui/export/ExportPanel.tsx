@@ -132,9 +132,9 @@ export function ExportPanel() {
           <Slider min={1} max={15} step={1} value={[videoSec]} onValueChange={([v]) => setVideoSec(v)} />
         </div>
 
-        {/* video quality */}
+        {/* quality — the resolution scale applies to stills and video; fps is video-only */}
         <div className="space-y-1">
-          <span className="text-ink">Video quality</span>
+          <span className="text-ink">Quality</span>
           <div className="flex gap-1">
             {VIDEO_QUALITY_LIST.map((q) => (
               <button
