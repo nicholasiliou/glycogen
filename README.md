@@ -1,19 +1,42 @@
+<div align="center">
+
+<img src="public/glycogen.svg" width="140" alt="glycogen logo">
+
 # Glycogen
 
-## Links
+*A generative design tool for creating compositions inspired by Marathon.*
 
-* **Live Demo:** https://nicholasiliou.github.io/glycogen/
-* **Gallery:** https://github.com/nicholasiliou/glycogen/discussions/categories/gallery
-* **Manual:** https://github.com/nicholasiliou/glycogen/wiki/Manual
-* **Making of:** https://iliou.notion.site/glycogen-report
+<p>
+<a href="https://nicholasiliou.github.io/glycogen/">Live Demo</a>
+•
+<a href="https://github.com/nicholasiliou/glycogen/wiki/Manual">Manual</a>
+•
+<a href="https://iliou.notion.site/glycogen-report">Making of</a>
+•
+<a href="https://github.com/nicholasiliou/glycogen/discussions/categories/gallery">Gallery</a>
+</p>
 
-## Local Development
+<p>
 
-### Prerequisites
+<img src="https://img.shields.io/github/stars/nicholasiliou/glycogen?style=social">
+<img src="https://img.shields.io/github/license/nicholasiliou/glycogen?style=social">
+<img src="https://img.shields.io/github/last-commit/nicholasiliou/glycogen?style=social">
 
-* Node.js
+</p>
 
-### Installation
+</div>
+
+<img width="100%" src="https://github.com/user-attachments/assets/082fd5e5-2804-41e9-a26c-c6dcdea97f5b" />
+
+# Contributors
+
+<a href="https://github.com/nicholasiliou/glycogen/graphs/contributors">
+<img src="https://contrib.rocks/image?repo=nicholasiliou/glycogen">
+</a>
+
+# Installation
+
+Prerequisite: Node
 
 ```bash
 git clone <repo-url>
@@ -31,3 +54,4 @@ Append the following URL fragments to enable additional functionality:
 ## Attributions
 
 Fonts by [Artyom Galinov](https://www.behance.net/iamimago) on Behance.
+
