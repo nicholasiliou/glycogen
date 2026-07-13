@@ -5,7 +5,7 @@ import { masksFor } from "./exporters/masks";
 import { loadMaskImage, type ExportFrameOptions } from "./exporters/frameCanvas";
 import { exportStill } from "./exporters/stillExporter";
 import { exportVideo } from "./exporters/videoExporter";
-import type { ExportProgress, ExportSettings, StillFormat } from "./exporters/types";
+import { VIDEO_QUALITIES, type ExportProgress, type ExportSettings, type StillFormat } from "./exporters/types";
 
 export type { StillFormat, ExportProgress, ExportSettings } from "./exporters/types";
 
@@ -57,14 +57,22 @@ export class Exporter {
   /** Record the next `videoDurationSec` seconds of live playback as a WebM video, reframed + masked. */
   async video(settings: ExportSettings, opts?: { onProgress?: (p: ExportProgress) => void }): Promise<Blob> {
     const frame = await this.frameOptions(settings);
-    return exportVideo({
-      source: this.canvas,
-      frame,
-      quality: settings.videoQuality,
-      format: settings.videoFormat,
-      durationSec: settings.videoDurationSec ?? 10,
-      baseName: "glycogen",
-      onProgress: opts?.onProgress,
-    });
+    // Render the stage at the encode resolution for the duration of the capture: the quality
+    // preset must mean "recorded at this resolution", not "the on-screen canvas upscaled".
+    const q = VIDEO_QUALITIES[settings.videoQuality ?? "high"];
+    this.stage.lockRenderSize(Math.round(frame.ratio.width * q.scale), Math.round(frame.ratio.height * q.scale));
+    try {
+      return await exportVideo({
+        source: this.canvas,
+        frame,
+        quality: settings.videoQuality,
+        format: settings.videoFormat,
+        durationSec: settings.videoDurationSec ?? 10,
+        baseName: "glycogen",
+        onProgress: opts?.onProgress,
+      });
+    } finally {
+      this.stage.unlockRenderSize();
+    }
   }
 }

@@ -30,7 +30,8 @@ const ExportCtx = createContext<ExportContextValue | null>(null);
 
 export function ExportProvider({ children }: { children: ReactNode }) {
   const [ratioId, setRatioId] = useState<AspectRatioId>("16:9");
-  const [custom, setCustom] = useState({ width: 1080, height: 1080 });
+  // Custom is a relative ratio (w:h), resolved to pixels by resolveAspectRatio.
+  const [custom, setCustom] = useState({ width: 1, height: 1 });
   const [maskEnabled, setMaskEnabled] = useState(true);
   const [maskVariant, setMaskVariant] = useState(0);
   const [watermarkEnabled, setWatermarkEnabled] = useState(true);

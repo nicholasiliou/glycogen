@@ -23,12 +23,22 @@ export const ASPECT_RATIOS: Record<Exclude<AspectRatioId, "custom">, AspectRatio
 
 export const ASPECT_RATIO_LIST: AspectRatio[] = Object.values(ASPECT_RATIOS);
 
-/** Resolve an aspect-ratio choice to concrete dimensions; `custom` needs an explicit size. */
+/**
+ * Resolve an aspect-ratio choice to concrete dimensions. `custom` is a *relative* ratio (e.g.
+ * 21:9, 2:3), not pixels: the short side is pinned to 1080 and the long side derived, capped at
+ * 3840 so extreme ratios can't allocate absurd canvases.
+ */
 export function resolveAspectRatio(id: AspectRatioId, custom?: { width: number; height: number }): AspectRatio {
   if (id === "custom") {
-    const width = Math.max(1, Math.round(custom?.width ?? 1080));
-    const height = Math.max(1, Math.round(custom?.height ?? 1080));
-    return { id: "custom", label: `Custom ${width}×${height}`, width, height };
+    const rw = Math.max(1, custom?.width ?? 1);
+    const rh = Math.max(1, custom?.height ?? 1);
+    const scale = Math.min(1080 / Math.min(rw, rh), 3840 / Math.max(rw, rh));
+    return {
+      id: "custom",
+      label: `Custom ${rw}:${rh}`,
+      width: Math.max(1, Math.round(rw * scale)),
+      height: Math.max(1, Math.round(rh * scale)),
+    };
   }
   return ASPECT_RATIOS[id];
 }

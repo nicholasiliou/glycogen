@@ -70,6 +70,9 @@ export function Stage() {
     canvas.style.inset = "0";
     canvas.style.width = "100%";
     canvas.style.height = "100%";
+    // Normally the canvas pixel size tracks the host 1:1, but during a video export the render
+    // size is locked to the export resolution — cover keeps the live view undistorted meanwhile.
+    canvas.style.objectFit = "cover";
     canvas.style.pointerEvents = "none";
     canvas.style.boxShadow = "0 0 80px rgba(0,0,0,0.6)";
     host.style.maskImage = `url(${asset("/masks/16x9/1.svg")})`;
@@ -78,15 +81,48 @@ export function Stage() {
     host.style.maskRepeat = "no-repeat";
     host.appendChild(canvas);
 
-    const resize = () => {
+    // Layout resizes (the drawer sliding, window drags) fire the observer continuously; the CSS
+    // cover-fit above lets the old render scale smoothly meanwhile. The real pixel resize is
+    // debounced until the size settles, then the previous frame crossfades out over the re-fitted
+    // render instead of snapping.
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let first = true;
+
+    const applyResize = () => {
+      if (canvas.width > 0 && canvas.height > 0 && !first) {
+        const snap = document.createElement("canvas");
+        snap.width = canvas.width;
+        snap.height = canvas.height;
+        snap.getContext("2d")?.drawImage(canvas, 0, 0);
+        Object.assign(snap.style, {
+          position: "absolute",
+          inset: "0",
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          pointerEvents: "none",
+          transition: "all 400ms ease-in-out"
+        } satisfies Partial<CSSStyleDeclaration>);
+        host.appendChild(snap);
+        requestAnimationFrame(() => (snap.style.opacity = "0"));
+        setTimeout(() => snap.remove(), 300);
+      }
+      first = false;
       stage.resize(host.clientWidth, host.clientHeight);
+    };
+
+    const resize = () => {
       setSize({ w: host.clientWidth, h: host.clientHeight });
+      if (timer) clearTimeout(timer);
+      if (first) applyResize();
+      else timer = setTimeout(applyResize, 240); // just past the drawer's 220ms slide
     };
     const ro = new ResizeObserver(resize);
     ro.observe(host);
     resize();
     return () => {
       ro.disconnect();
+      if (timer) clearTimeout(timer);
       if (canvas.parentElement === host) host.removeChild(canvas);
     };
   }, [stage]);

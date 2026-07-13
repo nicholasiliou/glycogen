@@ -11,6 +11,7 @@ import {
   type AppAction,
 } from "@/db/schema";
 import { useTable } from "@/db/useDb";
+import { labelOf } from "@/plugins/registry";
 import { useLive } from "@/ui/app/LiveProvider";
 import { ASSIGN_MIME, AssignContext, type AssignPending } from "@/ui/controller/widgets";
 import { pendingForAction, pendingForParam } from "./assign";
@@ -66,7 +67,7 @@ export function AssignPanel() {
       onDrop={onDrop}
     >
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        <Section title={managed ? `Params — ${managed.constructor.name.replace(/Layer$/, "")}` : "Params"}>
+        <Section title={managed ? `Params — ${labelOf(managed.id)}` : "Params"}>
           {!managed ? (
             <Hint>No plugin focused — load one first</Hint>
           ) : unboundParams.length === 0 ? (

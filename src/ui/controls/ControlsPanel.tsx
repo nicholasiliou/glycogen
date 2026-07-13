@@ -5,6 +5,7 @@ import { clamp01 } from "@/controls/types";
 import { clearDefaults, hasDefaults, isAdmin, saveDefaults } from "@/db/appDefaults";
 import { params, type ParamRow } from "@/db/schema";
 import type { Plugin } from "@/plugins/Plugin";
+import { labelOf } from "@/plugins/registry";
 import { useTable } from "@/db/useDb";
 import { useLive } from "@/ui/app/LiveProvider";
 import { FaderVisual } from "@/ui/controller/widgets/FaderVisual";
@@ -55,7 +56,7 @@ export function ControlsPanel() {
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         <div className="mb-2 flex items-center justify-between">
           <span className="text-[10px] uppercase tracking-wide text-ink-dim">
-            {managed.constructor.name.replace(/Layer$/, "")}
+            {labelOf(managed.id)}
             {stage.focusPart === "shader" && <span className="ml-1 rounded bg-accent/15 px-1 text-accent">fx</span>}
           </span>
         </div>
@@ -88,7 +89,7 @@ function AdminDefaults({ managed }: { managed: Plugin }) {
     setFlashed(what);
     setTimeout(() => setFlashed((cur) => (cur === what ? null : cur)), 1500);
   };
-  const name = managed.constructor.name.replace(/Layer$/, "");
+  const name = labelOf(managed.id);
   const overridden = hasDefaults(managed.id);
   const btn =
     "rounded border border-edge px-2 py-1 text-left text-xs text-ink-dim transition-colors hover:border-accent/50 hover:text-ink";

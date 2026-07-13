@@ -74,6 +74,7 @@ export function ExportPanel() {
           </div>
           {ex.ratioId === "custom" && (
             <div className="flex items-center gap-1 pt-1">
+              {/* A relative ratio (w:h) — the exporter resolves it to pixels (short side 1080). */}
               <input
                 type="number"
                 value={ex.custom.width}
@@ -81,7 +82,7 @@ export function ExportPanel() {
                 onChange={(e) => ex.setCustom({ ...ex.custom, width: Math.max(1, Number(e.target.value) || 1) })}
                 className="w-16 rounded border border-edge bg-transparent px-1 py-0.5"
               />
-              <span className="text-ink">×</span>
+              <span className="text-ink">:</span>
               <input
                 type="number"
                 value={ex.custom.height}
@@ -89,6 +90,7 @@ export function ExportPanel() {
                 onChange={(e) => ex.setCustom({ ...ex.custom, height: Math.max(1, Number(e.target.value) || 1) })}
                 className="w-16 rounded border border-edge bg-transparent px-1 py-0.5"
               />
+              <span className="text-ink-dim/60">{ex.ratio.width}×{ex.ratio.height}</span>
             </div>
           )}
         </div>

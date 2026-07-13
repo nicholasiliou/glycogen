@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Gamepad, Github, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/ui/components/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/ui/components/dialog";
+import { ConfirmDialog } from "@/ui/components/confirm-dialog";
 import { cn } from "@/ui/lib/cn";
 import { isAdmin } from "@/db/appDefaults";
+import { labelOf } from "@/plugins/registry";
 import { useLive } from "@/ui/app/LiveProvider";
 import { PluginPreview } from "@/ui/stage/PluginPreview";
 import { ExportPanel } from "@/ui/export/ExportPanel";
@@ -42,7 +43,7 @@ function MiniDial({ index, count, onStep }: { index: number; count: number; onSt
 function BankStrip() {
   const { banks, activeBank, selectBank, moveBank, load, clearBank } = useLive();
   const layer = banks[activeBank]?.plugin;
-  const name = layer ? layer.constructor.name.replace(/Layer$/, "") : "";
+  const name = layer ? labelOf(layer.id) : "";
   const [removing, setRemoving] = useState<number | null>(null);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
 
@@ -53,7 +54,7 @@ function BankStrip() {
   };
 
   const removingLayer = removing !== null ? banks[removing].plugin : null;
-  const removingName = removingLayer ? removingLayer.constructor.name.replace(/Layer$/, "") : "";
+  const removingName = removingLayer ? labelOf(removingLayer.id) : "";
 
   return (
     <div className="flex min-w-0 items-center gap-1.5">
@@ -91,32 +92,22 @@ function BankStrip() {
         ))}
       </div>
 
-      <Dialog open={removing !== null} onOpenChange={(o: boolean) => !o && setRemoving(null)}>
-        <DialogContent className="w-[min(360px,90vw)]">
-          <DialogHeader>
-            <DialogTitle>Remove plugin</DialogTitle>
-            <DialogDescription>
-              Remove <span className="text-ink font-medium">{removingName}</span> from bank{" "}
-              {(removing ?? 0) + 1}? This bank will be emptied.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2 px-4 pb-4 pt-1">
-            <Button variant="ghost" size="sm" onClick={() => setRemoving(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => {
-                if (removing !== null) clearBank(removing);
-                setRemoving(null);
-              }}
-            >
-              Remove
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={removing !== null}
+        onOpenChange={(o) => !o && setRemoving(null)}
+        title="Remove plugin"
+        description={
+          <>
+            Remove <span className="text-ink font-medium">{removingName}</span> from bank{" "}
+            {(removing ?? 0) + 1}? This bank will be emptied.
+          </>
+        }
+        confirmLabel="Remove"
+        confirmVariant="danger"
+        onConfirm={() => {
+          if (removing !== null) clearBank(removing);
+        }}
+      />
     </div>
   );
 }
@@ -147,6 +138,7 @@ export function HeaderBar({
     lastMidi,
   } = useLive();
 
+  const [confirmRepo, setConfirmRepo] = useState(false);
   const shaderLoaded = !!banks[activeBank]?.shader;
   // Clicking a preview focuses that half of the active bank (which one the controls drive).
   const focusRing = (part: "plugin" | "shader") =>
@@ -201,11 +193,17 @@ export function HeaderBar({
       >
         {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
       </Button>
-      <Button size="icon-sm" variant="ghost" asChild title="Open source repo">
-        <a href="https://github.com/nicholasiliou/glycogen" target="_blank" rel="noreferrer">
-          <Github className="h-4 w-4" />
-        </a>
+      <Button size="icon-sm" variant="ghost" title="Open source repo" onClick={() => setConfirmRepo(true)}>
+        <Github className="h-4 w-4" />
       </Button>
+      <ConfirmDialog
+        open={confirmRepo}
+        onOpenChange={setConfirmRepo}
+        title="Star us on GitHub"
+        description="If you like the Project, consider leaving a star, we really appreceate it!"
+        confirmLabel="Open"
+        onConfirm={() => window.open("https://github.com/nicholasiliou/glycogen", "_blank", "noopener,noreferrer")}
+      />
     </div>
   );
 }

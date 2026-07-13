@@ -9,6 +9,7 @@ import { Stage } from "@/ui/stage/Stage";
 import { ControlsPanel } from "@/ui/controls/ControlsPanel";
 import { AssignPanel } from "@/ui/controls/AssignPanel";
 import { MidiSettingsDialog } from "@/ui/settings/MidiSettingsDialog";
+import { DIALOG_PORTAL_ID } from "@/ui/components/dialog";
 
 export function LiveApp() {
   return (
@@ -126,7 +127,8 @@ function LiveShell() {
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-black text-ink">
       <HeaderBar controllerOpen={controllerOpen} onControllerToggle={() => setControllerOpen((o) => !o)} />
       <div className="flex min-h-0 flex-1">
-        <div className="relative min-h-0 flex-1">
+        {/* Also the dialog portal target: dialogs center on the canvas, not the page. */}
+        <div id={DIALOG_PORTAL_ID} className="relative min-h-0 flex-1">
           <Stage />
           <StartGate />
           <LearnToast />
@@ -162,9 +164,11 @@ function LiveShell() {
                 maskRepeat: "no-repeat",
               }}
             >
-              {/* The mask notches the top/bottom edges and rounds the corners, so the dialog content
-                  is inset into the mask's clip-free interior rather than filling the raw box. */}
-              <div className="absolute inset-0" style={{ padding: "0% 3.5%" }}>
+              {/* The mask notches the top/bottom edges (30px deep on the 1920×1080 artwork) and
+                  rounds the corners, so the dialog content is inset past the notch band on every
+                  side. Percent padding scales with the box like the mask does — vertical percent
+                  padding resolves against the WIDTH, so the notch depth is 30/1920 = 1.5625%. */}
+              <div className="absolute inset-0" style={{ padding: "1.5625% 3.5%" }}>
                 <MidiSettingsDialog />
               </div>
             </div>
@@ -172,17 +176,24 @@ function LiveShell() {
         )}
         </div>
 
-        {/* Right-side drawer. Lives in the flex row, so opening it narrows the stage. While the
-            controller overlay is open it shows the assign sidebar; otherwise the value editors. */}
-        {controlsOpen && (
-          <aside className="flex h-full w-72 shrink-0 flex-col">
+        {/* Right-side drawer. Lives in the flex row, so opening it narrows the stage (the canvas
+            re-fits via its ResizeObserver, which also animates thanks to the width transition).
+            While the controller overlay is open it shows the assign sidebar; otherwise the value
+            editors. Kept mounted so the drawer can slide instead of popping. */}
+        <aside
+          className={cn(
+            "flex h-full shrink-0 flex-col overflow-hidden transition-[width] duration-220 ease-out",
+            controlsOpen ? "w-72" : "w-0",
+          )}
+        >
+          <div className="flex h-full w-72 shrink-0 flex-col">
             <div className="flex items-center gap-2 px-3 py-2 text-[11px] uppercase tracking-wide text-ink-dim">
               <Sliders className="h-3.5 w-3.5" />
               {controllerOpen ? "Assign" : "Controls"}
             </div>
             {controllerOpen ? <AssignPanel /> : <ControlsPanel />}
-          </aside>
-        )}
+          </div>
+        </aside>
       </div>
     </div>
   );

@@ -50,6 +50,12 @@ function metaFromPath(path: string): PluginInfo {
   };
 }
 
+/** Display label for a plugin id. UI must use this, never `constructor.name` — class names minify
+ *  in production builds ("LandscapeLayer" → "el"). */
+export function labelOf(id: string): string {
+  return registry.get(id)?.label ?? id;
+}
+
 export function list(): PluginInfo[] {
   return [...registry.values()].map(({ id, label, kind }) => ({ id, label, kind }));
 }

@@ -120,10 +120,38 @@ export class Stage {
     }
   }
 
+  /** While a video export locks the render size, viewport resizes are deferred until release. */
+  private sizeLocked = false;
+  private deferredSize: { w: number; h: number } | null = null;
+
   resize(w: number, h: number): void {
+    if (this.sizeLocked) {
+      this.deferredSize = { w, h };
+      return;
+    }
     this.canvas.width = this.buffer.width = w;
     this.canvas.height = this.buffer.height = h;
     for (const p of this.loaded()) p.resize(w, h);
+  }
+
+  /**
+   * Render at an explicit pixel size until {@link unlockRenderSize}: a video export records the
+   * true output resolution instead of upscaling the viewport-sized canvas. The previous size (or
+   * any viewport resize that arrives while locked) is restored on unlock.
+   */
+  lockRenderSize(w: number, h: number): void {
+    const prev = { w: this.canvas.width, h: this.canvas.height };
+    this.unlockRenderSize();
+    this.resize(w, h);
+    this.sizeLocked = true;
+    this.deferredSize = prev;
+  }
+
+  unlockRenderSize(): void {
+    if (!this.sizeLocked) return;
+    this.sizeLocked = false;
+    if (this.deferredSize) this.resize(this.deferredSize.w, this.deferredSize.h);
+    this.deferredSize = null;
   }
 
   // ── loop ─────────────────────────────────────────────────────────────────────────────────────
