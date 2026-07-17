@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
-import { resolveAspectRatio, type AspectRatio, type AspectRatioId, type ExportSettings, type VideoFormatId, type VideoQualityId } from "@/runtime/export";
+import { resolveAspectRatio, scaledExportSize, type AspectRatio, type AspectRatioId, type ExportSettings, type VideoFormatId, type VideoQualityId } from "@/runtime/export";
 
 /**
  * Shared export selection so the panel (which edits it) and the Stage (which previews it as a
@@ -20,8 +20,14 @@ interface ExportContextValue {
   setVideoQuality: (q: VideoQualityId) => void;
   videoFormat: VideoFormatId;
   setVideoFormat: (f: VideoFormatId) => void;
+  /** Render the live canvas at the true export resolution (ratio × quality scale) instead of the
+   *  viewport size, so the operator previews actual output framing AND pixel quality. */
+  previewEnabled: boolean;
+  setPreviewEnabled: (b: boolean) => void;
   /** The resolved target dimensions for the current selection. */
   ratio: AspectRatio;
+  /** `ratio` with the quality preset's supersample applied — the actual export pixel size. */
+  outputSize: { width: number; height: number };
   /** Snapshot of the settings for an export call. */
   settings: (videoDurationSec?: number) => ExportSettings;
 }
@@ -37,11 +43,13 @@ export function ExportProvider({ children }: { children: ReactNode }) {
   const [watermarkEnabled, setWatermarkEnabled] = useState(true);
   const [videoQuality, setVideoQuality] = useState<VideoQualityId>("high");
   const [videoFormat, setVideoFormat] = useState<VideoFormatId>("webm");
+  const [previewEnabled, setPreviewEnabled] = useState(false);
 
   const ratio = useMemo(
     () => resolveAspectRatio(ratioId, custom),
     [ratioId, custom],
   );
+  const outputSize = useMemo(() => scaledExportSize(ratio, videoQuality), [ratio, videoQuality]);
 
   const value: ExportContextValue = {
     ratioId,
@@ -58,7 +66,10 @@ export function ExportProvider({ children }: { children: ReactNode }) {
     setVideoQuality,
     videoFormat,
     setVideoFormat,
+    previewEnabled,
+    setPreviewEnabled,
     ratio,
+    outputSize,
     settings: (videoDurationSec) => ({
       aspectRatio: ratioId,
       custom: ratioId === "custom" ? custom : undefined,

@@ -16,8 +16,9 @@ export interface MaskVariant {
   url: string;
 }
 
-/** Number of masks available in each folder. Update when adding new masks. */
-export const MASK_COUNTS: Record<AspectRatioId, number> = {
+/** Number of masks available in each folder. Update when adding new masks. Ratios without an
+ *  entry (the A-series poster sizes) simply have no masks. */
+export const MASK_COUNTS: Partial<Record<AspectRatioId, number>> = {
   "16:9": 1,
   "9:16": 1,
   "1:1": 1,
@@ -27,7 +28,7 @@ export const MASK_COUNTS: Record<AspectRatioId, number> = {
 
 import { asset } from "@/lib/asset";
 
-export const MASK_FOLDERS: Record<AspectRatioId, string> = {
+export const MASK_FOLDERS: Partial<Record<AspectRatioId, string>> = {
   "16:9": asset("/masks/16x9"),
   "9:16": asset("/masks/9x16"),
   "1:1": asset("/masks/1x1"),

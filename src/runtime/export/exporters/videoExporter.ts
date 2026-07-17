@@ -1,6 +1,6 @@
 import { pickMime, triggerDownload } from "./download";
 import { drawFrameInto, type ExportFrameOptions } from "./frameCanvas";
-import { VIDEO_FORMATS, VIDEO_QUALITIES, type ExportProgress, type VideoFormatId, type VideoQualityId } from "./types";
+import { scaledExportSize, VIDEO_FORMATS, VIDEO_QUALITIES, type ExportProgress, type VideoFormatId, type VideoQualityId } from "./types";
 
 export interface VideoExportInput {
   /** The live engine canvas, redrawn into the export frame each tick while it plays. */
@@ -47,8 +47,7 @@ export async function exportVideo(input: VideoExportInput): Promise<Blob> {
   const opts: ExportFrameOptions = { ...frame, background: "#000" };
 
   // Supersample: render the target larger than the chosen ratio, then encode at that resolution.
-  const outW = Math.round(frame.ratio.width * q.scale);
-  const outH = Math.round(frame.ratio.height * q.scale);
+  const { width: outW, height: outH } = scaledExportSize(frame.ratio, q.id);
   const target = document.createElement("canvas");
   target.width = outW;
   target.height = outH;

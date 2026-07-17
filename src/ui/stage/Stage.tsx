@@ -13,12 +13,19 @@ import { watermarkHitRect } from "@/runtime/watermark";
  * the export framing guide — the chosen aspect-ratio crop, dimmed letterbox, and a live mask preview
  * — so the operator always sees exactly what an export will capture. Same look as before, now backed
  * by the plugin-stack runtime instead of the engine compositor.
+ *
+ * With export preview enabled the canvas renders at the true export resolution (ratio × quality
+ * scale) and letterboxes into the host (`contain`), so framing AND pixel quality match the output;
+ * otherwise it tracks the viewport 1:1 and cover-fits as before.
  */
 export function Stage() {
   const { stage } = useLive();
   const ex = useExportSettings();
   const hostRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
+  // The render-size target for resize handlers that live inside the mount effect.
+  const previewRef = useRef<{ width: number; height: number } | null>(null);
+  previewRef.current = ex.previewEnabled ? ex.outputSize : null;
   const [dropNote, setDropNote] = useState<string | null>(null);
   const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -49,11 +56,18 @@ export function Stage() {
     const host = hostRef.current;
     if (!host) return;
     const rect = host.getBoundingClientRect();
-    // Canvas pixel dims may differ from CSS dims — scale the click into canvas space.
-    const scaleX = stage.canvas.width / rect.width;
-    const scaleY = stage.canvas.height / rect.height;
-    const cx = (e.clientX - rect.left) * scaleX;
-    const cy = (e.clientY - rect.top) * scaleY;
+    // Canvas pixel dims may differ from CSS dims — scale the click into canvas space. In preview
+    // mode the canvas is contain-fitted, so map through the letterboxed display rect instead.
+    let cx: number, cy: number;
+    if (previewRef.current) {
+      const cw = stage.canvas.width, ch = stage.canvas.height;
+      const s = Math.min(rect.width / cw, rect.height / ch);
+      cx = (e.clientX - rect.left - (rect.width - cw * s) / 2) / s;
+      cy = (e.clientY - rect.top - (rect.height - ch * s) / 2) / s;
+    } else {
+      cx = (e.clientX - rect.left) * (stage.canvas.width / rect.width);
+      cy = (e.clientY - rect.top) * (stage.canvas.height / rect.height);
+    }
     const hit = watermarkHitRect(stage.canvas.width, stage.canvas.height, ex.ratio.width / ex.ratio.height);
     if (hit && cx >= hit.x && cx <= hit.x + hit.w && cy >= hit.y && cy <= hit.y + hit.h) {
       const next = !ex.watermarkEnabled;
@@ -89,6 +103,15 @@ export function Stage() {
     let first = true;
 
     const applyResize = () => {
+      // In export preview the render size is pinned to the output resolution — viewport resizes
+      // only re-fit the CSS box, so skip the (expensive) pixel resize when the target is unchanged.
+      const preview = previewRef.current;
+      const w = preview ? preview.width : host.clientWidth;
+      const h = preview ? preview.height : host.clientHeight;
+      if (canvas.width === w && canvas.height === h) {
+        first = false;
+        return;
+      }
       if (canvas.width > 0 && canvas.height > 0 && !first) {
         const snap = document.createElement("canvas");
         snap.width = canvas.width;
@@ -99,7 +122,7 @@ export function Stage() {
           inset: "0",
           width: "100%",
           height: "100%",
-          objectFit: "cover",
+          objectFit: canvas.style.objectFit || "cover",
           pointerEvents: "none",
           transition: "all 400ms ease-in-out"
         } satisfies Partial<CSSStyleDeclaration>);
@@ -108,7 +131,7 @@ export function Stage() {
         setTimeout(() => snap.remove(), 300);
       }
       first = false;
-      stage.resize(host.clientWidth, host.clientHeight);
+      stage.resize(w, h);
     };
 
     const resize = () => {
@@ -126,6 +149,20 @@ export function Stage() {
       if (canvas.parentElement === host) host.removeChild(canvas);
     };
   }, [stage]);
+
+  // React to the export-preview toggle (and its resolution changing under quality/ratio edits):
+  // preview pins the render size to the true export resolution and letterboxes it; live mode
+  // returns the canvas to viewport tracking.
+  useLayoutEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const canvas = stage.canvas;
+    const preview = previewRef.current;
+    canvas.style.objectFit = preview ? "contain" : "cover";
+    const w = preview ? preview.width : host.clientWidth;
+    const h = preview ? preview.height : host.clientHeight;
+    if (canvas.width !== w || canvas.height !== h) stage.resize(w, h);
+  }, [stage, ex.previewEnabled, ex.outputSize.width, ex.outputSize.height]);
 
   // Export crop, computed over the full viewport (the canvas fills the host).
   const ratioWH = ex.ratio.width / ex.ratio.height;

@@ -27,6 +27,13 @@ export const VIDEO_QUALITIES: Record<VideoQualityId, VideoQuality> = {
 
 export const VIDEO_QUALITY_LIST: VideoQuality[] = Object.values(VIDEO_QUALITIES);
 
+/** The actual output pixel size for a ratio at a quality preset's supersample scale — the single
+ *  source of truth used by the exporters, the panel's size readout, and the live canvas preview. */
+export function scaledExportSize(ratio: { width: number; height: number }, quality: VideoQualityId = "high"): { width: number; height: number } {
+  const q = VIDEO_QUALITIES[quality];
+  return { width: Math.round(ratio.width * q.scale), height: Math.round(ratio.height * q.scale) };
+}
+
 /** Container/codec choice for video exports. */
 export type VideoFormatId = "webm" | "mp4";
 

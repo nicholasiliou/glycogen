@@ -1,5 +1,5 @@
 export { Exporter } from "./Exporter";
-export { VIDEO_QUALITIES, VIDEO_QUALITY_LIST, VIDEO_FORMATS, supportedVideoFormats } from "./exporters/types";
+export { VIDEO_QUALITIES, VIDEO_QUALITY_LIST, VIDEO_FORMATS, supportedVideoFormats, scaledExportSize } from "./exporters/types";
 export type {
   StillFormat,
   ExportProgress,
@@ -12,6 +12,9 @@ export type {
 export {
   ASPECT_RATIO_LIST,
   ASPECT_RATIOS,
+  SCREEN_RATIO_LIST,
+  PRINT_RATIO_LIST,
+  isPrintRatio,
   resolveAspectRatio,
 } from "./exporters/aspectRatios";
 export type { AspectRatio, AspectRatioId } from "./exporters/aspectRatios";

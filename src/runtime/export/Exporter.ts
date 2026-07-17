@@ -5,7 +5,7 @@ import { masksFor } from "./exporters/masks";
 import { loadMaskImage, type ExportFrameOptions } from "./exporters/frameCanvas";
 import { exportStill } from "./exporters/stillExporter";
 import { exportVideo } from "./exporters/videoExporter";
-import { VIDEO_QUALITIES, type ExportProgress, type ExportSettings, type StillFormat } from "./exporters/types";
+import { scaledExportSize, type ExportProgress, type ExportSettings, type StillFormat } from "./exporters/types";
 
 export type { StillFormat, ExportProgress, ExportSettings } from "./exporters/types";
 
@@ -42,9 +42,7 @@ export class Exporter {
     const frame = await this.frameOptions(settings);
     // The quality preset applies to stills too: render one frame at the scaled output resolution
     // and save at that size, instead of upscaling the viewport-sized canvas.
-    const q = VIDEO_QUALITIES[settings.videoQuality ?? "high"];
-    const outW = Math.round(frame.ratio.width * q.scale);
-    const outH = Math.round(frame.ratio.height * q.scale);
+    const { width: outW, height: outH } = scaledExportSize(frame.ratio, settings.videoQuality);
     this.stage.lockRenderSize(outW, outH);
     try {
       // Force one fresh render at the export resolution so the snapshot is current.
@@ -69,8 +67,8 @@ export class Exporter {
     const frame = await this.frameOptions(settings);
     // Render the stage at the encode resolution for the duration of the capture: the quality
     // preset must mean "recorded at this resolution", not "the on-screen canvas upscaled".
-    const q = VIDEO_QUALITIES[settings.videoQuality ?? "high"];
-    this.stage.lockRenderSize(Math.round(frame.ratio.width * q.scale), Math.round(frame.ratio.height * q.scale));
+    const encode = scaledExportSize(frame.ratio, settings.videoQuality);
+    this.stage.lockRenderSize(encode.width, encode.height);
     try {
       return await exportVideo({
         source: this.canvas,

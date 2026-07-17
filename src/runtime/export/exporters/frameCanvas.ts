@@ -45,7 +45,7 @@ function pickRandomMaskFromFolder(folderPath: string): string {
     "4x5": "4:5",
   };
   const ratio = ratioMap[folderName] || "1:1";
-  const count = MASK_COUNTS[ratio];
+  const count = MASK_COUNTS[ratio] ?? 1;
   const index = Math.floor(Math.random() * count) + 1;
   return `${folderPath}/${index}.svg`;
 }
