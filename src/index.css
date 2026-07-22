@@ -26,11 +26,12 @@
  *
  * The preferred value is `vw`-based (not the old self-referential `rem`, which crossed the
  * baseline far too early — laptops were already scaled up). It's tuned so the baseline holds
- * at exactly 16px up to a ~1440px laptop (`8.28 + 0.536·14.4 = 16`), then grows to the 22px
- * cap around a ~2560px 5K display — so small screens stay put and only larger ones get bigger.
+ * at exactly 16px up to a ~1440px laptop (`0.842 + 1.0526·14.4 = 16`), then grows to the 48px
+ * cap — triple the baseline — around the ~4480px-wide 4.5K M3 iMac, so small screens stay put
+ * and the big exhibition display gets a much larger header/sidebar.
  */
 html {
-  font-size: clamp(16px, 8.28px + 0.536vw, 22px);
+  font-size: clamp(16px, 0.842px + 1.0526vw, 48px);
 }
 
 html,
