@@ -30,9 +30,9 @@ const modules = import.meta.glob<Record<string, unknown>>(
 /**
  * Plugin ids temporarily kept out of the registry — the file stays on disk (nothing is deleted),
  * it's just not discovered, so it never appears in the browser, the db, or the fillers. Remove an id
- * here to re-enable it. Disabled for the demo: `volumetricCloud`.
+ * here to re-enable it. Disabled for the demo: `volumetricCloud`, `pixelStretch`.
  */
-const DISABLED = new Set<string>(["volumetricCloud"]);
+const DISABLED = new Set<string>(["volumetricCloud", "pixelStretch"]);
 
 const registry = new Map<string, Entry>();
 for (const [path, mod] of Object.entries(modules)) {
