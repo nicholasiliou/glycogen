@@ -99,6 +99,19 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   const { stepPlugin, stepShader, load, selectBank, clearBank, clearShader } = browse;
   useHardwareSync(midi);
 
+  // The device status getter (midi.status) is read directly by the settings dialog, but it's a
+  // plain field — React won't re-render when it changes. Subscribe to the status/devices events and
+  // bump the render tick, so a late-resolving enable() (e.g. the ALSA/PipeWire seq client wasn't
+  // ready on the first attempt) actually clears a stale "unavailable" and shows "ready".
+  useEffect(() => {
+    const offStatus = midi.on("status", refresh);
+    const offDevices = midi.on("devices", refresh);
+    return () => {
+      offStatus();
+      offDevices();
+    };
+  }, [midi]);
+
   // Load textlayer into bank 0 with the fisheye shader on mount. Selecting the bank afterwards
   // syncs the browse dials/previews to the boot scene (and refreshes).
   useEffect(() => {
