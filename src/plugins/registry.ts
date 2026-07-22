@@ -27,11 +27,19 @@ const modules = import.meta.glob<Record<string, unknown>>(
   { eager: true },
 );
 
+/**
+ * Plugin ids temporarily kept out of the registry — the file stays on disk (nothing is deleted),
+ * it's just not discovered, so it never appears in the browser, the db, or the fillers. Remove an id
+ * here to re-enable it. Disabled for the demo: `volumetricCloud`.
+ */
+const DISABLED = new Set<string>(["volumetricCloud"]);
+
 const registry = new Map<string, Entry>();
 for (const [path, mod] of Object.entries(modules)) {
   const ctor = Object.values(mod).find(isPluginClass);
   if (!ctor) continue;
   const info = metaFromPath(path);
+  if (DISABLED.has(info.id)) continue;
   if (registry.has(info.id)) console.warn(`[registry] duplicate plugin id "${info.id}" — overwriting`);
   registry.set(info.id, { ...info, ctor });
 }

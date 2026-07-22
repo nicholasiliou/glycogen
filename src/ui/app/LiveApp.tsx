@@ -21,9 +21,28 @@ export function LiveApp() {
   );
 }
 
+/**
+ * Demo stub: skip the click-to-start intro and boot straight into the preview. The whole StartGate
+ * below is left intact — flip this back to `false` to restore the audio-gesture gate.
+ *
+ * Note: browsers suspend the AudioContext until a real user gesture, so with the intro skipped audio
+ * may not sound until the first click/keypress anywhere in the page; the visuals run regardless.
+ */
+const SKIP_INTRO = true;
+
 /** The intro gate: two blinds meeting at the middle that retract to the top/bottom edges on start. */
 function StartGate() {
   const { started, start } = useLive();
+  // Auto-start once on mount when the intro is skipped — no blinds, no button.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (SKIP_INTRO && !autoStarted.current) {
+      autoStarted.current = true;
+      start();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- boot-once; start is stable enough here
+  }, []);
+  if (SKIP_INTRO) return null;
   const [phase, setPhase] = useState<"idle" | "opening" | "gone">("idle");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 

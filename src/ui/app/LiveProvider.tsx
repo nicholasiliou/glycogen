@@ -113,11 +113,22 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     };
   }, [midi]);
 
-  // Load textlayer into bank 0 with the fisheye shader on mount. Selecting the bank afterwards
-  // syncs the browse dials/previews to the boot scene (and refreshes).
+  // Random boot scene: every page refresh loads two *different* random generators into banks 0 and
+  // 1, each with a random shader (incl. "none"), so the exhibition never opens the same way twice.
+  // Selecting bank 0 afterwards syncs the browse dials/previews to what actually landed.
   useEffect(() => {
-    stage.loadBank(0, create("text"));
-    stage.setShader(0, create("fisheye"));
+    const gens = [...browse.generators];
+    const fx = browse.effects; // includes "none" — a real chance of no shader
+    if (gens.length === 0) return;
+    const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
+    // Pull two distinct generators (fall back to one if the registry somehow has a single entry).
+    const first = gens.splice(Math.floor(Math.random() * gens.length), 1)[0];
+    const second = gens.length ? gens.splice(Math.floor(Math.random() * gens.length), 1)[0] : first;
+    [first, second].forEach((gen, bank) => {
+      stage.loadBank(bank, create(gen.id));
+      const shader = fx.length ? pick(fx) : undefined;
+      stage.setShader(bank, shader && shader.id !== "none" ? create(shader.id) : null);
+    });
     selectBank(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- boot once; selectBank is stable enough here
   }, [stage]);

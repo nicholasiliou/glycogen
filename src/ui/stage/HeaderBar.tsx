@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Gamepad, RotateCw, Volume2, VolumeX } from "lucide-react";
+import { Dices, Gamepad, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/ui/components/button";
 import { ConfirmDialog } from "@/ui/components/confirm-dialog";
 import { cn } from "@/ui/lib/cn";
@@ -192,8 +192,8 @@ export function HeaderBar({
       >
         {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
       </Button>
-      <Button size="icon-sm" variant="ghost" title="Refresh page" onClick={() => window.location.reload()}>
-        <RotateCw className="h-4 w-4" />
+      <Button size="icon-sm" variant="ghost" title="Shuffle scene" onClick={() => window.location.reload()}>
+        <Dices className="h-4 w-4" />
       </Button>
     </div>
   );
