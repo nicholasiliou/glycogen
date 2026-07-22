@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Gamepad, Github, Volume2, VolumeX } from "lucide-react";
+import { Gamepad, RotateCw, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/ui/components/button";
 import { ConfirmDialog } from "@/ui/components/confirm-dialog";
 import { cn } from "@/ui/lib/cn";
@@ -11,9 +11,11 @@ import { ExportPanel } from "@/ui/export/ExportPanel";
 
 /** The little dial showing the browse position. Click to step forward, wheel to scrub either way. */
 function MiniDial({ index, count, onStep }: { index: number; count: number; onStep: (d: number) => void }) {
-  const S = 34;
-  const c = S / 2;
-  const r = 13;
+  // rem-sized so it scales with the viewport-driven root font-size like the rest of the chrome.
+  const S = "2.125rem"; // 34px at the 16px baseline
+  const c = "50%";
+  const r = "38%"; // ~13/34 of the viewbox
+  const vb = 34; // internal coordinate space for the pointer line math
   const a = (-90 + (index * 360) / Math.max(1, count)) * (Math.PI / 180);
   return (
     <button
@@ -23,13 +25,13 @@ function MiniDial({ index, count, onStep }: { index: number; count: number; onSt
       title="Click to cycle · scroll to scrub"
       className="shrink-0 cursor-pointer rounded-full transition-colors hover:bg-ink/5"
     >
-      <svg width={S} height={S} className="block">
+      <svg width={S} height={S} viewBox={`0 0 ${vb} ${vb}`} className="block">
         <circle cx={c} cy={c} r={r} fill="none" stroke="var(--color-edge)" strokeWidth={1} />
         <line
-          x1={c}
-          y1={c}
-          x2={c + Math.cos(a) * (r - 2)}
-          y2={c + Math.sin(a) * (r - 2)}
+          x1={vb / 2}
+          y1={vb / 2}
+          x2={vb / 2 + Math.cos(a) * (vb / 2 - 4)}
+          y2={vb / 2 + Math.sin(a) * (vb / 2 - 4)}
           stroke="var(--color-ink)"
           strokeWidth={1.5}
           strokeLinecap="round"
@@ -58,7 +60,7 @@ function BankStrip() {
 
   return (
     <div className="flex min-w-0 items-center gap-1.5">
-      <span className="max-w-30 truncate text-[11px] text-ink" title="Active bank">{name}</span>
+      <span className="max-w-30 truncate text-[0.6875rem] text-ink" title="Active bank">{name}</span>
       <div className="flex items-center gap-1">
         {banks.map((bank, i) => (
           <button
@@ -138,7 +140,6 @@ export function HeaderBar({
     lastMidi,
   } = useLive();
 
-  const [confirmRepo, setConfirmRepo] = useState(false);
   const shaderLoaded = !!banks[activeBank]?.shader;
   // Clicking a preview focuses that half of the active bank (which one the controls drive).
   const focusRing = (part: "plugin" | "shader") =>
@@ -164,7 +165,7 @@ export function HeaderBar({
 
       {/* Raw routing readout (e.g. "CC 25 → jog:0") — a dev hint, only on the #admin surface. */}
       {isAdmin() && lastMidi && (
-        <span className="min-w-0 truncate text-[11px] text-ink-dim" title="Last MIDI action">
+        <span className="min-w-0 truncate text-[0.6875rem] text-ink-dim" title="Last MIDI action">
           {lastMidi.control} → {lastMidi.target}
         </span>
       )}
@@ -191,17 +192,9 @@ export function HeaderBar({
       >
         {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
       </Button>
-      <Button size="icon-sm" variant="ghost" title="Open source repo" onClick={() => setConfirmRepo(true)}>
-        <Github className="h-4 w-4" />
+      <Button size="icon-sm" variant="ghost" title="Refresh page" onClick={() => window.location.reload()}>
+        <RotateCw className="h-4 w-4" />
       </Button>
-      <ConfirmDialog
-        open={confirmRepo}
-        onOpenChange={setConfirmRepo}
-        title="Star us on GitHub"
-        description="If you like the Project, consider leaving a star, we really appreceate it!"
-        confirmLabel="Open"
-        onConfirm={() => window.open("https://github.com/nicholasiliou/glycogen", "_blank", "noopener,noreferrer")}
-      />
     </div>
   );
 }

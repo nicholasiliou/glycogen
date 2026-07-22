@@ -18,6 +18,17 @@
   color-scheme: dark;
 }
 
+/*
+ * Viewport-scaled chrome. The stage canvas fills the screen (sized by a ResizeObserver),
+ * so on a large iMac the fixed-px header/sidebar looked tiny beside it. Driving the root
+ * font-size off the viewport width makes every rem-based size (Tailwind spacing, text,
+ * icon h/w) scale with the screen. 16px stays the baseline up to a ~1440px-wide laptop,
+ * then grows gently toward larger displays; clamped so it never shrinks or runs away.
+ */
+html {
+  font-size: clamp(16px, 0.9rem + 0.3vw, 22px);
+}
+
 html,
 body,
 #root {
@@ -29,7 +40,7 @@ body {
   background: #0a0a0a;
   color: var(--color-ink);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  font-size: 13px;
+  font-size: 0.8125rem; /* 13px at baseline; rem so it scales with the viewport-driven root */
   line-height: 1.4;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;

@@ -187,7 +187,7 @@ function LiveShell() {
           )}
         >
           <div className="flex h-full w-72 shrink-0 flex-col">
-            <div className="flex items-center gap-2 px-3 py-2 text-[11px] uppercase tracking-wide text-ink-dim">
+            <div className="flex items-center gap-2 px-3 py-2 text-[0.6875rem] uppercase tracking-wide text-ink-dim">
               <Sliders className="h-3.5 w-3.5" />
               {controllerOpen ? "Assign" : "Controls"}
             </div>
