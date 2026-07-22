@@ -101,8 +101,15 @@ export class MidiManager {
         access.onstatechange = () => this.bindInputs();
         this.bindInputs();
         this.setStatus("ready");
-      } catch {
-        this.setStatus("denied");
+      } catch (err) {
+        // requestMIDIAccess rejects for two very different reasons that we must not conflate:
+        // a genuine permission refusal (SecurityError / NotAllowedError — user blocked it or an
+        // insecure origin) vs. the MIDI backend failing to initialize (e.g. Linux/Chromium with no
+        // ALSA sequencer). Only the former is really "denied"; blaming the permission for the latter
+        // sends people to re-grant an already-granted permission. See the Ubuntu snd-seq case.
+        const name = err instanceof DOMException ? err.name : "";
+        const denied = name === "SecurityError" || name === "NotAllowedError";
+        this.setStatus(denied ? "denied" : "unavailable");
       } finally {
         this.enabling = undefined;
       }

@@ -114,7 +114,15 @@ export interface MidiDeviceInfo {
   state: string;
 }
 
-export type MidiStatus = "idle" | "unsupported" | "denied" | "ready";
+/**
+ * - `idle`        not yet requested
+ * - `unsupported` the browser has no `requestMIDIAccess` at all
+ * - `denied`      the user (or browser policy) refused the MIDI permission
+ * - `unavailable` permission wasn't the problem — the MIDI backend failed to start
+ *                 (e.g. no ALSA sequencer on Linux, or an insecure origin)
+ * - `ready`       access granted and bound
+ */
+export type MidiStatus = "idle" | "unsupported" | "denied" | "unavailable" | "ready";
 
 /** Raw-ish event passed to listeners on every recognized message. */
 export interface MidiEvent {

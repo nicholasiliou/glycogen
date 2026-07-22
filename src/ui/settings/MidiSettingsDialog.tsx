@@ -36,6 +36,14 @@ export function MidiSettingsDialog() {
             <button className="text-ink-dim hover:text-ink" onClick={() => midi.enable()}>
               Access denied — retry
             </button>
+          ) : status === "unavailable" ? (
+            <button
+              className="text-amber-400 hover:text-ink"
+              onClick={() => midi.enable()}
+              title="Permission is fine, but the MIDI backend failed to start. On Linux/Chromium this usually means the ALSA sequencer isn't loaded — run `sudo modprobe snd-seq`, then retry. Also make sure the page is served over https or localhost."
+            >
+              MIDI backend unavailable — retry
+            </button>
           ) : devices.length === 0 ? (
             <span className="text-ink-dim/70">No controller connected</span>
           ) : (

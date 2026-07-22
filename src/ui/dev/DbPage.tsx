@@ -60,7 +60,9 @@ function DeviceStatus() {
         ? "unavailable"
         : midi.status === "denied"
           ? "access denied"
-          : devices.length === 0
+          : midi.status === "unavailable"
+            ? "backend unavailable"
+            : devices.length === 0
             ? "no device"
             : devices.map((d) => d.name).join(", ")}
     </span>
