@@ -33,10 +33,9 @@ const SHADOW = [62, 28, 96];
  * buffer. Two-tone (lit/shadow) so it reads graphic rather than photoreal. Transparent + deterministic.
  */
 export class VolumetricCloudLayer extends Plugin {
-  detail = this.number({ min: 0.05, max: 0.6, default: 0.2 });
   scale = this.number({ min: 1, max: 8, default: 3 });
-  octaves = this.number({ min: 1, max: 6, step: 1, default: 4 });
-  coverage = this.number({ min: 0, max: 1, default: 0.5 });
+  octaves = this.number({ min: 1, max: 2, step: 1, default: 2 });
+  coverage = this.number({ min: 0, max: 0.6, default: 0.5 });
   density = this.number({ min: 0.2, max: 3, default: 1.4 });
   steps = this.number({ min: 2, max: 24, step: 1, default: 8 });
   shadow = this.number({ min: 0, max: 1, default: 0.8 });
@@ -47,9 +46,12 @@ export class VolumetricCloudLayer extends Plugin {
   private bctx = this.buf.getContext("2d")!;
   private image?: ImageData;
 
+  /** Render-buffer downsample fraction — fixed (no longer a param). */
+  private static readonly DETAIL = 0.5;
+
   render(f: Frame): HTMLCanvasElement {
     const w = this.canvas.width, h = this.canvas.height;
-    const detail = Math.max(0.05, Math.min(0.6, this.detail.value));
+    const detail = VolumetricCloudLayer.DETAIL;
     const rw = Math.max(2, Math.round(w * detail));
     const rh = Math.max(2, Math.round(h * detail));
     if (this.buf.width !== rw || this.buf.height !== rh || !this.image) {
@@ -59,7 +61,7 @@ export class VolumetricCloudLayer extends Plugin {
     }
 
     const scale = this.scale.value;
-    const oct = Math.max(1, Math.min(6, Math.round(this.octaves.value)));
+    const oct = Math.max(1, Math.min(2, Math.round(this.octaves.value)));
     const coverage = this.coverage.value;
     const density = this.density.value;
     const steps = Math.max(2, Math.min(24, Math.round(this.steps.value)));

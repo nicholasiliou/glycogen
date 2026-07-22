@@ -1,7 +1,8 @@
 import { ParamDriver } from "@/controls/adapters";
 import type { ControlBus } from "@/controls/ControlBus";
 import { clamp01 } from "@/controls/types";
-import { paramBindings, params } from "@/db/schema";
+import { fillerBindings } from "@/db/filler";
+import { actionBindings, paramBindings, params } from "@/db/schema";
 import type { FieldFn, Frame, Plugin } from "@/plugins/Plugin";
 import { TextLayer } from "@/plugins/TextLayer";
 import { cropRect, getBarcode, getWatermark, WATERMARK_PAD, WATERMARK_SIZE, watermarkOrigin } from "@/runtime/watermark";
@@ -190,8 +191,11 @@ export class Stage {
    * comparison. Driver press/hit baselines reset naturally on rebuild.
    */
   private resolveDrivers(plugin: Plugin): ParamDriver[] {
+    // Filler bindings depend on actionBindings too (an action frees/occupies widgets), so the cache
+    // key folds both table versions — a remap on either re-derives next frame.
+    const version = paramBindings.version + actionBindings.version;
     const cached = this.drivers.get(plugin);
-    if (cached && cached.at === paramBindings.version) return cached.list;
+    if (cached && cached.at === version) return cached.list;
     const byName = new Map(plugin.params.map((p) => [p.name, p]));
     const list: ParamDriver[] = [];
     for (const row of paramBindings.by("plugin", plugin.id)) {
@@ -199,7 +203,13 @@ export class Stage {
       const target = param && byName.get(param.name);
       if (target) list.push(new ParamDriver(row.widgetId, target, row.adapter));
     }
-    this.drivers.set(plugin, { at: paramBindings.version, list });
+    // Exhibition fillers: every widget left empty for this plugin drives one of its own params, so
+    // no control is dead. Computed, never persisted; can't collide (real/action/reserved skipped).
+    for (const filler of fillerBindings(plugin.id)) {
+      const target = byName.get(filler.param.name);
+      if (target) list.push(new ParamDriver(filler.widgetId, target, filler.adapter));
+    }
+    this.drivers.set(plugin, { at: version, list });
     return list;
   }
 

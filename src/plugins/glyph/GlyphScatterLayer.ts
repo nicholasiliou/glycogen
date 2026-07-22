@@ -26,7 +26,7 @@ const GLYPHS: GlyphData[] = BUILTIN_GLYPHS.map((b) => b.glyph);
  * there exceeds a threshold, and a second noise channel picks which glyph. Deterministic over time.
  */
 export class GlyphScatterLayer extends Plugin {
-  cell = this.number({ min: 8, max: 160, default: 56 });
+  cell = this.number({ min: 40, max: 160, default: 56 });
   threshold = this.number({ min: 0, max: 1, default: 0.5 });
   scale = this.number({ min: 0.1, max: 1, default: 0.8 });
   noiseScale = this.number({ min: 0.02, max: 0.5, default: 0.12 });
@@ -47,7 +47,7 @@ export class GlyphScatterLayer extends Plugin {
     const w = this.canvas.width, h = this.canvas.height;
     ctx.clearRect(0, 0, w, h);
 
-    const cellPx = Math.max(8, this.cell.value);
+    const cellPx = Math.max(40, this.cell.value);
     const cols = Math.ceil(w / cellPx);
     const rows = Math.ceil(h / cellPx);
     const threshold = this.threshold.value;

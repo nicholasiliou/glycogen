@@ -12,12 +12,12 @@ if (typeof window !== "undefined") {
  * with time. Grammar / palette / Phi / turtle maths are the original sketch's, untouched.
  */
 export class PlantLayer extends Plugin {
-  iterations = this.number({ min: 1, max: 7, step: 1, default: 4 });
+  iterations = this.number({ min: 1, max: 3, step: 1, default: 3 });
   cameraScale = this.number({ min: 0.5, max: 8, default: 3 });
   spinSpeed = this.number({ min: 0, max: 0.5, default: 0.06 });
   evolutionSpeed = this.number({ min: 0.01, max: 4, default: 1 });
   seed = this.number({ min: 1, max: 64, step: 1, default: 1 });
-  autoEvolve = this.toggle();
+  autoEvolve = this.toggle(true);
   opaque = this.toggle(); // transparent by default — the plant composites like every other layer
 
   private p?: P5;

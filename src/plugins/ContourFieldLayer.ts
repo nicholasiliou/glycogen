@@ -51,7 +51,6 @@ const LINE = [40, 40, 255, 255];
  */
 export class ContourFieldLayer extends Plugin {
   override nativeColor = "#2828FF"; // matches LINE — colors the bank dot / "native" on the color cycle
-  resolution = this.number({ min: 0.05, max: 0.5, default: 0.22 });
   scale = this.number({ min: 1, max: 16, default: 6 });
   octaves = this.number({ min: 1, max: 8, step: 1, default: 4 });
   warp = this.number({ min: 0, max: 2, default: 0.4 });
@@ -153,9 +152,11 @@ export class ContourFieldLayer extends Plugin {
     }
   }
 
+  /** Grid density as a fraction of canvas size — fixed (no longer a param). */
+  private static readonly RESOLUTION = 0.5;
+
   render(f: Frame): HTMLCanvasElement {
-    const resolution = Math.max(0.05, Math.min(0.5, this.resolution.value));
-    const [cols, rows] = this.gridSize(resolution);
+    const [cols, rows] = this.gridSize(ContourFieldLayer.RESOLUTION);
     this.cols = cols;
     this.rows = rows;
 

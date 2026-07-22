@@ -61,7 +61,7 @@ export abstract class Plugin {
   protected canvas: HTMLCanvasElement = document.createElement("canvas");
 
   /** Layer opacity 0..1 — the Stage composites this plugin's output at this alpha every frame.
-   *  Bound to the reserved knob:9 via a locked db row (the per-plugin mixing control). */
+   *  An ordinary assignable param (the per-plugin mixing control); ships unbound like any other. */
   opacity = this.bind(new Param({ min: 0, max: 1, default: 1 }));
 
   /** The plugin's native draw color (a {@link COLOR_PRESETS} hex). Subclasses override where they

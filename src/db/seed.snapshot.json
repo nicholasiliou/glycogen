@@ -106,11 +106,6 @@
       }
     },
     {
-      "id": "contourField/resolution",
-      "pluginId": "contourField",
-      "value": 0.282374237804878
-    },
-    {
       "id": "contourField/scale",
       "pluginId": "contourField",
       "value": 6.303091653963414
@@ -546,7 +541,7 @@
       "pluginId": "plant",
       "value": {
         "count": 0,
-        "on": false
+        "on": true
       }
     },
     {
@@ -641,11 +636,6 @@
       }
     },
     {
-      "id": "shape/resolution",
-      "pluginId": "shape",
-      "value": 8
-    },
-    {
       "id": "shape/radius",
       "pluginId": "shape",
       "value": 0.7
@@ -713,11 +703,6 @@
       }
     },
     {
-      "id": "volumetricCloud/detail",
-      "pluginId": "volumetricCloud",
-      "value": 0.22966963605182922
-    },
-    {
       "id": "volumetricCloud/scale",
       "pluginId": "volumetricCloud",
       "value": 8
@@ -725,7 +710,7 @@
     {
       "id": "volumetricCloud/octaves",
       "pluginId": "volumetricCloud",
-      "value": 4
+      "value": 2
     },
     {
       "id": "volumetricCloud/coverage",
@@ -799,7 +784,7 @@
     {
       "id": "glyphScatter/cell",
       "pluginId": "glyphScatter",
-      "value": 30.6312881097561
+      "value": 56
     },
     {
       "id": "glyphScatter/threshold",
@@ -1006,15 +991,6 @@
       }
     },
     {
-      "id": "seed:boids:seed",
-      "pluginId": "boids",
-      "widgetId": "fader:1",
-      "paramId": "boids/seed",
-      "adapter": {
-        "kind": "absolute"
-      }
-    },
-    {
       "id": "seed:boids:wrap",
       "pluginId": "boids",
       "widgetId": "pad:4",
@@ -1039,25 +1015,6 @@
       "paramId": "boids/reseed",
       "adapter": {
         "kind": "trigger"
-      }
-    },
-    {
-      "id": "opacity:boids",
-      "pluginId": "boids",
-      "widgetId": "knob:9",
-      "paramId": "boids/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
-    },
-    {
-      "id": "seed:contourField:resolution",
-      "pluginId": "contourField",
-      "widgetId": "knob:0",
-      "paramId": "contourField/resolution",
-      "adapter": {
-        "kind": "absolute"
       }
     },
     {
@@ -1124,34 +1081,6 @@
       }
     },
     {
-      "id": "seed:contourField:seed",
-      "pluginId": "contourField",
-      "widgetId": "knob:8",
-      "paramId": "contourField/seed",
-      "adapter": {
-        "kind": "absolute"
-      }
-    },
-    {
-      "id": "seed:contourField:textStrength",
-      "pluginId": "contourField",
-      "widgetId": "fader:1",
-      "paramId": "contourField/textStrength",
-      "adapter": {
-        "kind": "absolute"
-      }
-    },
-    {
-      "id": "opacity:contourField",
-      "pluginId": "contourField",
-      "widgetId": "knob:9",
-      "paramId": "contourField/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
-    },
-    {
       "id": "seed:gameOfLife:cellSize",
       "pluginId": "gameOfLife",
       "widgetId": "knob:0",
@@ -1197,15 +1126,6 @@
       }
     },
     {
-      "id": "seed:gameOfLife:seed",
-      "pluginId": "gameOfLife",
-      "widgetId": "knob:5",
-      "paramId": "gameOfLife/seed",
-      "adapter": {
-        "kind": "absolute"
-      }
-    },
-    {
       "id": "seed:gameOfLife:wrap",
       "pluginId": "gameOfLife",
       "widgetId": "pad:4",
@@ -1222,16 +1142,6 @@
       "adapter": {
         "kind": "trigger"
       }
-    },
-    {
-      "id": "opacity:gameOfLife",
-      "pluginId": "gameOfLife",
-      "widgetId": "knob:9",
-      "paramId": "gameOfLife/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
     },
     {
       "id": "seed:harmonograph:freqX1",
@@ -1313,16 +1223,6 @@
       "adapter": {
         "kind": "absolute"
       }
-    },
-    {
-      "id": "opacity:harmonograph",
-      "pluginId": "harmonograph",
-      "widgetId": "knob:9",
-      "paramId": "harmonograph/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
     },
     {
       "id": "seed:landscape:resolution",
@@ -1451,16 +1351,6 @@
       }
     },
     {
-      "id": "opacity:landscape",
-      "pluginId": "landscape",
-      "widgetId": "knob:9",
-      "paramId": "landscape/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
-    },
-    {
       "id": "seed:noise:detail",
       "pluginId": "noise",
       "widgetId": "knob:0",
@@ -1531,25 +1421,6 @@
       "adapter": {
         "kind": "absolute"
       }
-    },
-    {
-      "id": "seed:noise:seed",
-      "pluginId": "noise",
-      "widgetId": "knob:8",
-      "paramId": "noise/seed",
-      "adapter": {
-        "kind": "absolute"
-      }
-    },
-    {
-      "id": "opacity:noise",
-      "pluginId": "noise",
-      "widgetId": "knob:9",
-      "paramId": "noise/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
     },
     {
       "id": "seed:physarum:count",
@@ -1624,28 +1495,10 @@
       }
     },
     {
-      "id": "seed:physarum:seed",
-      "pluginId": "physarum",
-      "widgetId": "knob:8",
-      "paramId": "physarum/seed",
-      "adapter": {
-        "kind": "absolute"
-      }
-    },
-    {
       "id": "seed:physarum:speed",
       "pluginId": "physarum",
       "widgetId": "fader:0",
       "paramId": "physarum/speed",
-      "adapter": {
-        "kind": "absolute"
-      }
-    },
-    {
-      "id": "seed:physarum:textStrength",
-      "pluginId": "physarum",
-      "widgetId": "fader:1",
-      "paramId": "physarum/textStrength",
       "adapter": {
         "kind": "absolute"
       }
@@ -1667,16 +1520,6 @@
       "adapter": {
         "kind": "trigger"
       }
-    },
-    {
-      "id": "opacity:physarum",
-      "pluginId": "physarum",
-      "widgetId": "knob:9",
-      "paramId": "physarum/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
     },
     {
       "id": "seed:plant:iterations",
@@ -1715,15 +1558,6 @@
       }
     },
     {
-      "id": "seed:plant:seed",
-      "pluginId": "plant",
-      "widgetId": "fader:0",
-      "paramId": "plant/seed",
-      "adapter": {
-        "kind": "absolute"
-      }
-    },
-    {
       "id": "seed:plant:autoEvolve",
       "pluginId": "plant",
       "widgetId": "pad:4",
@@ -1740,16 +1574,6 @@
       "adapter": {
         "kind": "toggle"
       }
-    },
-    {
-      "id": "opacity:plant",
-      "pluginId": "plant",
-      "widgetId": "knob:9",
-      "paramId": "plant/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
     },
     {
       "id": "seed:reactionDiffusion:pattern",
@@ -1806,49 +1630,12 @@
       }
     },
     {
-      "id": "seed:reactionDiffusion:seed",
-      "pluginId": "reactionDiffusion",
-      "widgetId": "knob:3",
-      "paramId": "reactionDiffusion/seed",
-      "adapter": {
-        "kind": "absolute"
-      }
-    },
-    {
-      "id": "seed:reactionDiffusion:textStrength",
-      "pluginId": "reactionDiffusion",
-      "widgetId": "fader:1",
-      "paramId": "reactionDiffusion/textStrength",
-      "adapter": {
-        "kind": "absolute"
-      }
-    },
-    {
-      "id": "opacity:reactionDiffusion",
-      "pluginId": "reactionDiffusion",
-      "widgetId": "knob:9",
-      "paramId": "reactionDiffusion/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
-    },
-    {
       "id": "seed:shape:shape",
       "pluginId": "shape",
       "widgetId": "pad:4",
       "paramId": "shape/shape",
       "adapter": {
         "kind": "cycle"
-      }
-    },
-    {
-      "id": "seed:shape:resolution",
-      "pluginId": "shape",
-      "widgetId": "knob:0",
-      "paramId": "shape/resolution",
-      "adapter": {
-        "kind": "absolute"
       }
     },
     {
@@ -1933,16 +1720,6 @@
       }
     },
     {
-      "id": "opacity:shape",
-      "pluginId": "shape",
-      "widgetId": "knob:9",
-      "paramId": "shape/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
-    },
-    {
       "id": "seed:text:preset",
       "pluginId": "text",
       "widgetId": "pad:4",
@@ -1983,25 +1760,6 @@
       "pluginId": "text",
       "widgetId": "knob:1",
       "paramId": "text/tracking",
-      "adapter": {
-        "kind": "absolute"
-      }
-    },
-    {
-      "id": "opacity:text",
-      "pluginId": "text",
-      "widgetId": "knob:9",
-      "paramId": "text/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
-    },
-    {
-      "id": "seed:volumetricCloud:detail",
-      "pluginId": "volumetricCloud",
-      "widgetId": "knob:0",
-      "paramId": "volumetricCloud/detail",
       "adapter": {
         "kind": "absolute"
       }
@@ -2070,16 +1828,6 @@
       }
     },
     {
-      "id": "opacity:volumetricCloud",
-      "pluginId": "volumetricCloud",
-      "widgetId": "knob:9",
-      "paramId": "volumetricCloud/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
-    },
-    {
       "id": "seed:glyph:glyph",
       "pluginId": "glyph",
       "widgetId": "pad:4",
@@ -2105,16 +1853,6 @@
       "adapter": {
         "kind": "absolute"
       }
-    },
-    {
-      "id": "opacity:glyph",
-      "pluginId": "glyph",
-      "widgetId": "knob:9",
-      "paramId": "glyph/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
     },
     {
       "id": "seed:glyphScatter:cell",
@@ -2171,34 +1909,6 @@
       }
     },
     {
-      "id": "seed:glyphScatter:seed",
-      "pluginId": "glyphScatter",
-      "widgetId": "knob:6",
-      "paramId": "glyphScatter/seed",
-      "adapter": {
-        "kind": "absolute"
-      }
-    },
-    {
-      "id": "seed:glyphScatter:textStrength",
-      "pluginId": "glyphScatter",
-      "widgetId": "fader:1",
-      "paramId": "glyphScatter/textStrength",
-      "adapter": {
-        "kind": "absolute"
-      }
-    },
-    {
-      "id": "opacity:glyphScatter",
-      "pluginId": "glyphScatter",
-      "widgetId": "knob:9",
-      "paramId": "glyphScatter/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
-    },
-    {
       "id": "seed:ascii:cell",
       "pluginId": "ascii",
       "widgetId": "knob:0",
@@ -2215,16 +1925,6 @@
       "adapter": {
         "kind": "toggle"
       }
-    },
-    {
-      "id": "opacity:ascii",
-      "pluginId": "ascii",
-      "widgetId": "knob:9",
-      "paramId": "ascii/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
     },
     {
       "id": "seed:bayer:levels",
@@ -2254,16 +1954,6 @@
       }
     },
     {
-      "id": "opacity:bayer",
-      "pluginId": "bayer",
-      "widgetId": "knob:9",
-      "paramId": "bayer/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
-    },
-    {
       "id": "seed:colorLookup:count",
       "pluginId": "colorLookup",
       "widgetId": "knob:0",
@@ -2280,16 +1970,6 @@
       "adapter": {
         "kind": "absolute"
       }
-    },
-    {
-      "id": "opacity:colorLookup",
-      "pluginId": "colorLookup",
-      "widgetId": "knob:9",
-      "paramId": "colorLookup/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
     },
     {
       "id": "seed:deepGlow:radius0",
@@ -2355,16 +2035,6 @@
       }
     },
     {
-      "id": "opacity:deepGlow",
-      "pluginId": "deepGlow",
-      "widgetId": "knob:9",
-      "paramId": "deepGlow/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
-    },
-    {
       "id": "seed:fisheye:strength",
       "pluginId": "fisheye",
       "widgetId": "knob:0",
@@ -2381,26 +2051,6 @@
       "adapter": {
         "kind": "absolute"
       }
-    },
-    {
-      "id": "opacity:fisheye",
-      "pluginId": "fisheye",
-      "widgetId": "knob:9",
-      "paramId": "fisheye/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
-    },
-    {
-      "id": "opacity:none",
-      "pluginId": "none",
-      "widgetId": "knob:9",
-      "paramId": "none/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
     },
     {
       "id": "seed:pixelSort:threshold",
@@ -2430,16 +2080,6 @@
       }
     },
     {
-      "id": "opacity:pixelSort",
-      "pluginId": "pixelSort",
-      "widgetId": "knob:9",
-      "paramId": "pixelSort/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
-    },
-    {
       "id": "seed:pixelStretch:threshold",
       "pluginId": "pixelStretch",
       "widgetId": "knob:0",
@@ -2467,16 +2107,6 @@
       }
     },
     {
-      "id": "opacity:pixelStretch",
-      "pluginId": "pixelStretch",
-      "widgetId": "knob:9",
-      "paramId": "pixelStretch/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
-    },
-    {
       "id": "seed:pixelate:size",
       "pluginId": "pixelate",
       "widgetId": "knob:0",
@@ -2484,16 +2114,6 @@
       "adapter": {
         "kind": "absolute"
       }
-    },
-    {
-      "id": "opacity:pixelate",
-      "pluginId": "pixelate",
-      "widgetId": "knob:9",
-      "paramId": "pixelate/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
     },
     {
       "id": "seed:tracker:count",
@@ -2586,16 +2206,6 @@
       }
     },
     {
-      "id": "opacity:tracker",
-      "pluginId": "tracker",
-      "widgetId": "knob:9",
-      "paramId": "tracker/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
-    },
-    {
       "id": "seed:venetianBlinds:bands",
       "pluginId": "venetianBlinds",
       "widgetId": "knob:0",
@@ -2630,16 +2240,6 @@
       "adapter": {
         "kind": "absolute"
       }
-    },
-    {
-      "id": "opacity:venetianBlinds",
-      "pluginId": "venetianBlinds",
-      "widgetId": "knob:9",
-      "paramId": "venetianBlinds/opacity",
-      "adapter": {
-        "kind": "absolute"
-      },
-      "locked": true
     },
     {
       "id": "284a28fa-64d9-4f3d-bd52-1e275138b320",

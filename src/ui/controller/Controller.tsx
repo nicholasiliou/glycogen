@@ -97,6 +97,11 @@ function MixerPanel() {
   <Fader slot={1}/>
   <Fader slot={2}/>
   </div>
+
+  {/* horizontal fader spanning the mixer width, below the three vertical faders */}
+  <div className="w-full px-2">
+    <Fader slot={3} orient="horizontal"/>
+  </div>
     </div>
   );
 }

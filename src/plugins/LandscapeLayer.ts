@@ -46,7 +46,7 @@ function buildTerrain(N: number, amp: number, scaleN: number, time: number, octa
 
 /** A procedurally generated 3D landscape: a noise heightfield meshed and drawn as a rotating terrain. */
 export class LandscapeLayer extends Plugin {
-  resolution = this.number({ min: 8, max: 120, step: 1, default: 40 });
+  resolution = this.number({ min: 8, max: 48, step: 1, default: 40 });
   amplitude = this.number({ min: 0, max: 1.5, default: 0.55 });
   scale = this.number({ min: 1, max: 12, default: 4 });
   octaves = this.number({ min: 1, max: 6, step: 1, default: 4 });
@@ -70,7 +70,7 @@ export class LandscapeLayer extends Plugin {
   }
 
   render(f: Frame): HTMLCanvasElement {
-    const N = Math.max(8, Math.min(120, Math.round(this.resolution.value)));
+    const N = Math.max(8, Math.min(48, Math.round(this.resolution.value)));
     const octaves = Math.max(1, Math.round(this.octaves.value));
     const terrace = Math.round(this.terrace.value);
     const t = f.time * this.speed.value;

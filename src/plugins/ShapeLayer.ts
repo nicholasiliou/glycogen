@@ -19,7 +19,6 @@ const SHAPES = ["torusKnot", "sphere", "torus", "box", "cylinder", "cone", "supe
  */
 export class ShapeLayer extends Plugin {
   shape = this.cycle(SHAPES);
-  resolution = this.number({ min: 8, max: 80, step: 1, default: 28 });
   radius = this.number({ min: 0.1, max: 1.4, step: 0.01, default: 0.7 });
   lineWidth = this.number({ min: 0.25, max: 8, step: 0.25, default: 1 });
   tiltX = this.number({ min: -180, max: 180, default: 28 });
@@ -38,8 +37,11 @@ export class ShapeLayer extends Plugin {
     super();
   }
 
+  /** Mesh tessellation detail — fixed (no longer a param). */
+  private static readonly RESOLUTION = 8;
+
   private buildMesh(): number[] {
-    const res = Math.max(8, Math.min(80, Math.round(this.resolution.value)));
+    const res = ShapeLayer.RESOLUTION;
     switch (this.shape.pick(SHAPES)) {
       case "torus": return torusMesh(0.62, 0.28, res);
       case "box": return boxMesh();
@@ -52,7 +54,7 @@ export class ShapeLayer extends Plugin {
   }
 
   render(f: Frame): HTMLCanvasElement {
-    const key = `${this.shape.pick(SHAPES)}|${Math.round(this.resolution.value)}`;
+    const key = `${this.shape.pick(SHAPES)}|${ShapeLayer.RESOLUTION}`;
     if (key !== this.meshKey) {
       this.tris = this.buildMesh();
       this.meshKey = key;

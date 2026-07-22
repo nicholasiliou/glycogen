@@ -4,6 +4,7 @@ import { ControlBus } from "@/controls/ControlBus";
 import type { SlotId } from "@/controls/types";
 import type { AdapterKind } from "@/controls/adapters";
 import { actionBindings, appActions, bankOf, paramBindings, params, setActionBinding, setParamBinding, type AppAction } from "@/db/schema";
+import { fillerBindings } from "@/db/filler";
 import { useTable } from "@/db/useDb";
 import type { PluginInfo } from "@/plugins/registry";
 import { create } from "@/plugins/registry";
@@ -239,6 +240,11 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     for (const row of paramBindings.by("plugin", managed.id)) {
       const p = params.get(row.paramId);
       if (p) slotLabels[row.widgetId] = p.name;
+    }
+    // Exhibition fillers: label every otherwise-empty widget with the param it phantom-drives, so
+    // the surface looks as alive as it acts (Stage drives these same fillers). Real bindings win.
+    for (const filler of fillerBindings(managed.id)) {
+      if (!slotLabels[filler.widgetId]) slotLabels[filler.widgetId] = filler.param.name;
     }
   }
 
