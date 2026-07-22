@@ -19,6 +19,7 @@ export function MidiSettingsDialog() {
   const { midi, remoteConnected, controllerConnected } = useLive();
   const status = midi.status;
   const devices = midi.devices();
+  console.warn("[midi] dialog render; status", status, "devices", devices.length);
   const unlocked = controllerConnected;
 
   const openEmulator = () =>

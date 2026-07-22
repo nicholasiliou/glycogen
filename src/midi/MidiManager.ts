@@ -76,12 +76,14 @@ export class MidiManager {
   }
 
   private setStatus(s: MidiStatus): void {
+    console.warn("[midi] setStatus", this._status, "->", s);
     this._status = s;
     this.emit("status", s);
   }
 
   /** Request access (needs a secure context; Chrome/Edge support it best). */
   enable(): Promise<void> {
+    console.warn("[midi] enable() called; access?", !!this.access, "enabling?", !!this.enabling, "status", this._status);
     if (this.access) return Promise.resolve();
     // Coalesce concurrent calls: a second enable() while the first is still awaiting
     // requestMIDIAccess must NOT start its own request. Two requests yield two *distinct* access
