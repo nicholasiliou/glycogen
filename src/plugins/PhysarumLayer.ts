@@ -109,6 +109,33 @@ export class PhysarumLayer extends Plugin {
     this.simStep = 0;
   }
 
+  /**
+   * Resample the trail grid into the current size (nearest-neighbour) and rescale agent positions
+   * from the previous grid, so a resize preserves the evolved network instead of re-seeding. Agents
+   * count and headings are untouched; only their x/y are mapped into the new coordinate space.
+   */
+  private resample(prev: { cols: number; rows: number }): void {
+    const n = this.cols * this.rows;
+    const t = new Float32Array(n);
+    if (prev.cols > 0 && prev.rows > 0) {
+      for (let y = 0; y < this.rows; y++) {
+        const sy = Math.min(prev.rows - 1, Math.floor((y * prev.rows) / this.rows));
+        for (let x = 0; x < this.cols; x++) {
+          const sx = Math.min(prev.cols - 1, Math.floor((x * prev.cols) / this.cols));
+          t[y * this.cols + x] = this.trail[sy * prev.cols + sx];
+        }
+      }
+      const sxScale = this.cols / prev.cols;
+      const syScale = this.rows / prev.rows;
+      for (let i = 0; i < this.nAgents; i++) {
+        this.ax[i] = Math.min(this.cols - 1e-3, this.ax[i] * sxScale);
+        this.ay[i] = Math.min(this.rows - 1e-3, this.ay[i] * syScale);
+      }
+    }
+    this.trail = t;
+    this.trail2 = new Float32Array(n);
+  }
+
   private sense(fx: number, fy: number): number {
     const { cols, rows, trail } = this;
     let x = Math.floor(fx) % cols;
@@ -193,21 +220,26 @@ export class PhysarumLayer extends Plugin {
       this.maskActive = false;
     }
 
-    const needsReinit =
-      cols !== this.cols ||
-      rows !== this.rows ||
+    const resized = cols !== this.cols || rows !== this.rows;
+    const reseeded =
       count !== this.lastCount ||
       seed !== this.lastSeed ||
       this.reseed.count !== this.lastReseed ||
       (mode === "fill" && this.lastTextMode !== "fill" && this.maskActive);
 
-    if (needsReinit) {
+    if (resized || reseeded) {
+      const hadState = this.trail.length > 0 && this.nAgents > 0;
+      const prev = { cols: this.cols, rows: this.rows };
       this.cols = cols;
       this.rows = rows;
       this.lastCount = count;
       this.lastSeed = seed;
       this.lastReseed = this.reseed.count;
-      this.reinit(count, seed, this.maskActive ? this.mask : null);
+      // A pure resize (e.g. an export locking the render size) must NOT wipe the evolved network —
+      // resample the trail and rescale agent positions into the new grid. Only a real
+      // count/seed/reseed/mode change re-seeds from scratch.
+      if (resized && !reseeded && hadState) this.resample(prev);
+      else this.reinit(count, seed, this.maskActive ? this.mask : null);
     }
     this.lastTextMode = mode;
 

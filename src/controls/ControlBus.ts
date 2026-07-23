@@ -9,10 +9,18 @@ import { clamp01, emptySlotLive, type DriveInput, type SlotId, type SlotLive } f
 export class ControlBus {
   private slots = new Map<SlotId, SlotLive>();
   private subs = new Map<SlotId, Set<(live: SlotLive) => void>>();
+  private activitySubs = new Set<() => void>();
 
   /** Current live state of a slot (a shared empty snapshot for untouched slots). */
   get(slot: SlotId): SlotLive {
     return this.slots.get(slot) ?? EMPTY;
+  }
+
+  /** Fires on ANY control activity (any `drive`/`fire`, any slot). For coarse liveness signals —
+   *  e.g. the exhibition's inactivity reset — that don't care which control was touched. */
+  onActivity(fn: () => void): () => void {
+    this.activitySubs.add(fn);
+    return () => this.activitySubs.delete(fn);
   }
 
   private ensure(slot: SlotId): SlotLive {
@@ -63,6 +71,7 @@ export class ControlBus {
   private emit(slot: SlotId, live: SlotLive): void {
     const set = this.subs.get(slot);
     if (set) for (const fn of set) fn(live);
+    for (const fn of this.activitySubs) fn();
   }
 }
 

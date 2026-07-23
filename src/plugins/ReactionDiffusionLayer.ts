@@ -108,6 +108,33 @@ export class ReactionDiffusionLayer extends Plugin {
     }
   }
 
+  /**
+   * Resample the U/V fields from a previous grid size into the current one (nearest-neighbour),
+   * preserving the evolved pattern across a resize instead of re-seeding. Keeps the scratch buffers
+   * sized to the new grid.
+   */
+  private resample(prev: { u: Float32Array; v: Float32Array; cols: number; rows: number }): void {
+    const n = this.cols * this.rows;
+    const u = new Float32Array(n);
+    const v = new Float32Array(n);
+    // U starts at 1 (unreacted substrate); V at 0. New cells outside the old grid inherit those.
+    u.fill(1);
+    for (let y = 0; y < this.rows; y++) {
+      const sy = Math.min(prev.rows - 1, Math.floor((y * prev.rows) / this.rows));
+      for (let x = 0; x < this.cols; x++) {
+        const sx = Math.min(prev.cols - 1, Math.floor((x * prev.cols) / this.cols));
+        const si = sy * prev.cols + sx;
+        const di = y * this.cols + x;
+        u[di] = prev.u[si];
+        v[di] = prev.v[si];
+      }
+    }
+    this.u = u;
+    this.v = v;
+    this.u2 = new Float32Array(n);
+    this.v2 = new Float32Array(n);
+  }
+
   private step(feed: number, kill: number): void {
     const { cols, rows, u, v, u2, v2 } = this;
     for (let y = 0; y < rows; y++) {
@@ -173,16 +200,25 @@ export class ReactionDiffusionLayer extends Plugin {
       }
     }
 
-    const needsReinit = cols !== this.cols || rows !== this.rows || seed !== this.lastSeed || this.reseed.count !== this.lastReseed;
-    if (needsReinit) {
+    const resized = cols !== this.cols || rows !== this.rows;
+    const reseeded = seed !== this.lastSeed || this.reseed.count !== this.lastReseed;
+    if (resized || reseeded) {
+      const hadState = this.u.length > 0;
+      const prev = { u: this.u, v: this.v, cols: this.cols, rows: this.rows };
       this.cols = cols;
       this.rows = rows;
       this.lastSeed = seed;
       this.lastReseed = this.reseed.count;
-      this.reinit(seed);
-      // Seed along mask immediately after init if in fill mode.
-      if (mode === "fill" && f.textField && this.mask.length === n) {
-        rdSeedAlongMask(this.u, this.v, this.mask, n);
+      // A pure resize (e.g. an export locking the render size) must NOT wipe the evolved pattern —
+      // resample the existing grid into the new size so the still captures what's on screen. Only an
+      // actual seed/reseed change (or the very first frame) re-seeds from scratch.
+      if (resized && !reseeded && hadState) this.resample(prev);
+      else {
+        this.reinit(seed);
+        // Seed along mask immediately after init if in fill mode.
+        if (mode === "fill" && f.textField && this.mask.length === n) {
+          rdSeedAlongMask(this.u, this.v, this.mask, n);
+        }
       }
     }
 

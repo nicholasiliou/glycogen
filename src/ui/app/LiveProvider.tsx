@@ -69,6 +69,8 @@ interface LiveCtx {
   remoteConnected: boolean;
   /** Something can play the surface: a hardware MIDI device or the emulator. Gates assignment. */
   controllerConnected: boolean;
+  /** Seconds until the exhibition inactivity reset re-randomizes, or null outside the warning window. */
+  idleCountdown: number | null;
 }
 
 const Ctx = createContext<LiveCtx | null>(null);
@@ -82,6 +84,11 @@ export function useLive(): LiveCtx {
 /** Accumulated jog delta that fires one browse step per this many units — deliberately coarse
  *  (~most of a platter revolution) so a flick can't overshoot into loading the wrong plugin. */
 const JOG_STEP = 30;
+
+/** Exhibition inactivity reset: re-roll a random scene after this long with no control activity. */
+const IDLE_RESET_MS = 5 * 60 * 1000;
+/** Show the countdown warning once this much of the idle window remains. */
+const IDLE_WARN_MS = 20 * 1000;
 
 export function LiveProvider({ children }: { children: ReactNode }) {
   const refs = useRef<{ bus: ControlBus; stage: Stage; audio: AudioEngine; performer: LivePerformer; midi: MidiManager }>();
@@ -113,10 +120,11 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     };
   }, [midi]);
 
-  // Random boot scene: every page refresh loads two *different* random generators into banks 0 and
-  // 1, each with a random shader (incl. "none"), so the exhibition never opens the same way twice.
-  // Selecting bank 0 afterwards syncs the browse dials/previews to what actually landed.
-  useEffect(() => {
+  // Random scene: load two *different* random generators into banks 0 and 1, each with a random
+  // shader (incl. "none"), so the exhibition never opens the same way twice. Called on boot AND by
+  // the inactivity reset below. Selecting bank 0 afterwards syncs the browse dials/previews to what
+  // actually landed. Held in a ref so effects can call the latest without re-subscribing.
+  const randomizeScene = () => {
     const gens = [...browse.generators];
     const fx = browse.effects; // includes "none" — a real chance of no shader
     if (gens.length === 0) return;
@@ -130,8 +138,48 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       stage.setShader(bank, shader && shader.id !== "none" ? create(shader.id) : null);
     });
     selectBank(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- boot once; selectBank is stable enough here
+  };
+  const randomizeRef = useRef(randomizeScene);
+  randomizeRef.current = randomizeScene;
+
+  // Random boot scene once on mount.
+  useEffect(() => {
+    randomizeRef.current();
   }, [stage]);
+
+  // ── exhibition inactivity reset ──
+  // If nobody touches any control (on-screen, pop-out or hardware MIDI) for IDLE_RESET_MS, re-roll
+  // a fresh random scene so a visitor who's cranked everything into the weeds hands the piece back
+  // in a sensible state. `idleCountdown` is the seconds left, surfaced to the UI as a small warning
+  // once we're inside the final IDLE_WARN_MS; null the rest of the time.
+  const [idleCountdown, setIdleCountdown] = useState<number | null>(null);
+  useEffect(() => {
+    let deadline = performance.now() + IDLE_RESET_MS;
+    const bump = () => {
+      deadline = performance.now() + IDLE_RESET_MS;
+    };
+    const offBus = bus.onActivity(bump);
+    window.addEventListener("pointerdown", bump);
+    window.addEventListener("keydown", bump);
+    const id = window.setInterval(() => {
+      const remaining = deadline - performance.now();
+      if (remaining <= 0) {
+        randomizeRef.current();
+        deadline = performance.now() + IDLE_RESET_MS;
+        setIdleCountdown(null);
+      } else if (remaining <= IDLE_WARN_MS) {
+        setIdleCountdown(Math.ceil(remaining / 1000));
+      } else {
+        setIdleCountdown((c) => (c === null ? c : null));
+      }
+    }, 500);
+    return () => {
+      offBus();
+      window.removeEventListener("pointerdown", bump);
+      window.removeEventListener("keydown", bump);
+      window.clearInterval(id);
+    };
+  }, [bus]);
 
   const stepBrowse = (target: "plugin" | "shader", delta: number) =>
     target === "plugin" ? stepPlugin(delta) : stepShader(delta);
@@ -332,6 +380,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     lastMidi,
     remoteConnected,
     controllerConnected: remoteConnected || midi.devices().length > 0,
+    idleCountdown,
   };
 
   return (

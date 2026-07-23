@@ -90,6 +90,22 @@ function LearnToast() {
   );
 }
 
+/** Exhibition inactivity warning: a small countdown that appears in the final seconds before the
+ *  scene re-randomizes itself, so a lull doesn't reset without warning. Any control touch (or
+ *  click/keypress) resets the timer in the provider and clears this. */
+function IdleResetToast() {
+  const { idleCountdown } = useLive();
+  if (idleCountdown === null) return null;
+  return (
+    <div className="pointer-events-none absolute bottom-4 left-1/2 z-50 -translate-x-1/2 flex items-center gap-2 rounded-lg bg-black/60 px-4 py-2 text-sm text-ink backdrop-blur">
+      <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
+      <span>
+        Resetting to a fresh scene in <span className="font-mono text-accent">{idleCountdown}s</span> — touch any control to keep this one
+      </span>
+    </div>
+  );
+}
+
 function LiveShell() {
   const { load, midi, remoteConnected, controllerConnected } = useLive();
   const [controllerOpen, setControllerOpen] = useState(false);
@@ -151,6 +167,7 @@ function LiveShell() {
           <Stage />
           <StartGate />
           <LearnToast />
+          <IdleResetToast />
           {/* Drawer toggle: a little arrow on the right edge of the stage. */}
           <button
             onClick={() => setControlsOpen((o) => !o)}

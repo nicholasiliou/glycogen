@@ -32,7 +32,7 @@ const modules = import.meta.glob<Record<string, unknown>>(
  * it's just not discovered, so it never appears in the browser, the db, or the fillers. Remove an id
  * here to re-enable it. Disabled for the demo: `volumetricCloud`, `pixelSort`.
  */
-const DISABLED = new Set<string>(["volumetricCloud", "pixelSort"]);
+export const DISABLED = new Set<string>(["volumetricCloud", "pixelSort"]);
 
 const registry = new Map<string, Entry>();
 for (const [path, mod] of Object.entries(modules)) {
