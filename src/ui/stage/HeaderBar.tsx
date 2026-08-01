@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Dices, Gamepad, Volume2, VolumeX } from "lucide-react";
+import { useRef, useState } from "react";
+import { Dices, Gamepad, GripVertical, Trash2, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/ui/components/button";
 import { ConfirmDialog } from "@/ui/components/confirm-dialog";
 import { cn } from "@/ui/lib/cn";
@@ -41,13 +41,57 @@ function MiniDial({ index, count, onStep }: { index: number; count: number; onSt
   );
 }
 
-/** The unified bank strip: one dot per bank — load, activate, or remove the browsed plugin. */
+/** A 1×1 transparent PNG used to hide the browser's default drag ghost for the bank pills. */
+const EMPTY_DRAG_IMAGE =
+  typeof Image !== "undefined"
+    ? Object.assign(new Image(), {
+        src: "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+      })
+    : (undefined as unknown as HTMLImageElement);
+
+/**
+ * Pick black or white text for a `#rrggbb` fill via WCAG relative luminance — keeps the plugin
+ * name legible inside the active pill whatever color the layer wears.
+ */
+function contrastInk(hex: string): "#000" | "#fff" {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return "#fff";
+  const n = parseInt(m[1], 16);
+  const lin = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  const L = 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+  return L > 0.4 ? "#000" : "#fff";
+}
+
+/**
+ * The unified bank strip: one pill per bank — load, activate, or remove the browsed plugin. The
+ * active bank swells into a labelled pill (name + drag handle); the rest stay compact dots. Drag a
+ * pill over another to reorder (with a live preview of the resulting order) or onto the trash to
+ * empty it.
+ */
 function BankStrip() {
   const { banks, activeBank, selectBank, moveBank, load, clearBank } = useLive();
-  const layer = banks[activeBank]?.plugin;
-  const name = layer ? labelOf(layer.id) : "";
   const [removing, setRemoving] = useState<number | null>(null);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
+  const [overTrash, setOverTrash] = useState(false);
+  // The pills row is the single drop zone: every pill carries a data-index so a pointer anywhere in
+  // the strip (pills, carets, gaps) resolves to an insertion slot — no more releases landing on a
+  // gap with no handler and silently doing nothing.
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  /** Insertion slot (0..N) for a pointer X: which side of the nearest pill's midpoint it's on. */
+  const slotAt = (clientX: number): number => {
+    const pills = rowRef.current?.querySelectorAll<HTMLElement>("[data-bank]");
+    if (!pills?.length) return 0;
+    for (let k = 0; k < pills.length; k++) {
+      const r = pills[k].getBoundingClientRect();
+      if (clientX < r.left + r.width / 2) return k;
+    }
+    return pills.length;
+  };
 
   const onBankClick = (i: number) => {
     if (!banks[i].plugin) return load(i);
@@ -55,43 +99,132 @@ function BankStrip() {
     else selectBank(i);
   };
 
+  // `dragOver` holds the target *insertion slot* (0..N, the gap the caret sits in). `moveBank`'s
+  // `to` is a post-removal index, so a slot past the source shifts left by one. Dropping into the
+  // source's own two adjacent slots is a no-op.
+  const dropTo =
+    dragFrom !== null && dragOver !== null && dragOver !== dragFrom && dragOver !== dragFrom + 1
+      ? dragOver > dragFrom
+        ? dragOver - 1
+        : dragOver
+      : null;
+
   const removingLayer = removing !== null ? banks[removing].plugin : null;
   const removingName = removingLayer ? labelOf(removingLayer.id) : "";
 
+  // The drop position is shown as a fixed-width caret *between* pills — nothing resizes during the
+  // drag, so the geometry under the cursor never shifts (which is what caused the rapid layout
+  // oscillation). The caret sits in `dragOver`'s slot whenever the drop would actually move.
+  const caretAt = dropTo !== null ? dragOver : null;
+
+  const Caret = ({ at }: { at: number }) => (
+    <div
+      aria-hidden
+      className={cn(
+        "h-5 w-0.5 shrink-0 rounded-full bg-ink transition-opacity duration-150",
+        caretAt === at ? "opacity-80" : "opacity-0",
+      )}
+    />
+  );
+
   return (
     <div className="flex min-w-0 items-center gap-1.5">
-      <span className="max-w-30 truncate text-[0.6875rem] text-ink" title="Active bank">{name}</span>
-      <div className="flex items-center gap-1">
-        {banks.map((bank, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => onBankClick(i)}
-            // Dots drag to reorder the row (bank order is composite order).
-            draggable
-            onDragStart={(e) => {
-              setDragFrom(i);
-              e.dataTransfer.effectAllowed = "move";
-            }}
-            onDragOver={(e) => {
-              if (dragFrom !== null) e.preventDefault();
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              if (dragFrom !== null && dragFrom !== i) moveBank(dragFrom, i);
-              setDragFrom(null);
-            }}
-            onDragEnd={() => setDragFrom(null)}
-            title={`Bank ${i + 1}${bank.plugin ? (i === activeBank ? " · active (click to remove)" : " · loaded (click to activate)") : " · empty (click to load)"} · drag to reorder`}
-            // Loaded banks wear their layer's color (the tint, else the plugin's native color).
-            style={bank.plugin ? { backgroundColor: bank.plugin.displayColor() } : undefined}
-            className={cn(
-              "h-3 w-3 cursor-pointer rounded-full transition-colors",
-              bank.plugin ? (i === activeBank ? "" : "opacity-50") : "bg-edge",
-              dragFrom === i && "ring-1 ring-ink/60",
-            )}
-          />
-        ))}
+      {/* Trash target: drag a bank here to empty it. Only interactive mid-drag. */}
+      <button
+        type="button"
+        onDragOver={(e) => {
+          if (dragFrom === null || !banks[dragFrom].plugin) return;
+          e.preventDefault();
+          setDragOver(null);
+          setOverTrash(true);
+        }}
+        onDragLeave={() => setOverTrash(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          if (dragFrom !== null && banks[dragFrom].plugin) clearBank(dragFrom);
+          setDragFrom(null);
+          setOverTrash(false);
+        }}
+        title="Drag a bank here to remove its plugin"
+        className={cn(
+          "flex h-6 w-6 shrink-0 items-center justify-center rounded transition-opacity duration-300 ease-out",
+          dragFrom !== null && banks[dragFrom].plugin ? "opacity-100" : "pointer-events-none opacity-0",
+          overTrash ? "bg-red-500/20 text-red-400 ring-1 ring-red-400/60" : "text-ink-dim",
+        )}
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+
+      {/* The whole row is the drop zone, so a release anywhere in it resolves to a slot. */}
+      <div
+        ref={rowRef}
+        className="flex items-center gap-0.5"
+        onDragOver={(e) => {
+          if (dragFrom === null) return;
+          e.preventDefault();
+          setOverTrash(false);
+          setDragOver(slotAt(e.clientX));
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          const to =
+            dragFrom !== null
+              ? (() => {
+                  const s = slotAt(e.clientX);
+                  return s !== dragFrom && s !== dragFrom + 1 ? (s > dragFrom ? s - 1 : s) : null;
+                })()
+              : null;
+          if (dragFrom !== null && to !== null) moveBank(dragFrom, to);
+          setDragFrom(null);
+          setDragOver(null);
+        }}
+      >
+        <Caret at={0} />
+        {banks.map((bank, i) => {
+          const active = i === activeBank;
+          const color = bank.plugin?.displayColor();
+          const dragging = dragFrom === i;
+          return (
+            <div key={i} className="flex items-center gap-0.5">
+              <button
+                type="button"
+                data-bank={i}
+                onClick={() => onBankClick(i)}
+                // Pills drag to reorder the row (bank order is composite order).
+                draggable
+                onDragStart={(e) => {
+                  setDragFrom(i);
+                  e.dataTransfer.effectAllowed = "move";
+                  // Suppress the native drag ghost (its opaque box shows black edges); the dimmed
+                  // source pill + the caret already communicate the drag.
+                  e.dataTransfer.setDragImage(EMPTY_DRAG_IMAGE, 0, 0);
+                }}
+                onDragEnd={() => {
+                  setDragFrom(null);
+                  setDragOver(null);
+                  setOverTrash(false);
+                }}
+                title={`Bank ${i + 1}${bank.plugin ? (active ? " · active (click to remove)" : " · loaded (click to activate)") : " · empty (click to load)"} · drag to reorder or onto the trash to remove`}
+                // Loaded banks wear their layer's color (the tint, else the plugin's native color).
+                style={color ? { backgroundColor: color, color: contrastInk(color) } : undefined}
+                className={cn(
+                  "flex h-6 cursor-pointer items-center overflow-hidden rounded-full transition-opacity",
+                  active && bank.plugin ? "gap-0.5 px-2 text-[0.6875rem] font-medium" : "h-3 w-3 justify-center",
+                  !bank.plugin && "bg-edge",
+                  dragging && "opacity-30",
+                )}
+              >
+                {active && bank.plugin && (
+                  <>
+                    <GripVertical className="-ml-0.5 h-3 w-3 shrink-0 opacity-60" />
+                    <span className="max-w-30 truncate">{labelOf(bank.plugin.id)}</span>
+                  </>
+                )}
+              </button>
+              <Caret at={i + 1} />
+            </div>
+          );
+        })}
       </div>
 
       <ConfirmDialog
@@ -173,6 +306,9 @@ export function HeaderBar({
       <div className="flex-1" />
 
       <BankStrip />
+
+      {/* Divider: plugin-scoped controls (banks · trash) on the left, global actions on the right. */}
+      <div className="mx-1 h-6 w-px shrink-0 self-center bg-edge" />
 
       <ExportPanel />
       <Button
