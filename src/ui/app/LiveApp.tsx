@@ -113,6 +113,22 @@ function LiveShell() {
   // by a ResizeObserver on its host) re-fits to the narrower area automatically.
   const [controlsOpen, setControlsOpen] = useState(false);
 
+  // Track the stage container's left offset and width so HeaderBar can center its controls over it.
+  const stageContainerRef = useRef<HTMLDivElement>(null);
+  const [stageRect, setStageRect] = useState<{ left: number; width: number } | null>(null);
+  useEffect(() => {
+    const el = stageContainerRef.current;
+    if (!el) return;
+    const update = () => {
+      const r = el.getBoundingClientRect();
+      setStageRect({ left: r.left, width: r.width });
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // Boot default: without a controller (hardware or emulator) the on-screen sliders are the only
   // way to play, so open the drawer; with one connected keep it closed. Decided once, shortly
   // after MIDI enumeration settles — the delay lets an already-open emulator answer the bridge's
@@ -160,10 +176,10 @@ function LiveShell() {
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-black text-ink">
-      <HeaderBar controllerOpen={controllerOpen} onControllerToggle={() => setControllerOpen((o) => !o)} />
+      <HeaderBar controllerOpen={controllerOpen} onControllerToggle={() => setControllerOpen((o) => !o)} stageRect={stageRect} />
       <div className="flex min-h-0 flex-1">
         {/* Also the dialog portal target: dialogs center on the canvas, not the page. */}
-        <div id={DIALOG_PORTAL_ID} className="relative min-h-0 flex-1">
+        <div ref={stageContainerRef} id={DIALOG_PORTAL_ID} className="relative min-h-0 flex-1">
           <Stage />
           <StartGate />
           <LearnToast />

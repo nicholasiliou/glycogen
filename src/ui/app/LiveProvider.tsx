@@ -1,11 +1,13 @@
 import { createContext, useContext, useEffect, useReducer, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ControlBus } from "@/controls/ControlBus";
+import { Param, ButtonParam } from "@/controls/Param";
 import type { SlotId } from "@/controls/types";
 import type { AdapterKind } from "@/controls/adapters";
 import { actionBindings, appActions, bankOf, paramBindings, params, setActionBinding, setParamBinding, type AppAction } from "@/db/schema";
 import { fillerBindings } from "@/db/filler";
 import { useTable } from "@/db/useDb";
+import type { Plugin } from "@/plugins/Plugin";
 import type { PluginInfo } from "@/plugins/registry";
 import { create } from "@/plugins/registry";
 import { Stage, type FocusPart } from "@/runtime/Stage";
@@ -74,6 +76,8 @@ interface LiveCtx {
   controllerConnected: boolean;
   /** Seconds until the exhibition inactivity reset re-randomizes, or null outside the warning window. */
   idleCountdown: number | null;
+  /** Re-roll a completely random scene: random plugins, shaders, and param values. */
+  randomizeScene: () => void;
 }
 
 const Ctx = createContext<LiveCtx | null>(null);
@@ -124,27 +128,57 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   }, [midi]);
 
   // Random scene: load two *different* random generators into banks 0 and 1, each with a random
-  // shader (incl. "none"), so the exhibition never opens the same way twice. Called on boot AND by
-  // the inactivity reset below. Selecting bank 0 afterwards syncs the browse dials/previews to what
-  // actually landed. Held in a ref so effects can call the latest without re-subscribing.
+  // shader (incl. "none"), so the exhibition never opens the same way twice. Also randomizes every
+  // non-reserved param on each loaded plugin and shader. Called on boot AND by the inactivity reset
+  // below. Selecting bank 0 afterwards syncs the browse dials/previews to what actually landed.
+  // Held in a ref so effects can call the latest without re-subscribing.
   const randomizeScene = () => {
     const gens = [...browse.generators];
     const fx = browse.effects; // always load a shader — "none" is the passthrough, never null
     if (gens.length === 0) return;
     const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
-    // Pull two distinct generators (fall back to one if the registry somehow has a single entry).
-    const first = gens.splice(Math.floor(Math.random() * gens.length), 1)[0];
-    const second = gens.length ? gens.splice(Math.floor(Math.random() * gens.length), 1)[0] : first;
+
+    const randomizeParams = (plugin: Plugin) => {
+      for (const p of plugin.params) {
+        // Skip unnamed or opacity/reserved params
+        if (!p.name || p.name === "opacity") continue;
+        if (p instanceof Param) {
+          p.setNorm(Math.random());
+          p.snap();
+        } else if (p instanceof ButtonParam) {
+          if (p.intent === "cycle" && p.cycle.length > 0) {
+            p.count = Math.floor(Math.random() * p.cycle.length);
+          } else if (p.intent === "toggle") {
+            p.on = Math.random() < 0.5;
+          }
+          // triggers are one-shot — not sensible to randomize
+        }
+      }
+    };
+
+    // One bank: text plugin (always). One bank: a random generator (not text).
+    const textInfo = gens.find((g) => g.id === "text");
+    const nonText = gens.filter((g) => g.id !== "text");
+    const randomGen = nonText.length ? nonText.splice(Math.floor(Math.random() * nonText.length), 1)[0] : gens[0];
     // Pick two distinct random bank slots.
     const bankIndices = Array.from({ length: stage.banks.length }, (_, i) => i);
     const bankA = bankIndices.splice(Math.floor(Math.random() * bankIndices.length), 1)[0];
     const bankB = bankIndices.splice(Math.floor(Math.random() * bankIndices.length), 1)[0];
-    [first, second].forEach((gen, i) => {
-      const bank = i === 0 ? bankA : bankB;
-      stage.loadBank(bank, create(gen.id));
+    const pairs: Array<{ gen: PluginInfo; bank: number; randomParams: boolean }> = [
+      { gen: randomGen, bank: bankA, randomParams: true },
+      ...(textInfo ? [{ gen: textInfo, bank: bankB, randomParams: false }] : []),
+    ];
+    for (const { gen, bank, randomParams } of pairs) {
+      const plugin = create(gen.id);
+      if (randomParams) randomizeParams(plugin);
+      stage.loadBank(bank, plugin);
       const shader = fx.length ? pick(fx) : undefined;
-      if (shader) stage.setShader(bank, create(shader.id));
-    });
+      if (shader) {
+        const shaderPlugin = create(shader.id);
+        if (randomParams) randomizeParams(shaderPlugin);
+        stage.setShader(bank, shaderPlugin);
+      }
+    }
     selectBank(bankA);
   };
   const randomizeRef = useRef(randomizeScene);
@@ -402,6 +436,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     remoteConnected,
     controllerConnected: remoteConnected || midi.devices().length > 0,
     idleCountdown,
+    randomizeScene,
   };
 
   return (

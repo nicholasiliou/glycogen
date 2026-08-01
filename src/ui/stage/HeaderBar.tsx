@@ -391,9 +391,11 @@ function BankStrip({ drag }: { drag: BankDragState }) {
 export function HeaderBar({
   controllerOpen,
   onControllerToggle,
+  stageRect,
 }: {
   controllerOpen: boolean;
   onControllerToggle: () => void;
+  stageRect: { left: number; width: number } | null;
 }) {
   const {
     generators,
@@ -415,14 +417,19 @@ export function HeaderBar({
   const drag: BankDragState = { dragFrom, setDragFrom, overTrash, setOverTrash };
 
   return (
-    <div className="flex h-14 shrink-0 items-center gap-3 px-4 text-ink">
-      {/* Center: plugin wheel · banks · shader wheel */}
-      <div className="flex flex-1 items-center justify-center gap-2">
-        <WheelPicker items={generators} index={selectedPluginIndex} onStep={stepPlugin} jogPx={jogPluginPx} width={148} />
-        <div className="mx-1 h-6 w-px shrink-0 self-center bg-edge/40" />
-        <BankStrip drag={drag} />
-        <div className="mx-1 h-6 w-px shrink-0 self-center bg-edge/40" />
-        <WheelPicker items={effects} index={selectedShaderIndex} onStep={stepShader} jogPx={jogShaderPx} width={120} />
+    <div className="relative flex h-14 shrink-0 items-center overflow-hidden px-4 text-ink">
+      {/* Center: plugin wheel · banks · shader wheel — pinned over the live canvas column. */}
+      <div
+        className="pointer-events-none absolute inset-y-0 flex items-center justify-center"
+        style={stageRect ? { left: stageRect.left, width: stageRect.width } : { left: 0, right: 0 }}
+      >
+        <div className="pointer-events-auto flex items-center gap-2">
+          <WheelPicker items={generators} index={selectedPluginIndex} onStep={stepPlugin} jogPx={jogPluginPx} width={148} />
+          <div className="mx-1 h-6 w-px shrink-0 self-center bg-edge/40" />
+          <BankStrip drag={drag} />
+          <div className="mx-1 h-6 w-px shrink-0 self-center bg-edge/40" />
+          <WheelPicker items={effects} index={selectedShaderIndex} onStep={stepShader} jogPx={jogShaderPx} width={120} />
+        </div>
       </div>
 
       {/* Raw routing readout — dev hint, admin only */}
@@ -433,28 +440,30 @@ export function HeaderBar({
       )}
 
       {/* Right actions: trash (drag target) · export · controller · mute · shuffle */}
-      <TrashTarget drag={drag} />
-      <ExportPanel />
-      <Button
-        size="icon-sm"
-        variant={controllerOpen ? "default" : "ghost"}
-        onClick={onControllerToggle}
-        title={controllerOpen ? "Close controller" : "Open controller"}
-      >
-        <Gamepad className="h-4 w-4" />
-      </Button>
-      <Button
-        size="icon-sm"
-        variant="ghost"
-        onClick={toggleMute}
-        title={muted ? "Unmute" : "Mute"}
-        className={cn(muted && "text-red-400/70")}
-      >
-        {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-      </Button>
-      <Button size="icon-sm" variant="ghost" title="Shuffle scene" onClick={() => window.location.reload()}>
-        <Dices className="h-4 w-4" />
-      </Button>
+      <div className="ml-auto flex items-center gap-3">
+        <TrashTarget drag={drag} />
+        <ExportPanel />
+        <Button
+          size="icon-sm"
+          variant={controllerOpen ? "default" : "ghost"}
+          onClick={onControllerToggle}
+          title={controllerOpen ? "Close controller" : "Open controller"}
+        >
+          <Gamepad className="h-4 w-4" />
+        </Button>
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          onClick={toggleMute}
+          title={muted ? "Unmute" : "Mute"}
+          className={cn(muted && "text-red-400/70")}
+        >
+          {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+        </Button>
+        <Button size="icon-sm" variant="ghost" title="Shuffle scene" onClick={() => window.location.reload()}>
+          <Dices className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 }
