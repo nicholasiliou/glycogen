@@ -5,6 +5,7 @@ import { clamp01 } from "@/controls/types";
 import { clearDefaults, hasDefaults, isAdmin, saveDefaults } from "@/db/appDefaults";
 import { params, type ParamRow } from "@/db/schema";
 import type { Plugin } from "@/plugins/Plugin";
+import { TextLayer, TEXT_PRESETS } from "@/plugins/TextLayer";
 import { labelOf } from "@/plugins/registry";
 import { useTable } from "@/db/useDb";
 import { useLive } from "@/ui/app/LiveProvider";
@@ -60,6 +61,7 @@ export function ControlsPanel() {
             {stage.focusPart === "shader" && <span className="ml-1 rounded bg-accent/15 px-1 text-accent">fx</span>}
           </span>
         </div>
+        {managed instanceof TextLayer && <CustomTextField layer={managed} />}
         <div className="space-y-3">
           {rows.map((row) => {
             const live = liveByName.get(row.name);
@@ -73,6 +75,33 @@ export function ControlsPanel() {
         </div>
       </div>
       {isAdmin() && <AdminDefaults managed={managed} />}
+    </div>
+  );
+}
+
+/**
+ * Freeform text for the Text layer: type anything and it replaces the preset list until the field
+ * is cleared. Non-persistent by design — it lives on the layer instance only, so reloading the
+ * plugin, restoring a scene or resetting the exhibition brings the presets back.
+ */
+function CustomTextField({ layer }: { layer: TextLayer }) {
+  const [value, setValue] = useState(layer.customText);
+  // A different Text instance (other bank, freshly loaded) carries its own text.
+  useEffect(() => setValue(layer.customText), [layer]);
+  return (
+    <div className="mb-4 flex flex-col gap-1">
+      <span className="text-xs text-ink-dim">text override</span>
+      <textarea
+        rows={2}
+        value={value}
+        spellCheck={false}
+        placeholder={layer.preset.pick(TEXT_PRESETS as readonly string[])}
+        onChange={(e) => {
+          setValue(e.target.value);
+          layer.customText = e.target.value;
+        }}
+        className="resize-none rounded border border-edge bg-transparent px-2 py-1 text-xs text-ink outline-none placeholder:text-ink-dim/50 focus:border-accent/60"
+      />
     </div>
   );
 }

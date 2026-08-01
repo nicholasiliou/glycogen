@@ -32,6 +32,13 @@ export class TextLayer extends Plugin {
   fontSize = this.number({ min: 20, max: 400, default: 120 });
   tracking = this.number({ min: -20, max: 40, default: 0 });
 
+  /**
+   * Freeform override for the preset list, typed in the controls panel. Deliberately a plain field
+   * and not a param: it never reaches the db, a scene snapshot, a QR or an exported PNG, so it
+   * lives exactly as long as this instance does and a reload/reset comes back to the presets.
+   */
+  customText = "";
+
   private ctx = this.canvas.getContext("2d")!;
   private gridCache: { key: string; data: Float32Array; gw: number; gh: number } | null = null;
 
@@ -40,12 +47,17 @@ export class TextLayer extends Plugin {
     fontsReady.catch(() => {});
   }
 
+  /** What actually gets drawn: the freeform text if there is any, else the selected preset. */
+  private get text(): string {
+    return this.customText.trim() ? this.customText : this.preset.pick(TEXT_PRESETS as readonly string[]);
+  }
+
   render(_f: Frame): HTMLCanvasElement {
     const ctx = this.ctx;
     const w = this.canvas.width, h = this.canvas.height;
     ctx.clearRect(0, 0, w, h);
 
-    const text = this.preset.pick(TEXT_PRESETS as readonly string[]);
+    const text = this.text;
     const size = this.fontSize.value;
     const weight = this.bold.on ? "700" : "400";
     const family = this.font.pick(AVAILABLE_FONTS as readonly string[]);
@@ -68,7 +80,7 @@ export class TextLayer extends Plugin {
   }
 
   exportField(): FieldFn {
-    const text = this.preset.pick(TEXT_PRESETS as readonly string[]);
+    const text = this.text;
     const w = this.canvas.width || 1920, h = this.canvas.height || 1080;
     const size = this.fontSize.value;
     const weight = this.bold.on ? "700" : "400";
