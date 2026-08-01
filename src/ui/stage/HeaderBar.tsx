@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { Dices, Gamepad, GripVertical, Trash2, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/ui/components/button";
 import { ConfirmDialog } from "@/ui/components/confirm-dialog";
@@ -6,38 +6,168 @@ import { cn } from "@/ui/lib/cn";
 import { isAdmin } from "@/db/appDefaults";
 import { labelOf } from "@/plugins/registry";
 import { useLive } from "@/ui/app/LiveProvider";
-import { PluginPreview } from "@/ui/stage/PluginPreview";
+import { LayerIcon } from "@/ui/components/LayerIcon";
 import { ExportPanel } from "@/ui/export/ExportPanel";
 
-/** The little dial showing the browse position. Click to step forward, wheel to scrub either way. */
-function MiniDial({ index, count, onStep }: { index: number; count: number; onStep: (d: number) => void }) {
-  // rem-sized so it scales with the viewport-driven root font-size like the rest of the chrome.
-  const S = "2.125rem"; // 34px at the 16px baseline
-  const c = "50%";
-  const r = "38%"; // ~13/34 of the viewbox
-  const vb = 34; // internal coordinate space for the pointer line math
-  const a = (-90 + (index * 360) / Math.max(1, count)) * (Math.PI / 180);
+/** Per-plugin icon for the browse preview — kept local to avoid a cross-file dep. */
+const ICONS: Record<string, string> = {
+  shape: "Shapes", noise: "Waves", boids: "Bird", gameOfLife: "Grid3x3",
+  physarum: "Waypoints", reactionDiffusion: "Droplets", landscape: "Mountain",
+  harmonograph: "Spline", volumetricCloud: "Cloudy", text: "Type",
+  contourField: "LayoutGrid", glyph: "Hash", glyphScatter: "LayoutDashboard",
+  plant: "Sprout",
+  none: "Ban", pixelate: "Aperture", bayer: "Grid2x2", ascii: "Hash",
+  colorLookup: "Palette", deepGlow: "Crosshair", fisheye: "Aperture",
+  pixelSort: "ArrowDownUp", pixelStretch: "MoveHorizontal",
+  venetianBlinds: "AlignJustify", tracker: "Crosshair",
+};
+
+const ITEM_H = 32; // px height per row
+const VISIBLE = 3; // rows shown (prev · active · next)
+// How many extra items to render above and below so the strip never shows empty slots while dragging
+const RENDER_EXTRA = 2;
+
+/**
+ * Vertical drag-wheel picker.
+ *
+ * Interaction model:
+ * - Drag up/down: continuous pixel-level offset during the drag; commits steps on release.
+ * - Scroll wheel: one step per tick.
+ * - External index change (MIDI jog): animates a brief slide in the direction of the change.
+ *
+ * The strip renders VISIBLE + 2×RENDER_EXTRA rows centred on the active index so there's always
+ * something to show while dragging, then clips to VISIBLE rows.
+ */
+function WheelPicker<T extends { id: string; label: string; kind?: string }>({
+  items,
+  index,
+  onStep,
+  jogPx = 0,
+  width = 160,
+}: {
+  items: T[];
+  index: number;
+  onStep: (d: number) => void;
+  /** Raw sub-step offset in px from an external source (jog wheel). Applied when not dragging. */
+  jogPx?: number;
+  width?: number;
+}) {
+  // Sub-row remainder in px during mouse drag.
+  const [dragOffset, setDragOffset] = useState(0);
+  const [snapping, setSnapping] = useState(false);
+
+  const isDragging = useRef(false);
+  const remainder = useRef(0);
+
+  // ── Mouse drag ────────────────────────────────────────────────────────────
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    isDragging.current = true;
+    remainder.current = 0;
+    setSnapping(false);
+    setDragOffset(0);
+
+    let lastY = e.clientY;
+    let moved = false;
+
+    const onMove = (ev: PointerEvent) => {
+      const delta = lastY - ev.clientY;
+      lastY = ev.clientY;
+      if (delta !== 0) moved = true;
+
+      remainder.current += delta;
+      const steps = Math.trunc(remainder.current / ITEM_H);
+      if (steps !== 0) {
+        remainder.current -= steps * ITEM_H;
+        onStep(steps);
+      }
+      setDragOffset(remainder.current);
+    };
+
+    const onUp = () => {
+      isDragging.current = false;
+      // A click with no movement → step forward by 1.
+      if (!moved) onStep(1);
+      setSnapping(true);
+      setDragOffset(0);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }, [onStep]);
+
+  // Non-passive wheel handler so we can call preventDefault.
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      onStep(e.deltaY > 0 ? 1 : -1);
+    };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, [onStep]);
+
+  // Visual offset: drag takes priority; otherwise show live jog sub-step progress.
+  const visualOffset = isDragging.current ? dragOffset : jogPx;
+
+  const n = items.length;
+  // Build the list of row offsets to render: -RENDER_EXTRA … +RENDER_EXTRA
+  const offsets = Array.from({ length: VISIBLE + RENDER_EXTRA * 2 }, (_, i) => i - RENDER_EXTRA - 1);
+
   return (
-    <button
-      type="button"
-      onClick={() => onStep(1)}
-      onWheel={(e) => onStep(e.deltaY > 0 ? 1 : -1)}
-      title="Click to cycle · scroll to scrub"
-      className="shrink-0 cursor-pointer rounded-full transition-colors hover:bg-ink/5"
+    <div
+      ref={rootRef}
+      style={{ width, height: ITEM_H * VISIBLE, cursor: "ns-resize", userSelect: "none" }}
+      className="relative overflow-hidden"
+      onMouseDown={onMouseDown}
     >
-      <svg width={S} height={S} viewBox={`0 0 ${vb} ${vb}`} className="block">
-        <circle cx={c} cy={c} r={r} fill="none" stroke="var(--color-edge)" strokeWidth={1} />
-        <line
-          x1={vb / 2}
-          y1={vb / 2}
-          x2={vb / 2 + Math.cos(a) * (vb / 2 - 4)}
-          y2={vb / 2 + Math.sin(a) * (vb / 2 - 4)}
-          stroke="var(--color-ink)"
-          strokeWidth={1.5}
-          strokeLinecap="round"
-        />
-      </svg>
-    </button>
+      {/* Edge fades */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-linear-to-b from-black/70 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-8 bg-linear-to-t from-black/70 to-transparent" />
+
+      {/* Active row bracket */}
+      <div
+        className="pointer-events-none absolute inset-x-0 z-10 border-t border-b border-edge/50"
+        style={{ top: ITEM_H, height: ITEM_H }}
+      />
+
+      {/* Scrolling track */}
+      <div
+        style={{
+          transform: `translateY(${-RENDER_EXTRA * ITEM_H + visualOffset}px)`,
+          transition: snapping ? "transform 180ms cubic-bezier(0.25,0,0,1)" : "none",
+          willChange: "transform",
+        }}
+      >
+        {offsets.map((offset) => {
+          const itemIdx = ((index + offset) % n + n) % n;
+          const item = items[itemIdx];
+          const isActive = offset === 0;
+          const icon = ICONS[item.id] ?? (item.kind === "effect" ? "Layers" : "Shapes");
+          return (
+            <div
+              key={`${offset}:${itemIdx}`}
+              style={{ height: ITEM_H }}
+              className={cn(
+                "flex items-center gap-2 px-2",
+                isActive ? "opacity-100" : "opacity-20",
+              )}
+            >
+              <LayerIcon name={icon} className="h-4 w-4 shrink-0" />
+              {isActive && (
+                <span className="truncate text-xs leading-tight text-ink">{item.label}</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -65,18 +195,55 @@ function contrastInk(hex: string): "#000" | "#fff" {
   return L > 0.4 ? "#000" : "#fff";
 }
 
+interface BankDragState {
+  dragFrom: number | null;
+  setDragFrom: (i: number | null) => void;
+  overTrash: boolean;
+  setOverTrash: (b: boolean) => void;
+}
+
+/** Trash drop target — rendered in the right action area, receives drag state from HeaderBar. */
+function TrashTarget({ drag }: { drag: BankDragState }) {
+  const { banks, clearBank } = useLive();
+  const { dragFrom, setDragFrom, overTrash, setOverTrash } = drag;
+  return (
+    <button
+      type="button"
+      onDragOver={(e) => {
+        if (dragFrom === null || !banks[dragFrom].plugin) return;
+        e.preventDefault();
+        setOverTrash(true);
+      }}
+      onDragLeave={() => setOverTrash(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        if (dragFrom !== null && banks[dragFrom].plugin) clearBank(dragFrom);
+        setDragFrom(null);
+        setOverTrash(false);
+      }}
+      title="Drag a bank here to remove its plugin"
+      className={cn(
+        "flex h-6 w-6 shrink-0 items-center justify-center rounded transition-opacity duration-300 ease-out",
+        dragFrom !== null && banks[dragFrom].plugin ? "opacity-100" : "pointer-events-none opacity-0",
+        overTrash ? "bg-red-500/20 text-red-400 ring-1 ring-red-400/60" : "text-ink-dim",
+      )}
+    >
+      <Trash2 className="h-4 w-4" />
+    </button>
+  );
+}
+
 /**
  * The unified bank strip: one pill per bank — load, activate, or remove the browsed plugin. The
  * active bank swells into a labelled pill (name + drag handle); the rest stay compact dots. Drag a
  * pill over another to reorder (with a live preview of the resulting order) or onto the trash to
  * empty it.
  */
-function BankStrip() {
+function BankStrip({ drag }: { drag: BankDragState }) {
   const { banks, activeBank, selectBank, moveBank, load, clearBank } = useLive();
   const [removing, setRemoving] = useState<number | null>(null);
-  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const { dragFrom, setDragFrom, setOverTrash } = drag;
   const [dragOver, setDragOver] = useState<number | null>(null);
-  const [overTrash, setOverTrash] = useState(false);
   // The pills row is the single drop zone: every pill carries a data-index so a pointer anywhere in
   // the strip (pills, carets, gaps) resolves to an insertion slot — no more releases landing on a
   // gap with no handler and silently doing nothing.
@@ -128,33 +295,7 @@ function BankStrip() {
   );
 
   return (
-    <div className="flex min-w-0 items-center gap-1.5">
-      {/* Trash target: drag a bank here to empty it. Only interactive mid-drag. */}
-      <button
-        type="button"
-        onDragOver={(e) => {
-          if (dragFrom === null || !banks[dragFrom].plugin) return;
-          e.preventDefault();
-          setDragOver(null);
-          setOverTrash(true);
-        }}
-        onDragLeave={() => setOverTrash(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          if (dragFrom !== null && banks[dragFrom].plugin) clearBank(dragFrom);
-          setDragFrom(null);
-          setOverTrash(false);
-        }}
-        title="Drag a bank here to remove its plugin"
-        className={cn(
-          "flex h-6 w-6 shrink-0 items-center justify-center rounded transition-opacity duration-300 ease-out",
-          dragFrom !== null && banks[dragFrom].plugin ? "opacity-100" : "pointer-events-none opacity-0",
-          overTrash ? "bg-red-500/20 text-red-400 ring-1 ring-red-400/60" : "text-ink-dim",
-        )}
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
-
+    <div className="flex min-w-0 items-center">
       {/* The whole row is the drop zone, so a release anywhere in it resolves to a slot. */}
       <div
         ref={rowRef}
@@ -257,59 +398,42 @@ export function HeaderBar({
   const {
     generators,
     effects,
-    selectedPlugin,
     selectedPluginIndex,
-    selectedShader,
     selectedShaderIndex,
     stepPlugin,
     stepShader,
-    banks,
-    activeBank,
-    focusPart,
-    setFocusPart,
+    jogPluginPx,
+    jogShaderPx,
     muted,
     toggleMute,
-    clearShader,
     lastMidi,
   } = useLive();
 
-  const shaderLoaded = !!banks[activeBank]?.shader;
-  // Clicking a preview focuses that half of the active bank (which one the controls drive).
-  const focusRing = (part: "plugin" | "shader") =>
-    focusPart === part ? "rounded opacity-100" : "rounded opacity-40 hover:opacity-60";
+  // Drag state lives here so TrashTarget (right side) and BankStrip (center) share it.
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [overTrash, setOverTrash] = useState(false);
+  const drag: BankDragState = { dragFrom, setDragFrom, overTrash, setOverTrash };
 
   return (
-    <div className="flex h-14 shrink-0 items-center gap-3 px-8 text-ink">
-      {/* Plugins and shaders browse side by side — one dial each, no mode switch. */}
-      <div className="flex items-center gap-1.5" title="Browse plugins · click the preview to focus the plugin">
-        <MiniDial index={selectedPluginIndex} count={generators.length} onStep={stepPlugin} />
-        <button type="button" onClick={() => setFocusPart("plugin")} className={focusRing("plugin")}>
-          <PluginPreview info={selectedPlugin} className="w-44" />
-        </button>
-      </div>
-      <div className="flex items-center gap-1.5" title="Browse shaders (applies to the active bank) · click the preview to focus the shader">
-        <MiniDial index={selectedShaderIndex} count={effects.length} onStep={stepShader} />
-        <button type="button" onClick={() => setFocusPart("shader")} className={focusRing("shader")}>
-          <PluginPreview info={selectedShader} className="w-32" />
-        </button>
+    <div className="flex h-14 shrink-0 items-center gap-3 px-4 text-ink">
+      {/* Center: plugin wheel · banks · shader wheel */}
+      <div className="flex flex-1 items-center justify-center gap-2">
+        <WheelPicker items={generators} index={selectedPluginIndex} onStep={stepPlugin} jogPx={jogPluginPx} width={148} />
+        <div className="mx-1 h-6 w-px shrink-0 self-center bg-edge/40" />
+        <BankStrip drag={drag} />
+        <div className="mx-1 h-6 w-px shrink-0 self-center bg-edge/40" />
+        <WheelPicker items={effects} index={selectedShaderIndex} onStep={stepShader} jogPx={jogShaderPx} width={120} />
       </div>
 
-      <div className="flex-1" />
-
-      {/* Raw routing readout (e.g. "CC 25 → jog:0") — a dev hint, only on the #admin surface. */}
+      {/* Raw routing readout — dev hint, admin only */}
       {isAdmin() && lastMidi && (
-        <span className="min-w-0 truncate text-[0.6875rem] text-ink-dim" title="Last MIDI action">
+        <span className="shrink-0 truncate text-[0.6875rem] text-ink-dim" title="Last MIDI action">
           {lastMidi.control} → {lastMidi.target}
         </span>
       )}
 
-      <div className="flex-1" />
-
-      <BankStrip />
-
-      {/* Divider: plugin-scoped controls (banks · trash) on the left, global actions on the right. */}
-      <div className="mx-1 h-6 w-px shrink-0 self-center bg-edge" />
-
+      {/* Right actions: trash (drag target) · export · controller · mute · shuffle */}
+      <TrashTarget drag={drag} />
       <ExportPanel />
       <Button
         size="icon-sm"

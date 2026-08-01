@@ -39,6 +39,9 @@ interface LiveCtx {
   selectedShaderIndex: number;
   stepPlugin: (delta: number) => void;
   stepShader: (delta: number) => void;
+  /** Raw sub-step jog progress in [-ITEM_H, +ITEM_H] px — for instant wheel visual feedback. */
+  jogPluginPx: number;
+  jogShaderPx: number;
   banks: Stage["banks"];
   activeBank: number;
   focusPart: FocusPart;
@@ -126,18 +129,23 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   // actually landed. Held in a ref so effects can call the latest without re-subscribing.
   const randomizeScene = () => {
     const gens = [...browse.generators];
-    const fx = browse.effects; // includes "none" — a real chance of no shader
+    const fx = browse.effects; // always load a shader — "none" is the passthrough, never null
     if (gens.length === 0) return;
     const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
     // Pull two distinct generators (fall back to one if the registry somehow has a single entry).
     const first = gens.splice(Math.floor(Math.random() * gens.length), 1)[0];
     const second = gens.length ? gens.splice(Math.floor(Math.random() * gens.length), 1)[0] : first;
-    [first, second].forEach((gen, bank) => {
+    // Pick two distinct random bank slots.
+    const bankIndices = Array.from({ length: stage.banks.length }, (_, i) => i);
+    const bankA = bankIndices.splice(Math.floor(Math.random() * bankIndices.length), 1)[0];
+    const bankB = bankIndices.splice(Math.floor(Math.random() * bankIndices.length), 1)[0];
+    [first, second].forEach((gen, i) => {
+      const bank = i === 0 ? bankA : bankB;
       stage.loadBank(bank, create(gen.id));
       const shader = fx.length ? pick(fx) : undefined;
-      stage.setShader(bank, shader && shader.id !== "none" ? create(shader.id) : null);
+      if (shader) stage.setShader(bank, create(shader.id));
     });
-    selectBank(0);
+    selectBank(bankA);
   };
   const randomizeRef = useRef(randomizeScene);
   randomizeRef.current = randomizeScene;
@@ -187,6 +195,12 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   const { learnSlot, armLearn, cancelLearn, lastMidi } = useMidiRouting({ midi, bus, stage, refresh });
 
   // ── the jog wheels ARE the browse dials: jog:0 sweeps plugins, jog:1 sweeps shaders ──
+  // jogPxRef holds the raw sub-step accumulator in display pixels so the WheelPicker can show
+  // instant movement before a full step fires. Scaled: JOG_STEP raw units → ITEM_H px.
+  const ITEM_H = 32; // must match HeaderBar's ITEM_H
+  const jogPxRef = useRef({ plugin: 0, shader: 0 });
+  const [jogPluginPx, setJogPluginPx] = useState(0);
+  const [jogShaderPx, setJogShaderPx] = useState(0);
   const stepRef = useRef(stepBrowse);
   stepRef.current = stepBrowse;
   useEffect(() => {
@@ -200,6 +214,11 @@ export function LiveProvider({ children }: { children: ReactNode }) {
           acc -= steps * JOG_STEP;
           stepRef.current(target, steps);
         }
+        // Expose sub-step progress as pixels for instant wheel visual feedback.
+        const px = -(acc / JOG_STEP) * ITEM_H;
+        jogPxRef.current[target] = px;
+        if (target === "plugin") setJogPluginPx(px);
+        else setJogShaderPx(px);
       });
     };
     const offPlugin = attach("jog:0", "plugin");
@@ -354,6 +373,8 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     selectedShaderIndex: browse.selectedShaderIndex,
     stepPlugin,
     stepShader,
+    jogPluginPx,
+    jogShaderPx,
     banks: stage.banks,
     activeBank: stage.active,
     focusPart: stage.focusPart,

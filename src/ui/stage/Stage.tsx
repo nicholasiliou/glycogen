@@ -6,7 +6,6 @@ import { masksFor } from "@/runtime/export";
 import { readPngText } from "@/runtime/export/exporters/pngMeta";
 import { applyScene, parseScene, SCENE_PNG_READ_KEYWORDS } from "@/runtime/scene";
 import { asset } from "@/lib/asset";
-import { watermarkHitRect } from "@/runtime/watermark";
 
 /**
  * The stage viewport. Mounts the runtime {@link Stage}'s canvas into a 16:9-masked host and overlays
@@ -50,30 +49,6 @@ export function Stage() {
         flashNote("No glycogen scene in this file");
       }
     });
-  };
-
-  const onHostClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const host = hostRef.current;
-    if (!host) return;
-    const rect = host.getBoundingClientRect();
-    // Canvas pixel dims may differ from CSS dims — scale the click into canvas space. In preview
-    // mode the canvas is contain-fitted, so map through the letterboxed display rect instead.
-    let cx: number, cy: number;
-    if (previewRef.current) {
-      const cw = stage.canvas.width, ch = stage.canvas.height;
-      const s = Math.min(rect.width / cw, rect.height / ch);
-      cx = (e.clientX - rect.left - (rect.width - cw * s) / 2) / s;
-      cy = (e.clientY - rect.top - (rect.height - ch * s) / 2) / s;
-    } else {
-      cx = (e.clientX - rect.left) * (stage.canvas.width / rect.width);
-      cy = (e.clientY - rect.top) * (stage.canvas.height / rect.height);
-    }
-    const hit = watermarkHitRect(stage.canvas.width, stage.canvas.height, ex.ratio.width / ex.ratio.height);
-    if (hit && cx >= hit.x && cx <= hit.x + hit.w && cy >= hit.y && cy <= hit.y + hit.h) {
-      const next = !ex.watermarkEnabled;
-      ex.setWatermarkEnabled(next);
-      ex.setMaskEnabled(next);
-    }
   };
 
   useLayoutEffect(() => {
@@ -181,7 +156,6 @@ export function Stage() {
   return (
     <div
       ref={hostRef}
-      onClick={onHostClick}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
       className="relative h-full w-full touch-none overflow-visible bg-black"

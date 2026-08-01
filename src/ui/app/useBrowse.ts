@@ -35,30 +35,32 @@ export function useBrowse({ stage, refresh }: { stage: Stage; refresh: () => voi
   const [selPlugin, setSelPlugin] = useState(0);
   const [selShader, setSelShader] = useState(0);
 
-  // Apply a shader entry live to the active bank: "none" clears the slot (and hands the controls
-  // back to the plugin), anything else loads it and focuses the shader half of the bank.
+  // Apply a shader entry live to the active bank. "none" loads the passthrough (NoneLayer) so
+  // there is always a shader slot to edit — the switch in the controls panel stays enabled.
   const applyShader = (info: PluginInfo | undefined) => {
     if (!info) return;
-    const clearing = info.id === "none";
-    stage.setShader(stage.active, clearing ? null : create(info.id));
-    stage.focusPart = clearing ? "plugin" : "shader";
+    stage.setShader(stage.active, create(info.id));
+    stage.focusPart = "shader";
     refresh();
   };
 
   const stepPlugin = (d: number) => {
     if (!generators.length) return;
-    const n = (selPlugin + d + generators.length * 100) % generators.length;
-    setSelPlugin(n);
-    // Previewing a plugin loads it straight into the active bank — no manual load step.
-    stage.loadBank(stage.active, create(generators[n].id));
-    refresh();
+    setSelPlugin((prev) => {
+      const n = (prev + d + generators.length * 100) % generators.length;
+      stage.loadBank(stage.active, create(generators[n].id));
+      refresh();
+      return n;
+    });
   };
 
   const stepShader = (d: number) => {
     if (!effects.length) return;
-    const n = (selShader + d + effects.length * 100) % effects.length;
-    setSelShader(n);
-    applyShader(effects[n]); // previewing a shader applies + focuses it directly
+    setSelShader((prev) => {
+      const n = (prev + d + effects.length * 100) % effects.length;
+      applyShader(effects[n]);
+      return n;
+    });
   };
 
   const load = (bank?: number) => {
@@ -81,7 +83,9 @@ export function useBrowse({ stage, refresh }: { stage: Stage; refresh: () => voi
   };
 
   const clearShader = () => {
-    stage.setShader(stage.active, null);
+    const noneInfo = effects.find((e) => e.id === "none");
+    if (noneInfo) stage.setShader(stage.active, create(noneInfo.id));
+    else stage.setShader(stage.active, null);
     stage.focusPart = "plugin";
     setSelShader(0); // None is index 0, so the dial returns home
     refresh();

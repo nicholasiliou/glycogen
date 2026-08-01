@@ -40,7 +40,7 @@ export function ExportProvider({ children }: { children: ReactNode }) {
   const [custom, setCustom] = useState({ width: 1, height: 1 });
   const [maskEnabled, setMaskEnabled] = useState(true);
   const [maskVariant, setMaskVariant] = useState(0);
-  const [watermarkEnabled, setWatermarkEnabled] = useState(true);
+  const [watermarkEnabled, setWatermarkEnabled] = useState(false);
   const [videoQuality, setVideoQuality] = useState<VideoQualityId>("high");
   const [videoFormat, setVideoFormat] = useState<VideoFormatId>("webm");
   const [previewEnabled, setPreviewEnabled] = useState(false);

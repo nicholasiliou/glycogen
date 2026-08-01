@@ -222,9 +222,7 @@ function LiveShell() {
             controlsOpen ? "w-72" : "w-0",
           )}
         >
-          <div className="flex h-full w-72 shrink-0 flex-col">
-            <div className="flex items-center gap-2 px-3 py-2 text-[0.6875rem] uppercase tracking-wide text-ink-dim">
-            </div>
+          <div className="flex h-full w-72 shrink-0 flex-col pt-3">
             {controllerOpen ? <AssignPanel /> : <ControlsPanel />}
           </div>
         </aside>

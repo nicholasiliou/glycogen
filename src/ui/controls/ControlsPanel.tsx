@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { ButtonParam, Param } from "@/controls/Param";
 import { clamp01 } from "@/controls/types";
 import { clearDefaults, hasDefaults, isAdmin, saveDefaults } from "@/db/appDefaults";
@@ -27,6 +28,50 @@ function useRaf(): void {
   }, []);
 }
 
+/** Collapsible param section with a chevron header. */
+function ParamSection({ plugin, focusPart }: { plugin: Plugin; focusPart: "plugin" | "shader" }) {
+  const { stage, setFocusPart } = useLive();
+  const [open, setOpen] = useState(true);
+  const pluginId = plugin.id;
+  const rows = useTable(params, (t) => [...t.by("plugin", pluginId)].sort((a, b) => a.order - b.order), [pluginId]);
+  const liveByName = new Map(plugin.params.map((p) => [p.name, p]));
+
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next) setFocusPart(focusPart);
+    else if (stage.focusPart === focusPart) setFocusPart(focusPart === "plugin" ? "shader" : "plugin");
+  };
+
+  return (
+    <div>
+      <button
+        onClick={toggle}
+        className="flex w-full items-center gap-1.5 px-4 py-2 text-[10px] uppercase tracking-wide text-ink-dim hover:text-ink"
+      >
+        {open ? <ChevronDown className="h-3 w-3 shrink-0" /> : <ChevronRight className="h-3 w-3 shrink-0" />}
+        {labelOf(plugin.id)}
+      </button>
+      {open && (
+        <div className="px-4 pb-3">
+          {plugin instanceof TextLayer && <CustomTextField layer={plugin} />}
+          <div className="space-y-3">
+            {rows.map((row) => {
+              const live = liveByName.get(row.name);
+              return (
+                <div key={row.id} className="flex flex-col gap-1">
+                  <span className="min-w-0 flex-1 truncate text-xs text-ink-dim">{row.name}</span>
+                  {live && <ValueEditor row={row} live={live} />}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * The right-side controls drawer: the focused plugin's params with live value editors ONLY — this
  * panel *drives* the app. All binding work (chips, drag-to-assign, presets) lives on the assign
@@ -35,14 +80,9 @@ function useRaf(): void {
 export function ControlsPanel() {
   useRaf();
   const { stage } = useLive();
-  const managed = stage.managed();
-  const pluginId = managed?.id ?? "";
+  const bank = stage.banks[stage.active];
 
-  // pluginId is a selector input: without it in deps the memoised selection would go stale when
-  // focus moves (or the first plugin loads) without a table mutation.
-  const rows = useTable(params, (t) => [...t.by("plugin", pluginId)].sort((a, b) => a.order - b.order), [pluginId]);
-
-  if (!managed) {
+  if (!bank?.plugin) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center p-4 text-center text-sm text-ink-dim/60">
         No plugin focused — load one first
@@ -50,31 +90,18 @@ export function ControlsPanel() {
     );
   }
 
-  const liveByName = new Map(managed.params.map((p) => [p.name, p]));
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-wide text-ink-dim">
-            {labelOf(managed.id)}
-            {stage.focusPart === "shader" && <span className="ml-1 rounded bg-accent/15 px-1 text-accent">fx</span>}
-          </span>
-        </div>
-        {managed instanceof TextLayer && <CustomTextField layer={managed} />}
-        <div className="space-y-3">
-          {rows.map((row) => {
-            const live = liveByName.get(row.name);
-            return (
-              <div key={row.id} className="flex flex-col gap-1">
-                <span className="min-w-0 flex-1 truncate text-xs text-ink-dim">{row.name}</span>
-                {live && <ValueEditor row={row} live={live} />}
-              </div>
-            );
-          })}
-        </div>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <ParamSection plugin={bank.plugin} focusPart="plugin" />
+        {bank.shader && (
+          <>
+            <div className="mx-4 border-t border-edge/40" />
+            <ParamSection plugin={bank.shader} focusPart="shader" />
+          </>
+        )}
       </div>
-      {isAdmin() && <AdminDefaults managed={managed} />}
+      {isAdmin() && <AdminDefaults managed={stage.managed()!} />}
     </div>
   );
 }
