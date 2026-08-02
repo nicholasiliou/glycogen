@@ -23,6 +23,8 @@ export class GameOfLifeLayer extends Plugin {
   seed = this.number({ min: 1, max: 64, step: 1, default: 1 });
   wrap = this.toggle(true);
   reseed = this.trigger();
+  /** Interval in seconds between automatic reseeds; 0 = off. */
+  pulse = this.number({ min: 0, max: 60, default: 0 });
 
   private ctx = this.canvas.getContext("2d")!;
   private cells = new Uint8Array(0);
@@ -32,6 +34,7 @@ export class GameOfLifeLayer extends Plugin {
   private lastSeed = NaN;
   private lastDensity = NaN;
   private lastReseed = 0;
+  private lastPulseTime = -Infinity;
 
   constructor() {
     super();
@@ -75,7 +78,7 @@ export class GameOfLifeLayer extends Plugin {
     this.cells.set(next);
   }
 
-  render(_f: Frame): HTMLCanvasElement {
+  render(f: Frame): HTMLCanvasElement {
     const cs = Math.max(3, Math.round(this.cellSize.value));
     const cols = Math.max(1, Math.floor(this.canvas.width / cs));
     const rows = Math.max(1, Math.floor(this.canvas.height / cs));
@@ -84,13 +87,17 @@ export class GameOfLifeLayer extends Plugin {
     const wrap = this.wrap.on;
     const speed = Math.max(1, Math.round(this.speed.value));
 
-    if (cols !== this.cols || rows !== this.rows || seed !== this.lastSeed || density !== this.lastDensity || this.reseed.count !== this.lastReseed) {
+    const pulseInterval = this.pulse.value;
+    const pulseFired = pulseInterval > 0 && f.time - this.lastPulseTime >= pulseInterval;
+
+    if (cols !== this.cols || rows !== this.rows || seed !== this.lastSeed || density !== this.lastDensity || this.reseed.count !== this.lastReseed || pulseFired) {
       this.cols = cols;
       this.rows = rows;
       this.lastSeed = seed;
       this.lastDensity = density;
       this.lastReseed = this.reseed.count;
       this.reinit(seed, density);
+      this.lastPulseTime = f.time;
     }
 
     for (let s = 0; s < speed; s++) this.step(wrap);

@@ -18,8 +18,14 @@ export type { StillFormat, ExportProgress, ExportSettings } from "./exporters/ty
  */
 export class Exporter {
   private frameCounter = 0;
+  private abortController: AbortController | null = null;
 
   constructor(private stage: Stage) {}
+
+  cancel() {
+    this.abortController?.abort();
+    this.abortController = null;
+  }
 
   private get canvas(): HTMLCanvasElement {
     return this.stage.canvas;
@@ -62,6 +68,7 @@ export class Exporter {
   /** Record the next `videoDurationSec` seconds of live playback as a WebM video, reframed + masked. */
   async video(settings: ExportSettings, opts?: { onProgress?: (p: ExportProgress) => void }): Promise<Blob> {
     const frame = await this.frameOptions(settings);
+    this.abortController = new AbortController();
     this.stage.lockRenderSize(settings.width, settings.height);
     try {
       return await exportVideo({
@@ -72,8 +79,10 @@ export class Exporter {
         durationSec: settings.videoDurationSec ?? 10,
         baseName: "glycogen",
         onProgress: opts?.onProgress,
+        signal: this.abortController.signal,
       });
     } finally {
+      this.abortController = null;
       this.stage.unlockRenderSize();
     }
   }

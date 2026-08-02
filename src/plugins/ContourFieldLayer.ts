@@ -41,7 +41,7 @@ function fbm3(x: number, y: number, z: number, seed: number, octaves: number): n
   return sum / norm;
 }
 
-const MAX_CELLS = 200000;
+const MAX_CELLS = 60000;
 const LINE = [40, 40, 255, 255];
 
 /**
@@ -90,8 +90,8 @@ export class ContourFieldLayer extends Plugin {
       for (let x = 0; x < cols; x++) {
         let sx = x * fx, sy = y * fy;
         if (warp > 0) {
-          const wx = fbm3(sx + 11.3, sy + 4.7, zWarp, seed + 7777, 2) - 0.5;
-          const wy = fbm3(sx + 2.1, sy + 19.4, zWarp + 5.0, seed + 3333, 2) - 0.5;
+          const wx = fbm3(sx + 11.3, sy + 4.7, zWarp, seed + 7777, 1) - 0.5;
+          const wy = fbm3(sx + 2.1, sy + 19.4, zWarp + 5.0, seed + 3333, 1) - 0.5;
           sx += wx * warp;
           sy += wy * warp;
         }
@@ -153,7 +153,7 @@ export class ContourFieldLayer extends Plugin {
   }
 
   /** Grid density as a fraction of canvas size — fixed (no longer a param). */
-  private static readonly RESOLUTION = 0.5;
+  private static readonly RESOLUTION = 0.25;
 
   render(f: Frame): HTMLCanvasElement {
     const [cols, rows] = this.gridSize(ContourFieldLayer.RESOLUTION);

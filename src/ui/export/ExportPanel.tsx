@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Download, Image as ImageIcon, Link, Link2Off, Video } from "lucide-react";
+import { ChevronDown, Download, Image as ImageIcon, Link, Link2Off, Video, X } from "lucide-react";
 import { Exporter, isPrintRatio, masksFor, PRINT_RATIO_LIST, SCREEN_RATIO_LIST, supportedVideoFormats } from "@/runtime/export";
 import { useLive } from "@/ui/app/LiveProvider";
 import { Button } from "@/ui/components/button";
@@ -164,8 +164,17 @@ export function ExportPanel() {
         </div>
 
         {busy === "video" && (
-          <div className="h-1 w-full overflow-hidden rounded-full bg-edge">
-            <div className="h-full bg-ink transition-[width]" style={{ width: `${Math.round(progress * 100)}%` }} />
+          <div className="flex items-center gap-2">
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-edge">
+              <div className="h-full bg-ink transition-[width]" style={{ width: `${Math.round(progress * 100)}%` }} />
+            </div>
+            <button
+              onClick={() => exporter.cancel()}
+              title="Cancel export"
+              className="text-ink-dim/60 hover:text-ink transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
           </div>
         )}
         {busy === "still" && <div className="text-ink-dim/60">Rendering…</div>}

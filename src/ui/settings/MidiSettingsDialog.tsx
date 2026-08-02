@@ -71,7 +71,7 @@ export function MidiSettingsDialog() {
             onClick={() => setSurfaceMode("assign")}
             className={cn(
               "px-2.5 py-1.5 transition-colors",
-              surfaceMode === "assign" ? "bg-accent/20 text-accent" : "text-ink-dim hover:text-ink",
+              surfaceMode === "assign" ? "bg-accent/20 text-accent" : "bg-transparent text-ink-dim hover:text-ink",
             )}
             title="MIDI assignment mode — click or drag widgets to map controls"
           >
@@ -82,7 +82,7 @@ export function MidiSettingsDialog() {
             onClick={() => setSurfaceMode("live")}
             className={cn(
               "px-2.5 py-1.5 transition-colors",
-              surfaceMode === "live" ? "bg-accent/20 text-accent" : "text-ink-dim hover:text-ink",
+              surfaceMode === "live" ? "bg-accent/20 text-accent" : "bg-transparent text-ink-dim hover:text-ink",
             )}
             title="Emulator mode — use the on-screen controller to play live"
           >

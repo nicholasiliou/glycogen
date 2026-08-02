@@ -46,6 +46,8 @@ export class PhysarumLayer extends Plugin {
   /** Cycle through off → fill → attract with a pad press. */
   textMode = this.cycle(["off", "fill", "attract"]);
   reseed = this.trigger();
+  /** Interval in seconds between automatic reseeds; 0 = off. */
+  pulse = this.number({ min: 0, max: 60, default: 0 });
 
   private ctx = this.canvas.getContext("2d")!;
   private buf = document.createElement("canvas");
@@ -69,6 +71,7 @@ export class PhysarumLayer extends Plugin {
   private lastSeed = NaN;
   private lastCount = -1;
   private lastReseed = 0;
+  private lastPulseTime = -Infinity;
 
   private gridSize(): [number, number] {
     let cols = Math.max(16, this.canvas.width);
@@ -221,10 +224,13 @@ export class PhysarumLayer extends Plugin {
     }
 
     const resized = cols !== this.cols || rows !== this.rows;
+    const pulseInterval = this.pulse.value;
+    const pulseFired = pulseInterval > 0 && f.time - this.lastPulseTime >= pulseInterval;
     const reseeded =
       count !== this.lastCount ||
       seed !== this.lastSeed ||
       this.reseed.count !== this.lastReseed ||
+      pulseFired ||
       (mode === "fill" && this.lastTextMode !== "fill" && this.maskActive);
 
     if (resized || reseeded) {
@@ -239,7 +245,10 @@ export class PhysarumLayer extends Plugin {
       // resample the trail and rescale agent positions into the new grid. Only a real
       // count/seed/reseed/mode change re-seeds from scratch.
       if (resized && !reseeded && hadState) this.resample(prev);
-      else this.reinit(count, seed, this.maskActive ? this.mask : null);
+      else {
+        this.reinit(count, seed, this.maskActive ? this.mask : null);
+        this.lastPulseTime = f.time;
+      }
     }
     this.lastTextMode = mode;
 

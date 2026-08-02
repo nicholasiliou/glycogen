@@ -17,7 +17,7 @@ const ICONS: Record<string, string> = {
   contourField: "LayoutGrid", glyph: "Hash", glyphScatter: "LayoutDashboard",
   plant: "Sprout",
   none: "Ban", pixelate: "Aperture", bayer: "Grid2x2", ascii: "Hash",
-  colorLookup: "Palette", deepGlow: "Crosshair", fisheye: "Aperture",
+deepGlow: "Crosshair", fisheye: "Aperture",
   pixelSort: "ArrowDownUp", pixelStretch: "MoveHorizontal",
   venetianBlinds: "AlignJustify", tracker: "Crosshair",
 };
@@ -140,7 +140,7 @@ function WheelPicker<T extends { id: string; label: string; kind?: string }>({
       {/* Scrolling track */}
       <div
         style={{
-          transform: `translateY(${-RENDER_EXTRA * ITEM_H + visualOffset}px)`,
+          transform: `translateY(${-RENDER_EXTRA * ITEM_H - visualOffset}px)`,
           transition: snapping ? "transform 180ms cubic-bezier(0.25,0,0,1)" : "none",
           willChange: "transform",
         }}

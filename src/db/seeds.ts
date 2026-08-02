@@ -130,8 +130,7 @@ export const DEFAULT_LAYOUTS: Record<string, Record<string, SlotId>> = {
   },
   ascii: { cell: "knob:0", colored: "pad:4" },
   bayer: { levels: "knob:0", scale: "knob:1", colored: "pad:4" },
-  colorLookup: { count: "knob:0", amount: "knob:1" },
-  deepGlow: {
+deepGlow: {
     radius0: "knob:0", radius1: "knob:1", radius2: "knob:2", str0: "knob:3", str1: "knob:4",
     str2: "knob:5", mix: "knob:6",
   },

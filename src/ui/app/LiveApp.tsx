@@ -133,10 +133,11 @@ function PipStage() {
   const snapToCorner = (x: number, y: number) => {
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
-    return clamp(
-      x < cx ? PIP_MARGIN : window.innerWidth - PIP_W - PIP_MARGIN,
-      y < cy ? PIP_MARGIN : window.innerHeight - PIP_H - PIP_MARGIN,
-    );
+    const right = x >= cx;
+    const top = y < cy;
+    // Top-right overlaps the header bar buttons — redirect to bottom-right instead.
+    const snapY = (right && top) ? window.innerHeight - PIP_H - PIP_MARGIN : (top ? PIP_MARGIN : window.innerHeight - PIP_H - PIP_MARGIN);
+    return clamp(right ? window.innerWidth - PIP_W - PIP_MARGIN : PIP_MARGIN, snapY);
   };
 
   const onPointerDown = (e: React.PointerEvent) => {

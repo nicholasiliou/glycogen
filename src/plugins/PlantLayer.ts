@@ -18,7 +18,6 @@ export class PlantLayer extends Plugin {
   evolutionSpeed = this.number({ min: 0.01, max: 4, default: 1 });
   seed = this.number({ min: 1, max: 64, step: 1, default: 1 });
   autoEvolve = this.toggle(true);
-  opaque = this.toggle(); // transparent by default — the plant composites like every other layer
 
   private p?: P5;
   private container: HTMLDivElement;
@@ -58,8 +57,7 @@ export class PlantLayer extends Plugin {
       const effectiveSeed = Math.floor(seed + (this.autoEvolve.on ? this.frameTime * this.evolutionSpeed.value : 0));
 
       p.scale(this.cameraScale.value);
-      if (this.opaque.on) p.background(0);
-      else p.clear();
+      p.clear();
 
       if (effectiveSeed !== this.lastSeed || iterations !== this.lastIterations || !this.baseCol) {
         p.randomSeed(effectiveSeed);

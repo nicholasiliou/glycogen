@@ -14,6 +14,8 @@ export interface VideoExportInput {
   durationSec: number;
   baseName: string;
   onProgress?: (p: ExportProgress) => void;
+  /** Abort signal — resolves the export early and discards the output. */
+  signal?: AbortSignal;
 }
 
 /**
@@ -104,15 +106,21 @@ export async function exportVideo(input: VideoExportInput): Promise<Blob> {
   const startWall = performance.now();
   await new Promise<void>((resolve) => {
     const tick = () => {
+      if (input.signal?.aborted) { resolve(); return; }
       const el = performance.now() - startWall;
       input.onProgress?.({ frame: Math.round((el / 1000) * fps), totalFrames, fraction: Math.min(1, el / ms) });
       if (el >= ms) resolve();
       else setTimeout(tick, 100);
     };
+    input.signal?.addEventListener("abort", () => resolve(), { once: true });
     tick();
   });
 
   cancelAnimationFrame(raf);
+  if (input.signal?.aborted) {
+    recorder.stop();
+    return new Blob([], { type: mime });
+  }
   await new Promise((r) => setTimeout(r, 150)); // let the encoder flush the tail
   recorder.stop();
   const blob = await done;

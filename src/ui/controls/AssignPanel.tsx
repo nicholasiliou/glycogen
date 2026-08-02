@@ -75,7 +75,7 @@ export function AssignPanel() {
             "flex-1 rounded-l py-1.5 text-xs font-medium transition-colors " +
             (focusPart === "plugin"
               ? "text-bg"
-              : "bg-surface text-ink-dim hover:text-ink")
+              : "bg-transparent text-ink-dim hover:text-ink")
           }
         >
           Plugin
@@ -88,8 +88,8 @@ export function AssignPanel() {
             (focusPart === "shader"
               ? "text-bg"
               : hasShader
-                ? "bg-surface text-ink-dim hover:text-ink"
-                : "bg-surface text-ink-dim/30 cursor-not-allowed")
+                ? "bg-transparent text-ink-dim hover:text-ink"
+                : "bg-transparent text-ink-dim/30 cursor-not-allowed")
           }
         >
           Shader
