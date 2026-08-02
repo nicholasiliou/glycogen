@@ -35,7 +35,7 @@ const modules = import.meta.glob<Record<string, unknown>>(
 export const DISABLED = new Set<string>(["volumetricCloud", "pixelSort", "colorLookup"]);
 
 const LABEL_OVERRIDES: Record<string, string> = {
-  pixelate: "Hentai",
+  pixelate: "Otaku",
 };
 
 const registry = new Map<string, Entry>();
