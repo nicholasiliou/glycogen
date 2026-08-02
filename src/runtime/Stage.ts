@@ -319,10 +319,15 @@ export class Stage {
     if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
     ctx.globalCompositeOperation = "source-over";
     ctx.clearRect(0, 0, w, h);
+    // Desaturate to luminance, then tint by the preset hex (multiply: black stays black). The
+    // `grayscale(1)` filter is applied as part of the drawImage, so it never composites an opaque
+    // fill over transparent regions  -  antialiased edges keep their true coverage. (An opaque
+    // `saturation`/`multiply` fill over the whole rect instead forces edge pixels to full coverage
+    // and rewrites their color toward gray×hex, leaving a soft black fringe once alpha is clipped
+    // back. That blend-only path is faster in Firefox but not edge-correct, so we keep the filter.)
+    ctx.filter = "grayscale(1)";
     ctx.drawImage(src, 0, 0, w, h);
-    ctx.globalCompositeOperation = "saturation";
-    ctx.fillStyle = "#808080";
-    ctx.fillRect(0, 0, w, h);
+    ctx.filter = "none";
     ctx.globalCompositeOperation = "multiply";
     ctx.fillStyle = hex;
     ctx.fillRect(0, 0, w, h);

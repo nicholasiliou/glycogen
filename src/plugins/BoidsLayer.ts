@@ -65,6 +65,31 @@ export class BoidsLayer extends Plugin {
     super();
   }
 
+  /**
+   * A pure resize (e.g. an export locking the render size) must NOT re-seed the flock or drop the
+   * accumulated motion-trail. Setting canvas.width clears the bitmap, so we snapshot the old frame,
+   * resize, then blit it back scaled into the new size and rescale the boid positions to match.
+   * Without this an export shows a single fresh frame (dots, no trails) instead of the live look.
+   */
+  resize(w: number, h: number): void {
+    const prevW = this.canvas.width, prevH = this.canvas.height;
+    const nw = Math.max(1, Math.round(w)), nh = Math.max(1, Math.round(h));
+    if (nw === prevW && nh === prevH) return;
+    let snap: HTMLCanvasElement | null = null;
+    if (prevW > 0 && prevH > 0) {
+      snap = document.createElement("canvas");
+      snap.width = prevW;
+      snap.height = prevH;
+      snap.getContext("2d")!.drawImage(this.canvas, 0, 0);
+    }
+    super.resize(w, h);
+    if (snap) {
+      this.ctx.drawImage(snap, 0, 0, prevW, prevH, 0, 0, nw, nh);
+      const sx = nw / prevW, sy = nh / prevH;
+      for (let i = 0; i < this.capacity; i++) { this.px[i] *= sx; this.py[i] *= sy; }
+    }
+  }
+
   private ensureCapacity(n: number): void {
     if (n <= this.capacity) return;
     this.px = new Float32Array(n);
