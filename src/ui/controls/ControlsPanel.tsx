@@ -76,7 +76,7 @@ function ParamSection({ plugin, focusPart }: { plugin: Plugin; focusPart: "plugi
 }
 
 /**
- * The right-side controls drawer: the focused plugin's params with live value editors ONLY — this
+ * The right-side controls drawer: the focused plugin's params with live value editors ONLY  -  this
  * panel *drives* the app. All binding work (chips, drag-to-assign, presets) lives on the assign
  * surface (the controller overlay + {@link AssignPanel}), never here.
  */
@@ -88,7 +88,7 @@ export function ControlsPanel() {
   if (!bank?.plugin) {
     return (
       <div className="flex min-h-0 flex-1 items-center justify-center p-4 text-center text-sm text-ink-dim/60">
-        No plugin focused — load one first
+        No plugin focused  -  load one first
       </div>
     );
   }
@@ -111,7 +111,7 @@ export function ControlsPanel() {
 
 /**
  * Freeform text for the Text layer: type anything and it replaces the preset list until the field
- * is cleared. Non-persistent by design — it lives on the layer instance only, so reloading the
+ * is cleared. Non-persistent by design  -  it lives on the layer instance only, so reloading the
  * plugin, restoring a scene or resetting the exhibition brings the presets back.
  */
 function CustomTextField({ layer }: { layer: TextLayer }) {
@@ -173,9 +173,9 @@ function AdminDefaults({ managed }: { managed: Plugin }) {
   );
 }
 
-// ── live value editors (drive the param directly — bound or not) ────────────────────────────────
+// ── live value editors (drive the param directly  -  bound or not) ────────────────────────────────
 
-/** Annotation row: label left, editable value right — rendered below the widget. */
+/** Annotation row: label left, editable value right  -  rendered below the widget. */
 function Annotation({ label, param }: { label?: string; param: Param }) {
   return (
     <div className="flex items-center justify-between px-0.5">
@@ -292,7 +292,7 @@ function resolveNumericWidget(param: Param, kind?: ControlKind) {
 
 // ── numeric widget implementations ────────────────────────────────────────────────────────────
 
-/** Horizontal skeuomorphic fader (default — same look as the controller). */
+/** Horizontal skeuomorphic fader (default  -  same look as the controller). */
 function ParamFader({ param }: { param: Param }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const onDown = (e: ReactPointerEvent) => {

@@ -1,7 +1,7 @@
 /**
  * The app-wide color presets. Every plugin declares a native draw color from this palette (the
  * `nativeColor` field on the {@link Plugin} factory), and every layer carries a factory `color`
- * cycle that recolors its final output through the same presets — so "which colors exist" lives
+ * cycle that recolors its final output through the same presets  -  so "which colors exist" lives
  * in exactly one place.
  */
 export interface ColorPreset {
@@ -22,7 +22,7 @@ export const COLOR_PRESETS: readonly ColorPreset[] = [
 
 export const DEFAULT_COLOR = COLOR_PRESETS[0].hex;
 
-/** The factory `color` cycle's options — every preset. */
+/** The factory `color` cycle's options  -  every preset. */
 export const COLOR_CYCLE: readonly string[] = COLOR_PRESETS.map((c) => c.name);
 
 /** Map a `color` cycle press count to a preset hex. */

@@ -18,7 +18,7 @@ import { pendingForAction, pendingForParam } from "./assign";
 
 /**
  * The assignment sidebar, shown while the controller overlay is open: the dump of *unassigned*
- * functions. Drag a row onto an overlay widget (or click the row, then click a widget) to assign —
+ * functions. Drag a row onto an overlay widget (or click the row, then click a widget) to assign  - 
  * the row disappears, consumed by the widget. Drag a widget's occupant back here to unbind it (it
  * reappears in the list). Presets snapshot the whole binding state.
  */
@@ -29,7 +29,7 @@ export function AssignPanel() {
   const pluginId = managed?.id ?? "";
   const hasShader = !!banks[activeBank]?.shader;
 
-  // Unassigned = no binding row. Locked (opacity) rows count as assigned — they never surface here.
+  // Unassigned = no binding row. Locked (opacity) rows count as assigned  -  they never surface here.
   const pbVersion = useTable(paramBindings, (t) => t.version);
   const abVersion = useTable(actionBindings, (t) => t.version);
   const unboundParams = useTable(
@@ -67,7 +67,7 @@ export function AssignPanel() {
       onDragOver={(e) => { if (e.dataTransfer.types.includes(ASSIGN_MIME)) e.preventDefault(); }}
       onDrop={onDrop}
     >
-      {/* Plugin / Shader focus toggle — swaps which half of the active bank is being assigned */}
+      {/* Plugin / Shader focus toggle  -  swaps which half of the active bank is being assigned */}
       <div className="flex shrink-0 gap-px p-2">
         <button
           onClick={() => setFocusPart("plugin")}
@@ -96,11 +96,11 @@ export function AssignPanel() {
         </button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        <Section title={managed ? `Params — ${labelOf(managed.id)}` : "Params"}>
+        <Section title={managed ? `Params  -  ${labelOf(managed.id)}` : "Params"}>
           {!managed ? (
-            <Hint>No plugin focused — load one first</Hint>
+            <Hint>No plugin focused  -  load one first</Hint>
           ) : unboundParams.length === 0 ? (
-            <Hint>All params assigned — drag one off a widget to unbind</Hint>
+            <Hint>All params assigned  -  drag one off a widget to unbind</Hint>
           ) : (
             unboundParams.map((row) => (
               <AssignRow

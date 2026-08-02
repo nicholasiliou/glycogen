@@ -1,11 +1,11 @@
 /**
- * The committed db baseline — the authored floor the app boots from.
+ * The committed db baseline  -  the authored floor the app boots from.
  *
  * Every user-mutable table persists to the *local* browser's localStorage and never rides into git,
  * so a fresh deploy (or any first-time visitor) boots with those tables empty and everything falls
  * back to code-declared defaults. This module closes that gap: a developer authors the look in the
  * `#admin` surface (which writes localStorage rows like any other mutation), exports the whole db as
- * a JSON snapshot, and commits it to `seed.snapshot.json`. At boot the snapshot seeds each table —
+ * a JSON snapshot, and commits it to `seed.snapshot.json`. At boot the snapshot seeds each table  - 
  * but only rows the browser's own localStorage didn't already provide, so a visitor's live tweaks
  * still win. The committed snapshot is the floor; localStorage overrides on top.
  */
@@ -31,7 +31,7 @@ import {
   type PresetRow,
 } from "./schema";
 
-/** One array per user-mutable table — the full authored db, minus the code-sourced tables. */
+/** One array per user-mutable table  -  the full authored db, minus the code-sourced tables. */
 export interface DbSnapshot {
   paramDefaults: ParamDefaultRow[];
   paramBindings: ParamBindingRow[];
@@ -62,7 +62,7 @@ export function snapshotDb(): DbSnapshot {
   };
 }
 
-/** Pretty JSON of the current db — the `#admin` export action copies this into `seed.snapshot.json`. */
+/** Pretty JSON of the current db  -  the `#admin` export action copies this into `seed.snapshot.json`. */
 export function exportSnapshotJson(): string {
   return JSON.stringify(snapshotDb(), null, 2);
 }
@@ -70,7 +70,7 @@ export function exportSnapshotJson(): string {
 /** Insert rows the table doesn't already hold, skipping (with a warning) any that fail validation. */
 function fillMissing<Row extends RowBase>(table: Table<Row>, rows: Row[]): void {
   for (const row of rows) {
-    if (table.has(row.id)) continue; // localStorage already provided this row — it wins
+    if (table.has(row.id)) continue; // localStorage already provided this row  -  it wins
     try {
       table.insert(row);
     } catch (e) {

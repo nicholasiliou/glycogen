@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { embedPngTextBytes, readPngText } from "./pngMeta";
 
-/** A minimal well-formed-enough PNG: signature + IHDR(13 bytes) + IEND. CRCs are zero — the
+/** A minimal well-formed-enough PNG: signature + IHDR(13 bytes) + IEND. CRCs are zero  -  the
  *  codec never verifies them, it only walks length-prefixed chunks. */
 function tinyPng(): Uint8Array {
   const sig = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];

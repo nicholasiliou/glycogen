@@ -1,6 +1,6 @@
 /**
  * Shared internals for the skeuomorphic controller widgets. Every on-screen widget is an abstract
- * control slot on the {@link ControlBus}. Right-click any widget to arm it for MIDI learn — the
+ * control slot on the {@link ControlBus}. Right-click any widget to arm it for MIDI learn  -  the
  * next hardware touch binds to that slot and clears the learn state.
  */
 import * as React from "react";
@@ -12,13 +12,13 @@ import type { AppAction } from "@/db/schema";
 export const ControlBusContext = createContext<ControlBus | null>(null);
 
 /**
- * What the surface is for right now: `"live"` (pop-out + host bus — widgets drive the app) or
- * `"assign"` (the controller overlay — an inert map you drag functions onto; widgets never drive
+ * What the surface is for right now: `"live"` (pop-out + host bus  -  widgets drive the app) or
+ * `"assign"` (the controller overlay  -  an inert map you drag functions onto; widgets never drive
  * the bus).
  */
 export type SurfaceMode = "live" | "assign";
 export const SurfaceModeContext = createContext<SurfaceMode>("live");
-/** Setter for SurfaceMode — provided by MidiSettingsDialog so SlotFrame can switch modes. */
+/** Setter for SurfaceMode  -  provided by MidiSettingsDialog so SlotFrame can switch modes. */
 export const SetSurfaceModeContext = createContext<((m: SurfaceMode) => void) | null>(null);
 
 /** Slot → label (the focused plugin's bound variable name). Updates as focus changes. */
@@ -38,11 +38,11 @@ export const LearnSlotContext = createContext<SlotId | null>(null);
 export const ArmLearnContext = createContext<(slot: SlotId) => void>(() => {});
 
 /**
- * An assignment in progress — armed by clicking/dragging a row in the assign sidebar, or by
+ * An assignment in progress  -  armed by clicking/dragging a row in the assign sidebar, or by
  * dragging a widget's occupant on the assign surface. While pending, every legal widget highlights
  * and completes the assignment on click or drop; illegal widgets dim (clicking one cancels).
  * `legal` maps each allowed widget to its legal adapters (first entry = the default the assignment
- * lands with; actions carry a placeholder entry — legality is press-widgets-only).
+ * lands with; actions carry a placeholder entry  -  legality is press-widgets-only).
  */
 export type AssignPending =
   | { type: "param"; pluginId: string; paramId: string; label: string; legal: Partial<Record<SlotId, string[]>> }
@@ -72,7 +72,7 @@ export const AssignContext = createContext<AssignCtxType>({
 
 export function useBus(): ControlBus {
   const bus = useContext(ControlBusContext);
-  if (!bus) throw new Error("ControlBusContext is missing — wrap the controller in a provider");
+  if (!bus) throw new Error("ControlBusContext is missing  -  wrap the controller in a provider");
   return bus;
 }
 
@@ -104,10 +104,10 @@ export interface SlotView {
   liveValue: number;
   /** Last signed step (encoders/jog). */
   liveDelta: number;
-  /** Bumps on every message — lets relative widgets react to each tick. */
+  /** Bumps on every message  -  lets relative widgets react to each tick. */
   liveSeq: number;
   pressed: boolean;
-  /** Moved within the last 300ms — drives the accent glow. */
+  /** Moved within the last 300ms  -  drives the accent glow. */
   active: boolean;
   /** This slot is currently armed for MIDI learn. */
   armed: boolean;
@@ -119,7 +119,7 @@ export interface SlotView {
 
 /**
  * Bind a widget to a slot: read its live state + occupant label, get actions to drive it. In
- * assign mode the surface is an inert map — drive/fire are no-ops, only the frames respond.
+ * assign mode the surface is an inert map  -  drive/fire are no-ops, only the frames respond.
  */
 export function useSlot(slot: SlotId): SlotView {
   const bus = useBus();
@@ -168,7 +168,7 @@ function Label({ children, lit }: { children: React.ReactNode; lit?: boolean }) 
  * additionally makes the frame an assignment target: while an assignment is pending, legal frames
  * highlight and complete it on click or drop, illegal ones dim (clicking cancels). In assign mode
  * the frame also blocks pointer input from reaching the widget (the surface is an inert map) and,
- * when the slot has an occupant, becomes draggable — dragging re-arms the occupant so it can move
+ * when the slot has an occupant, becomes draggable  -  dragging re-arms the occupant so it can move
  * to another widget or be dropped on the sidebar to unbind.
  */
 export function SlotFrame({
@@ -200,7 +200,7 @@ export function SlotFrame({
     if (legal) assign.assignTo(slot!);
     else assign.cancel();
   };
-  // Assign mode, nothing pending: swallow the pointer before the widget sees it (inert surface) —
+  // Assign mode, nothing pending: swallow the pointer before the widget sees it (inert surface)  - 
   // no preventDefault, so a native drag of the occupant can still start.
   const inertCapture = (e: React.SyntheticEvent) => e.stopPropagation();
 

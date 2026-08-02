@@ -1,7 +1,7 @@
 import type p5 from "p5";
 
 /**
- * The original `sketch.js` L-system + turtle, preserved verbatim — only adapted from
+ * The original `sketch.js` L-system + turtle, preserved verbatim  -  only adapted from
  * p5 global mode to instance mode (global `random()` → `p.random()`, etc.). The
  * constants, thresholds, EGA palette, rule grammar, Phi metrics and turtle drawing
  * are intentionally unchanged. Do not "fix" anything here; the look is the point.

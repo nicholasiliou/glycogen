@@ -7,7 +7,7 @@ describe("registry (path-derived discovery)", () => {
     expect(ids).toContain("shape");
     expect(ids).toContain("pixelate");
     expect(list().find((p) => p.id === "shape")).toMatchObject({ label: "Shape", kind: "generator" });
-    expect(list().find((p) => p.id === "pixelate")).toMatchObject({ label: "Pixelate", kind: "effect" });
+    expect(list().find((p) => p.id === "pixelate")).toMatchObject({ label: "Hentai", kind: "effect" });
   });
 
   it("instantiates by id with its controls already bound + named", () => {
@@ -17,7 +17,7 @@ describe("registry (path-derived discovery)", () => {
   });
 
   it("discovers the full ported catalog (generators + effect shaders)", () => {
-    // Ids in DISABLED are intentionally kept out of the registry for the demo — assert they're
+    // Ids in DISABLED are intentionally kept out of the registry for the demo  -  assert they're
     // absent, and skip them in the discovery checks below (re-enabling is a one-line edit there).
     const ids = list().map((p) => p.id);
     for (const id of DISABLED) expect(ids).not.toContain(id);

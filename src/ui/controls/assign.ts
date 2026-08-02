@@ -3,7 +3,7 @@
  * {@link AssignPending}, whose `legal` map is what highlights drop targets on the overlay. The same
  * rules the db validators enforce, precomputed for the pointer:
  *   • params land on any non-reserved widget with a legal adapter that isn't action-occupied;
- *   • actions are press-driven — any non-reserved press widget (dropping one evicts params there).
+ *   • actions are press-driven  -  any non-reserved press widget (dropping one evicts params there).
  */
 import { legalAdapters, WIDGET_SIGNAL } from "@/controls/adapters";
 import { actionBindings, widgets, type AppActionRow, type ParamRow } from "@/db/schema";

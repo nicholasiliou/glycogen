@@ -46,7 +46,7 @@ export class VolumetricCloudLayer extends Plugin {
   private bctx = this.buf.getContext("2d")!;
   private image?: ImageData;
 
-  /** Render-buffer downsample fraction — fixed (no longer a param). */
+  /** Render-buffer downsample fraction  -  fixed (no longer a param). */
   private static readonly DETAIL = 0.5;
 
   render(f: Frame): HTMLCanvasElement {

@@ -5,7 +5,7 @@ import { DEFAULT_ACTION_LAYOUT, DEFAULT_LAYOUTS, seedActionBindings, seedCodeTab
 
 /**
  * Parity net for the M3 migration: boots the db from the real plugin registry and checks that the
- * transcribed factory layouts resolve — every layout entry must name a real param and widget and
+ * transcribed factory layouts resolve  -  every layout entry must name a real param and widget and
  * carry a legal adapter (materialisation warns + skips otherwise, which this treats as a failure).
  */
 describe("seedParamBindings against the real registry", () => {
@@ -26,7 +26,7 @@ describe("seedParamBindings against the real registry", () => {
 
     for (const [pluginId, layout] of Object.entries(DEFAULT_LAYOUTS)) {
       // A layout may outlive its plugin while the plugin is temporarily disabled in the registry
-      // (see DISABLED in registry.ts) — the entry stays so re-enabling is one edit, so skip it here.
+      // (see DISABLED in registry.ts)  -  the entry stays so re-enabling is one edit, so skip it here.
       if (!plugins.has(pluginId)) continue;
       const rows = paramBindings.by("plugin", pluginId);
       for (const [field, widgetId] of Object.entries(layout)) {
@@ -50,7 +50,7 @@ describe("seedParamBindings against the real registry", () => {
 
   it("covers every registered plugin with a factory layout", () => {
     // A new plugin without a DEFAULT_LAYOUTS entry still works (params exist) but ships with no
-    // widget layout — flag it here so the omission is a decision, not an accident.
+    // widget layout  -  flag it here so the omission is a decision, not an accident.
     for (const plugin of plugins.all()) {
       expect(DEFAULT_LAYOUTS[plugin.id], `DEFAULT_LAYOUTS["${plugin.id}"]`).toBeDefined();
     }
@@ -61,7 +61,7 @@ describe("seedParamBindings against the real registry", () => {
     const placed = new Map(actionBindings.all().map((r) => [r.widgetId, r.actionId]));
     expect(Object.fromEntries(placed)).toEqual(DEFAULT_ACTION_LAYOUT);
 
-    // user moves Clear elsewhere, then "reboots" — nothing re-materialises (the rows are theirs)
+    // user moves Clear elsewhere, then "reboots"  -  nothing re-materialises (the rows are theirs)
     const clear = actionBindings.all().find((r) => r.actionId === "clear")!;
     actionBindings.delete(clear.id);
     seedActionBindings();

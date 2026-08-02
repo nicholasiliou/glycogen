@@ -4,7 +4,7 @@ import { ShaderRunner } from "./ShaderRunner";
 // Alpha discipline: textures arrive straight (texImage2D un-premultiplies canvas sources) but the
 // GL canvas is composited as PREMULTIPLIED. Blurring/summing straight RGBA over a transparent
 // background leaks color into near-zero-alpha pixels, which the compositor then un-premultiplies
-// into a blown-out white halo — so both passes work premultiplied (rgb·a) and write premultiplied.
+// into a blown-out white halo  -  so both passes work premultiplied (rgb·a) and write premultiplied.
 const BLUR_FRAG = `
 precision highp float;
 varying vec2 vUv;
@@ -65,7 +65,7 @@ export class DeepGlowLayer extends Plugin {
   private blurV = new ShaderRunner(BLUR_FRAG);
   private compose = new ShaderRunner(COMPOSE_FRAG, ["uBlur0", "uBlur1", "uBlur2"]);
   // ShaderRunner returns its single reused canvas, so each blur tier must be snapshotted into its
-  // own canvas before the next tier overwrites it — otherwise all three glow textures alias the
+  // own canvas before the next tier overwrites it  -  otherwise all three glow textures alias the
   // last pass and the multi-radius glow collapses to one. (This was the "broken" look.)
   private tiers = [document.createElement("canvas"), document.createElement("canvas"), document.createElement("canvas")];
   private tierCtx = this.tiers.map((c) => c.getContext("2d")!);

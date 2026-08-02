@@ -10,7 +10,7 @@ import type { Stage } from "@/runtime/Stage";
 export interface UseMidiRouting {
   /** MIDI learn: widget currently armed for one-shot hardware capture, or null. */
   learnSlot: SlotId | null;
-  /** Arm a widget for MIDI learn — next hardware touch binds it and clears. */
+  /** Arm a widget for MIDI learn  -  next hardware touch binds it and clears. */
   armLearn: (slot: SlotId) => void;
   /** Cancel any pending learn. */
   cancelLearn: () => void;
@@ -22,7 +22,7 @@ export interface UseMidiRouting {
  * Hardware MIDI → bus, through the binding db, plus one-shot MIDI learn and the "last MIDI action"
  * readout. The router and control listener are attached once; per-render state (learn) is read
  * through refs so the once-attached closures always see fresh values. Learning writes
- * `hardwareControls` + `hardwareBindings` rows — nothing else holds mapping state.
+ * `hardwareControls` + `hardwareBindings` rows  -  nothing else holds mapping state.
  */
 export function useMidiRouting(opts: {
   midi: MidiManager;
@@ -62,7 +62,7 @@ export function useMidiRouting(opts: {
     });
     const offRouter = attachMidiRouter(midi, bus, {
       report: (control, widgetId) => {
-        // Friendly readout: the widget's occupant — the app action sitting on it, else the focused
+        // Friendly readout: the widget's occupant  -  the app action sitting on it, else the focused
         // plugin's bound param name, else the raw widget id.
         const action = actionBindings.by("widget", widgetId as SlotId)[0];
         let label: string | undefined = action && appActions.get(action.actionId)?.label;

@@ -67,7 +67,7 @@ export function snapToScale(rootMidi: number, scale: ScaleName, midi: number): n
   return rootMidi + octave * 12 + best;
 }
 
-/** Map a 0..1 value to a degree within `span` degrees — handy for visual params -> pitch. */
+/** Map a 0..1 value to a degree within `span` degrees  -  handy for visual params -> pitch. */
 export function unitToDegree(unit: number, span: number, offset = 0): number {
   return Math.round(offset + clamp01(unit) * span);
 }

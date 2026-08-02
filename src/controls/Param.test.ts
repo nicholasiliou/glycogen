@@ -46,7 +46,7 @@ describe("Param (numeric)", () => {
 });
 
 describe("ButtonParam (declared intent, press stream)", () => {
-  it("pick() cycles by press count, toggles, and pulses fired — all from one press stream", () => {
+  it("pick() cycles by press count, toggles, and pulses fired  -  all from one press stream", () => {
     const b = new ButtonParam("cycle", { options: ["a", "b", "c"] });
     b.tick();
     expect(b.pick(["a", "b", "c"])).toBe("a");

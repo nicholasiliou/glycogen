@@ -19,7 +19,7 @@ export const ASPECT_RATIOS: Record<Exclude<AspectRatioId, "custom">, AspectRatio
   "9:16": { id: "9:16", label: "9:16 portrait", width: 1080, height: 1920 },
   "1:1": { id: "1:1", label: "1:1 square", width: 1080, height: 1080 },
   "4:5": { id: "4:5", label: "4:5 portrait", width: 1080, height: 1350 },
-  // ISO A-series posters (portrait, 1:√2) at a 150 dpi base — the Max quality preset's 2×
+  // ISO A-series posters (portrait, 1:√2) at a 150 dpi base  -  the Max quality preset's 2×
   // supersample lands exactly on 300 dpi, i.e. print-ready pixel dimensions.
   A4: { id: "A4", label: "A4 poster", width: 1240, height: 1754 },
   A3: { id: "A3", label: "A3 poster", width: 1754, height: 2480 },
@@ -32,7 +32,7 @@ export const ASPECT_RATIO_LIST: AspectRatio[] = Object.values(ASPECT_RATIOS);
 /** Screen-destined ratios (social/video framings), shown as the primary row in the panel. */
 export const SCREEN_RATIO_LIST: AspectRatio[] = (["16:9", "9:16", "1:1", "4:5"] as const).map((id) => ASPECT_RATIOS[id]);
 
-/** Print-destined poster sizes. Stills only — video makes no sense at print resolution. */
+/** Print-destined poster sizes. Stills only  -  video makes no sense at print resolution. */
 export const PRINT_RATIO_LIST: AspectRatio[] = (["A4", "A3", "A2", "A1"] as const).map((id) => ASPECT_RATIOS[id]);
 
 export function isPrintRatio(id: AspectRatioId): boolean {

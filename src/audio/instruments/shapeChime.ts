@@ -6,7 +6,7 @@ import { Voice, num, norm, lerp } from "./util";
 // ───────────────────────── shape -> metallic FM bell + saw lead ─────────────────────────
 /**
  * Per-shape character. Each geometry gets its own arp, base octave, bell harmonicity and a
- * sawtooth-lead voicing — so switching the shape audibly switches the instrument's identity,
+ * sawtooth-lead voicing  -  so switching the shape audibly switches the instrument's identity,
  * not just its pitch. Bell + saw lead play together: the bell rings the shape, the saw leads it.
  */
 interface ShapeVoicing {
@@ -14,11 +14,11 @@ interface ShapeVoicing {
   arp: number[];
   /** Octave offset (in scale degrees) shifting the whole voice up/down. */
   octave: number;
-  /** FM bell partial ratio — the metallic colour. */
+  /** FM bell partial ratio  -  the metallic colour. */
   harmonicity: number;
   /** Saw-lead chord (scale degrees), played as a sustained stack under the bell. */
   lead: number[];
-  /** Saw lead filter cutoff in Hz — its brightness. */
+  /** Saw lead filter cutoff in Hz  -  its brightness. */
   cutoff: number;
 }
 
@@ -72,7 +72,7 @@ export function createShapeChime(engine: AudioEngine): Instrument {
     bell.triggerAttackRelease(engine.freqOfDegree(v.arp[i % v.arp.length] + oct), "2n", time, 0.5);
     i++;
   }, "2n");
-  // Saw-lead chord swells across the bar — the shape's harmonic "body".
+  // Saw-lead chord swells across the bar  -  the shape's harmonic "body".
   const leadId = engine.transport.scheduleRepeat((time) => {
     if ((cur?.presence ?? 0) <= 0.03) return;
     const v = shapeVoicing(cur?.props ?? {});
@@ -89,7 +89,7 @@ export function createShapeChime(engine: AudioEngine): Instrument {
       // The shape sets the bell's metallic colour; knot/super complexity nudges it brighter.
       const complexity = num(p.props, "knotP", 0) + num(p.props, "knotQ", 0) + num(p.props, "superM", 0);
       bell.set({ harmonicity: v.harmonicity + lerp(0, 2, norm(complexity, 0, 32)) });
-      // Spin energy opens the saw lead's filter — a fast-spinning shape sings brighter.
+      // Spin energy opens the saw lead's filter  -  a fast-spinning shape sings brighter.
       leadFilter.frequency.rampTo(lerp(v.cutoff * 0.5, v.cutoff, p.energy), 0.3);
       voice.applyGain(p.presence);
     },

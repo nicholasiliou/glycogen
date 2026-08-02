@@ -14,7 +14,7 @@ export interface VideoExportInput {
   durationSec: number;
   baseName: string;
   onProgress?: (p: ExportProgress) => void;
-  /** Abort signal — resolves the export early and discards the output. */
+  /** Abort signal  -  resolves the export early and discards the output. */
   signal?: AbortSignal;
 }
 
@@ -32,7 +32,7 @@ function targetBitrate(width: number, height: number, fps: number, factor: numbe
 /**
  * Realtime capture of whatever the engine is currently rendering, for a fixed number of seconds.
  * The instrument plays forever, so a video export is simply "record the next N seconds": we never
- * touch the transport — we just mirror the live canvas into a reframed/masked target canvas and
+ * touch the transport  -  we just mirror the live canvas into a reframed/masked target canvas and
  * capture *that* stream. The quality preset controls capture fps, supersampling (the target is
  * rendered larger than the chosen ratio for crisper edges) and a resolution-aware bitrate; the
  * format picks the container/codec (WebM everywhere, MP4 where MediaRecorder supports it).
@@ -44,7 +44,7 @@ export async function exportVideo(input: VideoExportInput): Promise<Blob> {
 
   const { source, frame, durationSec, baseName } = input;
   const fps = input.fps;
-  // Video has no alpha — paint masked-out regions black.
+  // Video has no alpha  -  paint masked-out regions black.
   const opts: ExportFrameOptions = { ...frame, background: "#000" };
 
   const outW = frame.ratio.width;
@@ -58,7 +58,7 @@ export async function exportVideo(input: VideoExportInput): Promise<Blob> {
   // Capture with an explicit per-frame push (`requestFrame`), not `captureStream(fps)`: the
   // fps-throttled stream only samples the canvas when the browser notices a repaint, so under
   // load frames land unevenly and the recording stutters below the nominal rate. With frameRate 0
-  // nothing is captured until we ask — we draw on our own fps clock below and push each frame the
+  // nothing is captured until we ask  -  we draw on our own fps clock below and push each frame the
   // moment it's drawn, so the encoder sees frames at the cadence the preset promises.
   const captureTarget = target as unknown as { captureStream: (fps?: number) => MediaStream };
   let stream = captureTarget.captureStream(0);

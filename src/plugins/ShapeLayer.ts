@@ -14,7 +14,7 @@ const SHAPES = ["torusKnot", "sphere", "torus", "box", "cylinder", "cone", "supe
 
 /**
  * Reference generator. A parametric 3D shape rendered as a rotating wireframe/filled object. Each
- * parameter is just a control binding — move `fader 3` to spin, tap `button 0` to cycle geometry.
+ * parameter is just a control binding  -  move `fader 3` to spin, tap `button 0` to cycle geometry.
  * No id/label/kind here: those come from the filename + folder via the registry.
  */
 export class ShapeLayer extends Plugin {
@@ -37,7 +37,7 @@ export class ShapeLayer extends Plugin {
     super();
   }
 
-  /** Mesh tessellation detail — fixed (no longer a param). */
+  /** Mesh tessellation detail  -  fixed (no longer a param). */
   private static readonly RESOLUTION = 8;
 
   private buildMesh(): number[] {

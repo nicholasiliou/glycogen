@@ -12,7 +12,7 @@ export interface StillExportInput {
   baseName: string;
   /** Frame number, for the filename suffix. */
   frameNumber: number;
-  /** Text metadata baked into the file (PNG only — JPEG has no equivalent slot we write). */
+  /** Text metadata baked into the file (PNG only  -  JPEG has no equivalent slot we write). */
   meta?: { keyword: string; text: string };
 }
 

@@ -29,7 +29,7 @@ function isFinderModule(col: number, row: number, size: number): boolean {
 }
 
 async function build(): Promise<void> {
-  // Level-H gives ~30% damage tolerance — that headroom covers the logo in the center.
+  // Level-H gives ~30% damage tolerance  -  that headroom covers the logo in the center.
   const qr = QRCode.create(SITE_URL, { errorCorrectionLevel: "H" });
   const { size, data } = qr.modules;
 
@@ -135,7 +135,7 @@ export function getBarcode(): HTMLCanvasElement | null {
 }
 
 /**
- * The centered cover-crop of the export ratio inside the canvas — the region the framing guide
+ * The centered cover-crop of the export ratio inside the canvas  -  the region the framing guide
  * outlines, the mask preview covers, and an export captures. The watermark anchors inside THIS
  * frame (not the arbitrary-aspect stage host), so it hugs the previewed mask and lands in exports.
  */
@@ -159,7 +159,7 @@ export function watermarkOrigin(frameW: number, frameH: number): { x: number; y:
 }
 
 /**
- * Returns the bounding box of the entire watermark strip (QR + barcode) in canvas coordinates —
+ * Returns the bounding box of the entire watermark strip (QR + barcode) in canvas coordinates  - 
  * anchored inside the export crop, matching the geometry used when drawing in Stage. Returns null
  * if the barcode isn't built yet (call after getWatermark() has resolved).
  */

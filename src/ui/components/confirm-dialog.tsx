@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
  * A small confirm/cancel dialog. Controlled: the caller owns `open` and reacts to `onConfirm`;
  * both buttons (and the dialog's own close affordances) end up in `onOpenChange(false)`.
  *
- * Pass `suppressKey` to enable a "Do not show again" checkbox — if the user checks it and
+ * Pass `suppressKey` to enable a "Do not show again" checkbox  -  if the user checks it and
  * confirms, that key is stored in localStorage and the dialog auto-confirms on future opens.
  */
 export function ConfirmDialog({

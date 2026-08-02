@@ -21,12 +21,12 @@ export interface CodeRegistration {
 let booted = false;
 
 export function bootDb(code: CodeRegistration): void {
-  if (booted) return; // idempotent — StrictMode / HMR may re-run the caller
+  if (booted) return; // idempotent  -  StrictMode / HMR may re-run the caller
   booted = true;
   seedCodeTables();
   plugins.replaceAll(code.plugins);
   params.replaceAll(code.params);
-  db.load(); // localStorage rows in first — a visitor's own tweaks win over the committed baseline
+  db.load(); // localStorage rows in first  -  a visitor's own tweaks win over the committed baseline
   seedSnapshot(committedSnapshot as DbSnapshot); // fill only ids localStorage didn't provide
   seedActionBindings(); // before params: an action on a widget blocks param rows there
   seedParamBindings();

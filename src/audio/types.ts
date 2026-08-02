@@ -1,7 +1,7 @@
 /** A single visual-param value, fed to instruments (formerly the engine's PropertyValue). */
 export type PropertyValue = number | number[] | boolean | string;
 
-/** Instrument family — pinned per plugin type so a plugin's sound never changes character. */
+/** Instrument family  -  pinned per plugin type so a plugin's sound never changes character. */
 export type InstrumentFamily =
   | "drums"
   | "pad"
@@ -19,14 +19,14 @@ export interface SonicParams {
   props: Record<string, PropertyValue>;
   /** Overall activity/energy 0..1 (motion, population, reaction rate…). */
   energy: number;
-  /** Stage presence 0..1 — layer opacity, used as a base level so fading out fades the sound. */
+  /** Stage presence 0..1  -  layer opacity, used as a base level so fading out fades the sound. */
   presence: number;
   time: number;
 }
 
 /**
  * The contract every plugin's voice implements. An instrument owns its Tone nodes, reads
- * the latest {@link SonicParams} via `update` (called per visual frame) and — if rhythmic —
+ * the latest {@link SonicParams} via `update` (called per visual frame) and  -  if rhythmic  - 
  * schedules its own events on the shared musical clock so it always stays in time.
  */
 export interface Instrument {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Db, type Table } from "./engine";
 
-// The test jsdom exposes a stub localStorage without methods — install a working in-memory one.
+// The test jsdom exposes a stub localStorage without methods  -  install a working in-memory one.
 function memoryStorage(): Storage {
   const map = new Map<string, string>();
   return {

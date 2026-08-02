@@ -3,7 +3,7 @@ import type { RowBase, Table } from "./engine";
 
 /**
  * Subscribe a component to a db table. `selector` derives whatever the component needs; it re-runs
- * when the table's version bumps (any mutation) — so hot paths never pay for reactivity — and when
+ * when the table's version bumps (any mutation)  -  so hot paths never pay for reactivity  -  and when
  * any of `deps` change. Pass every outside value the selector closes over (a plugin id, a filter…)
  * in `deps`, exactly like a useMemo: the table version alone can't see them change.
  *

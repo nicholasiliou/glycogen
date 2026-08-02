@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Download, Image as ImageIcon, Link, Link2Off, Video, X } from "lucide-react";
+import { ChevronDown, Download, Image as ImageIcon, Link, Link2Off, Upload, Video, X } from "lucide-react";
 import { Exporter, isPrintRatio, masksFor, PRINT_RATIO_LIST, SCREEN_RATIO_LIST, supportedVideoFormats } from "@/runtime/export";
+import { readPngText } from "@/runtime/export/exporters/pngMeta";
+import { applyScene, parseScene, SCENE_PNG_READ_KEYWORDS } from "@/runtime/scene";
 import { useLive } from "@/ui/app/LiveProvider";
 import { Button } from "@/ui/components/button";
 import { Switch } from "@/ui/components/switch";
@@ -62,6 +64,32 @@ export function ExportPanel() {
   const [error, setError] = useState<string | null>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
+  // Import: load a previously exported PNG and restore its embedded scene.
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importNote, setImportNote] = useState<string | null>(null);
+  const [importDragOver, setImportDragOver] = useState(false);
+  const importNoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flashImportNote = (msg: string) => {
+    setImportNote(msg);
+    if (importNoteTimer.current) clearTimeout(importNoteTimer.current);
+    importNoteTimer.current = setTimeout(() => setImportNote(null), 2500);
+  };
+
+  const loadFile = (file: File) => {
+    void file.arrayBuffer().then((buf) => {
+      const bytes = new Uint8Array(buf);
+      const json = SCENE_PNG_READ_KEYWORDS.reduce<string | null>((found, kw) => found ?? readPngText(bytes, kw), null);
+      const scene = json ? parseScene(json) : null;
+      if (scene) {
+        applyScene(stage, scene);
+        flashImportNote("Scene restored");
+      } else {
+        flashImportNote("No glycogen scene in this file");
+      }
+    });
+  };
+
   const variants = masksFor(ex.ratioId);
   const videoFormats = useMemo(() => supportedVideoFormats(), []);
   const print = isPrintRatio(ex.ratioId);
@@ -95,6 +123,39 @@ export function ExportPanel() {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72 space-y-3 text-[11px] text-ink">
+
+        {/* ── import ────────────────────────────────────────────────────────── */}
+        <div>
+          <p className="mb-1.5 text-[10px] text-ink-dim/70 leading-snug">
+            Drag a previously exported PNG here (or onto the canvas) to resume editing it. The scene embedded in the file will be restored.
+          </p>
+          <div
+            className={`relative flex cursor-pointer flex-col items-center justify-center gap-1 rounded border border-dashed py-3 transition-colors ${importDragOver ? "border-accent/70 bg-accent/5" : "border-edge/60 hover:border-edge"}`}
+            onDragOver={(e) => { e.preventDefault(); setImportDragOver(true); }}
+            onDragLeave={() => setImportDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setImportDragOver(false);
+              const file = e.dataTransfer.files?.[0];
+              if (file) loadFile(file);
+            }}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="h-4 w-4 text-ink-dim/50" />
+            <span className="text-[10px] text-ink-dim/60">{importNote ?? "Drop PNG or click to browse"}</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png"
+              className="sr-only"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) loadFile(file);
+                e.target.value = "";
+              }}
+            />
+          </div>
+        </div>
 
         {/* ── ratio preset ──────────────────────────────────────────────────── */}
         <Select

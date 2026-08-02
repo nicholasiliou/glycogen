@@ -5,10 +5,10 @@
  * mashes a pad and nothing happens. This module computes *phantom* bindings so that, for whichever
  * plugin is currently focused, EVERY otherwise-empty widget drives one of that plugin's own params.
  *
- * These are computed on the fly, never written to the db — so they leave no junk rows, regenerate as
+ * These are computed on the fly, never written to the db  -  so they leave no junk rows, regenerate as
  * you browse plugins, and can never fight a real binding: a widget already taken by a real param
  * binding, an app action, or a reserved role is skipped. Params are reused freely to cover every
- * widget (doubling is fine, and expected — most plugins declare fewer params than there are widgets).
+ * widget (doubling is fine, and expected  -  most plugins declare fewer params than there are widgets).
  *
  * The pick is deterministic per plugin (seeded from the plugin id), so the on-screen labels
  * (LiveProvider) and the live drivers (Stage) always agree, and the surface doesn't reshuffle every
@@ -46,7 +46,7 @@ function seeded(seedStr: string): () => number {
  * Compute the phantom fillers for `pluginId`: every widget that is not reserved, not occupied by an
  * app action, and not already carrying a real param binding for this plugin gets a random legal
  * param of the plugin. Widgets with no legal param for their kind (e.g. a pad when the plugin has
- * only continuous params) are left empty — nothing to honestly do there.
+ * only continuous params) are left empty  -  nothing to honestly do there.
  */
 export function fillerBindings(pluginId: string): FillerBinding[] {
   const pluginParams = params.by("plugin", pluginId);
@@ -62,7 +62,7 @@ export function fillerBindings(pluginId: string): FillerBinding[] {
   const out: FillerBinding[] = [];
   for (const widget of widgets.all()) {
     if (widget.reserved || taken.has(widget.id)) continue;
-    // Params this widget kind can legally drive — pair each with its default adapter up front.
+    // Params this widget kind can legally drive  -  pair each with its default adapter up front.
     const candidates: { param: ParamRow; adapter: AdapterSpec }[] = [];
     for (const param of pluginParams) {
       const adapter = defaultAdapter(param.control, widget.kind);

@@ -9,7 +9,7 @@ const toggle: ParamControl = { type: "toggle", default: false };
 const trigger: ParamControl = { type: "trigger" };
 const cycle = (n: number): ParamControl => ({ type: "cycle", options: Array.from({ length: n }, (_, i) => `o${i}`) });
 
-describe("legalAdapters — the full legality matrix", () => {
+describe("legalAdapters  -  the full legality matrix", () => {
   it("continuous numbers take absolute from abs widgets, relative from rel widgets, nothing from presses", () => {
     expect(legalAdapters(num(), "knob")).toEqual(["absolute"]);
     expect(legalAdapters(num(), "fader")).toEqual(["absolute"]);
@@ -58,7 +58,7 @@ function drive(param: Param | ButtonParam, spec: AdapterSpec, frames: Partial<Sl
   }
 }
 
-describe("ParamDriver — absolute", () => {
+describe("ParamDriver  -  absolute", () => {
   it("adopts absolute positions, only when the slot actually moved", () => {
     const p = new Param({ min: 0, max: 10 });
     drive(p, { kind: "absolute" }, [{ value: 0.5, hits: 1 }]);
@@ -83,7 +83,7 @@ describe("ParamDriver — absolute", () => {
   });
 });
 
-describe("ParamDriver — relative", () => {
+describe("ParamDriver  -  relative", () => {
   it("integrates deltas", () => {
     const p = new Param({ min: 0, max: 10, step: 1 });
     const d = new ParamDriver("encoder:0", p, { kind: "relative" });
@@ -93,7 +93,7 @@ describe("ParamDriver — relative", () => {
   });
 });
 
-describe("ParamDriver — press family", () => {
+describe("ParamDriver  -  press family", () => {
   it("toggle: presses flip .on and pulse .fired for exactly one frame", () => {
     const b = new ButtonParam("toggle");
     const d = new ParamDriver("pad:4", b, { kind: "toggle" });

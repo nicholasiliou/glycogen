@@ -1,5 +1,5 @@
 //A skeuomorphic, MixTrack-style layout of the live control surface.
-// Identical layout to before — only the wiring changed: each widget now drives an abstract
+// Identical layout to before  -  only the wiring changed: each widget now drives an abstract
 // ControlBus slot (assigned here), instead of a learned MIDI assignment.
 
 import { useEffect, useState } from "react";
@@ -35,7 +35,7 @@ function SidePanel({ pad, enc, jog, jogLabel }: { pad: number; enc: number; jog:
   const stack = (
     <div className="flex flex-col items-center gap-6">
     <div className="grid grid-cols-4 gap-3">
-      {/* top row: ordinary pads — the factory action layout puts Clear/Bank 1–6 here */}
+      {/* top row: ordinary pads  -  the factory action layout puts Clear/Bank 1 - 6 here */}
       <Pad slot={pad + 0}/>
       <Pad slot={pad + 1}/>
       <Pad slot={pad + 2}/>

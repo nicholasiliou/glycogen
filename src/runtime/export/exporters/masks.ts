@@ -2,7 +2,7 @@ import type { AspectRatioId } from "./aspectRatios";
 
 /**
  * Mask registry: each aspect ratio maps to a folder in /masks/{aspectRatio}/. Masks are numbered
- * (1.svg, 2.svg, etc.) and stored with a count of how many exist. A mask is an alpha cut-out —
+ * (1.svg, 2.svg, etc.) and stored with a count of how many exist. A mask is an alpha cut-out  - 
  * its white area is the visible region; everything else becomes transparent (PNG) or black (video).
  *
  * The frontend exposes a simple on/off toggle; when enabled, a random mask from the aspect

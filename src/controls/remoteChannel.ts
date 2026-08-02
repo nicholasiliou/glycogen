@@ -3,7 +3,7 @@
  * (the single source of truth); a popup opened at {@link REMOTE_HASH} renders only the controller
  * surface and has no stage of its own. It relays every widget drive/fire to the host over a
  * same-origin BroadcastChannel, and the host mirrors back the bits the surface needs to render
- * (per-slot labels + the browse label). No engine, no shared memory — just messages.
+ * (per-slot labels + the browse label). No engine, no shared memory  -  just messages.
  */
 import type { DriveInput, SlotId } from "./types";
 import type { SlotAction } from "@/ui/controller/widgets/shared";
@@ -27,7 +27,7 @@ export type RemoteMessage =
   | { kind: "fire"; slot: SlotId }
   | { kind: "step"; target: "plugin" | "shader"; delta: number }
   | { kind: "hello" } // remote → host: "send me the current snapshot" (also marks presence)
-  | { kind: "ping" } // host → remote: "anyone out there?" — an open pop-out answers with hello
+  | { kind: "ping" } // host → remote: "anyone out there?"  -  an open pop-out answers with hello
   | { kind: "bye" } // remote → host: the pop-out is closing
   | { kind: "snapshot"; snapshot: RemoteSnapshot };
 

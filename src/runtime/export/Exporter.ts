@@ -12,7 +12,7 @@ export type { StillFormat, ExportProgress, ExportSettings } from "./exporters/ty
 /**
  * Lean export pipeline for the live runtime: a still (PNG/JPEG) or a WebM video, each reframed to a
  * chosen aspect ratio with an optional alpha mask baked in. The instrument plays forever: a still
- * snapshots the current live frame and a video records the next N seconds — neither interrupts the
+ * snapshots the current live frame and a video records the next N seconds  -  neither interrupts the
  * Stage's render loop. The aspect ratio is applied at export time (cover-crop); the Stage keeps its
  * own size.
  */

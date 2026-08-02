@@ -9,15 +9,15 @@ import { asset } from "@/lib/asset";
 
 /**
  * The stage viewport. Mounts the runtime {@link Stage}'s canvas into a 16:9-masked host and overlays
- * the export framing guide — the chosen aspect-ratio crop, dimmed letterbox, and a live mask preview
- * — so the operator always sees exactly what an export will capture. Same look as before, now backed
+ * the export framing guide  -  the chosen aspect-ratio crop, dimmed letterbox, and a live mask preview
+ *  -  so the operator always sees exactly what an export will capture. Same look as before, now backed
  * by the plugin-stack runtime instead of the engine compositor.
  *
  * With export preview enabled the canvas renders at the true export resolution (ratio × quality
  * scale) and letterboxes into the host (`contain`), so framing AND pixel quality match the output;
  * otherwise it tracks the viewport 1:1 and cover-fits as before.
  */
-export function Stage() {
+export function Stage({ fadingOut = false, onFadeOutDone }: { fadingOut?: boolean; onFadeOutDone?: () => void } = {}) {
   const { stage } = useLive();
   const ex = useExportSettings();
   const hostRef = useRef<HTMLDivElement>(null);
@@ -62,7 +62,7 @@ export function Stage() {
     canvas.style.width = "100%";
     canvas.style.height = "100%";
     // Normally the canvas pixel size tracks the host 1:1, but during a video export the render
-    // size is locked to the export resolution — cover keeps the live view undistorted meanwhile.
+    // size is locked to the export resolution  -  cover keeps the live view undistorted meanwhile.
     canvas.style.objectFit = "cover";
     canvas.style.pointerEvents = "none";
     canvas.style.boxShadow = "0 0 80px rgba(0,0,0,0.6)";
@@ -79,7 +79,7 @@ export function Stage() {
     let first = true;
 
     const applyResize = () => {
-      // Render size is always pinned to the export output resolution — viewport resizes only
+      // Render size is always pinned to the export output resolution  -  viewport resizes only
       // re-fit the CSS box, so skip the (expensive) pixel resize when the target is unchanged.
       const preview = previewRef.current;
       const w = preview.width;
@@ -163,7 +163,7 @@ export function Stage() {
     if (variant) maskUrl = variant.url.endsWith(".svg") ? variant.url : `${variant.url}/1.svg`;
   }
 
-  // Fade in from black on initial mount — one rAF tick so the black frame is actually painted first.
+  // Fade in from black on initial mount  -  one rAF tick so the black frame is actually painted first.
   useEffect(() => {
     const id = requestAnimationFrame(() => setFadeIn(false));
     return () => cancelAnimationFrame(id);
@@ -239,11 +239,12 @@ export function Stage() {
         />
       )}
       <div
-        className="pointer-events-none absolute inset-0 z-10 bg-black"
+        className="pointer-events-none absolute inset-0 z-5 bg-black"
         style={{
-          opacity: fadeIn ? 1 : 0,
-          transition: fadeIn ? "none" : "opacity 600ms ease-in-out",
+          opacity: fadeIn || fadingOut ? 1 : 0,
+          transition: fadeIn ? "none" : "opacity 380ms ease-in-out",
         }}
+        onTransitionEnd={() => { if (fadingOut) onFadeOutDone?.(); }}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { Dices, Gamepad, GripVertical, Trash2, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/ui/components/button";
-import { ConfirmDialog } from "@/ui/components/confirm-dialog";
+import { ConfirmDialog, isSuppressed } from "@/ui/components/confirm-dialog";
 import { cn } from "@/ui/lib/cn";
 import { isAdmin } from "@/db/appDefaults";
 import { labelOf } from "@/plugins/registry";
@@ -9,14 +9,14 @@ import { useLive } from "@/ui/app/LiveProvider";
 import { LayerIcon } from "@/ui/components/LayerIcon";
 import { ExportPanel } from "@/ui/export/ExportPanel";
 
-/** Per-plugin icon for the browse preview — kept local to avoid a cross-file dep. */
+/** Per-plugin icon for the browse preview  -  kept local to avoid a cross-file dep. */
 const ICONS: Record<string, string> = {
   shape: "Shapes", noise: "Waves", boids: "Bird", gameOfLife: "Grid3x3",
   physarum: "Waypoints", reactionDiffusion: "Droplets", landscape: "Mountain",
   harmonograph: "Spline", volumetricCloud: "Cloudy", text: "Type",
   contourField: "LayoutGrid", glyph: "Hash", glyphScatter: "LayoutDashboard",
   plant: "Sprout",
-  none: "Ban", pixelate: "Aperture", bayer: "Grid2x2", ascii: "Hash",
+  none: "Ban", pixelate: "Grid3x3", bayer: "Grid2x2", ascii: "Hash",
 deepGlow: "Crosshair", fisheye: "Aperture",
   pixelSort: "ArrowDownUp", pixelStretch: "MoveHorizontal",
   venetianBlinds: "AlignJustify", tracker: "Crosshair",
@@ -160,9 +160,7 @@ function WheelPicker<T extends { id: string; label: string; kind?: string }>({
               )}
             >
               <LayerIcon name={icon} className="h-4 w-4 shrink-0" />
-              {isActive && (
-                <span className="truncate text-xs leading-tight text-ink">{item.label}</span>
-              )}
+              <span className="truncate text-xs leading-tight text-ink">{item.label}</span>
             </div>
           );
         })}
@@ -180,7 +178,7 @@ const EMPTY_DRAG_IMAGE =
     : (undefined as unknown as HTMLImageElement);
 
 /**
- * Pick black or white text for a `#rrggbb` fill via WCAG relative luminance — keeps the plugin
+ * Pick black or white text for a `#rrggbb` fill via WCAG relative luminance  -  keeps the plugin
  * name legible inside the active pill whatever color the layer wears.
  */
 function contrastInk(hex: string): "#000" | "#fff" {
@@ -202,7 +200,7 @@ interface BankDragState {
   setOverTrash: (b: boolean) => void;
 }
 
-/** Trash drop target — rendered in the right action area, receives drag state from HeaderBar. */
+/** Trash drop target  -  rendered in the right action area, receives drag state from HeaderBar. */
 function TrashTarget({ drag }: { drag: BankDragState }) {
   const { banks, clearBank } = useLive();
   const { dragFrom, setDragFrom, overTrash, setOverTrash } = drag;
@@ -234,7 +232,7 @@ function TrashTarget({ drag }: { drag: BankDragState }) {
 }
 
 /**
- * The unified bank strip: one pill per bank — load, activate, or remove the browsed plugin. The
+ * The unified bank strip: one pill per bank  -  load, activate, or remove the browsed plugin. The
  * active bank swells into a labelled pill (name + drag handle); the rest stay compact dots. Drag a
  * pill over another to reorder (with a live preview of the resulting order) or onto the trash to
  * empty it.
@@ -245,7 +243,7 @@ function BankStrip({ drag }: { drag: BankDragState }) {
   const { dragFrom, setDragFrom, setOverTrash } = drag;
   const [dragOver, setDragOver] = useState<number | null>(null);
   // The pills row is the single drop zone: every pill carries a data-index so a pointer anywhere in
-  // the strip (pills, carets, gaps) resolves to an insertion slot — no more releases landing on a
+  // the strip (pills, carets, gaps) resolves to an insertion slot  -  no more releases landing on a
   // gap with no handler and silently doing nothing.
   const rowRef = useRef<HTMLDivElement>(null);
 
@@ -279,7 +277,7 @@ function BankStrip({ drag }: { drag: BankDragState }) {
   const removingLayer = removing !== null ? banks[removing].plugin : null;
   const removingName = removingLayer ? labelOf(removingLayer.id) : "";
 
-  // The drop position is shown as a fixed-width caret *between* pills — nothing resizes during the
+  // The drop position is shown as a fixed-width caret *between* pills  -  nothing resizes during the
   // drag, so the geometry under the cursor never shifts (which is what caused the rapid layout
   // oscillation). The caret sits in `dragOver`'s slot whenever the drop would actually move.
   const caretAt = dropTo !== null ? dragOver : null;
@@ -392,10 +390,12 @@ export function HeaderBar({
   controllerOpen,
   onControllerToggle,
   stageRect,
+  onShuffle,
 }: {
   controllerOpen: boolean;
   onControllerToggle: () => void;
   stageRect: { left: number; width: number } | null;
+  onShuffle: () => void;
 }) {
   const {
     generators,
@@ -411,14 +411,15 @@ export function HeaderBar({
     lastMidi,
   } = useLive();
 
-  // Drag state lives here so TrashTarget (right side) and BankStrip (center) share it.
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [overTrash, setOverTrash] = useState(false);
   const drag: BankDragState = { dragFrom, setDragFrom, overTrash, setOverTrash };
 
+  const [shuffleConfirmOpen, setShuffleConfirmOpen] = useState(false);
+
   return (
     <div className="relative flex h-14 shrink-0 items-center overflow-hidden px-4 text-ink">
-      {/* Center: plugin wheel · banks · shader wheel — pinned over the live canvas column. */}
+      {/* Center: plugin wheel · banks · shader wheel  -  pinned over the live canvas column. */}
       <div
         className="pointer-events-none absolute inset-y-0 flex items-center justify-center"
         style={stageRect ? { left: stageRect.left, width: stageRect.width } : { left: 0, right: 0 }}
@@ -432,7 +433,7 @@ export function HeaderBar({
         </div>
       </div>
 
-      {/* Raw routing readout — dev hint, admin only */}
+      {/* Raw routing readout  -  dev hint, admin only */}
       {isAdmin() && lastMidi && (
         <span className="shrink-0 truncate text-[0.6875rem] text-ink-dim" title="Last MIDI action">
           {lastMidi.control} → {lastMidi.target}
@@ -460,10 +461,30 @@ export function HeaderBar({
         >
           {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
         </Button>
-        <Button size="icon-sm" variant="ghost" title="Shuffle scene" onClick={() => window.location.reload()}>
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          title="Shuffle scene"
+          onClick={() => { if (isSuppressed("glycogen.shuffleNoWarn")) onShuffle(); else setShuffleConfirmOpen(true); }}
+        >
           <Dices className="h-4 w-4" />
         </Button>
       </div>
+
+      <ConfirmDialog
+        open={shuffleConfirmOpen}
+        onOpenChange={setShuffleConfirmOpen}
+        title="Shuffle scene?"
+        description={
+          <>
+            This will replace your current loadout with a fresh random scene. Any unsaved work will be lost.{" "}
+            <span className="text-ink">Export a PNG first</span> to save it; you can drag it back onto the canvas later to resume editing.
+          </>
+        }
+        confirmLabel="Shuffle"
+        suppressKey="glycogen.shuffleNoWarn"
+        onConfirm={onShuffle}
+      />
     </div>
   );
 }

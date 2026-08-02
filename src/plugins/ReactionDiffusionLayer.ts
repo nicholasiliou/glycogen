@@ -15,7 +15,7 @@ const MAX_CELLS = 90000;
 const DIFF_U = 1.0;
 const DIFF_V = 0.5;
 
-// Named feed/kill (f, k) regimes — the parameter space is finicky, so presets make it approachable.
+// Named feed/kill (f, k) regimes  -  the parameter space is finicky, so presets make it approachable.
 const PRESETS: [string, number, number][] = [
   ["coral", 0.0545, 0.062],
   ["mitosis", 0.0367, 0.0649],
@@ -36,7 +36,7 @@ const LOW = [8, 10, 14, 0];
 const HIGH = [192, 252, 4, 255];
 
 /**
- * Gray–Scott reaction–diffusion. Two virtual chemicals U and V diffuse on a downsampled grid; V
+ * Gray - Scott reaction - diffusion. Two virtual chemicals U and V diffuse on a downsampled grid; V
  * catalyses its own production by consuming U, so seeds bloom into self-organising patterns. The
  * pad cycles named regimes; `iterations` steps advance per frame.
  */
@@ -209,7 +209,7 @@ export class ReactionDiffusionLayer extends Plugin {
       this.rows = rows;
       this.lastSeed = seed;
       this.lastReseed = this.reseed.count;
-      // A pure resize (e.g. an export locking the render size) must NOT wipe the evolved pattern —
+      // A pure resize (e.g. an export locking the render size) must NOT wipe the evolved pattern  - 
       // resample the existing grid into the new size so the still captures what's on screen. Only an
       // actual seed/reseed change (or the very first frame) re-seeds from scratch.
       if (resized && !reseeded && hadState) this.resample(prev);

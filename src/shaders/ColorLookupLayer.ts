@@ -21,7 +21,7 @@ void main() {
   gl_FragColor = vec4(mix(c, best, uMix), src.a);
 }`;
 
-/** Palette (constant — colour pickers have no control-kind in the new model). */
+/** Palette (constant  -  colour pickers have no control-kind in the new model). */
 const PALETTE = {
   uC0: [0.75, 0.99, 0.02],
   uC1: [0.92, 0.01, 0.49],

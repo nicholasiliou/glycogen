@@ -17,7 +17,7 @@ type Entry = PluginInfo & { ctor: new () => Plugin };
 
 /**
  * Auto-discovers every plugin from the filesystem. Any `*Layer.ts` under plugins/ or shaders/ that
- * exports a `Plugin` subclass is registered, and its id/label/kind come entirely from its path —
+ * exports a `Plugin` subclass is registered, and its id/label/kind come entirely from its path  - 
  * `plugins/ShapeLayer.ts` → `{ id: "shape", label: "Shape", kind: "generator" }`,
  * `shaders/PixelateLayer.ts` → `{ id: "pixelate", label: "Pixelate", kind: "effect" }`. No manual
  * metadata, no central list: dropping a file in is the whole registration.
@@ -28,11 +28,15 @@ const modules = import.meta.glob<Record<string, unknown>>(
 );
 
 /**
- * Plugin ids temporarily kept out of the registry — the file stays on disk (nothing is deleted),
+ * Plugin ids temporarily kept out of the registry  -  the file stays on disk (nothing is deleted),
  * it's just not discovered, so it never appears in the browser, the db, or the fillers. Remove an id
  * here to re-enable it. Disabled for the demo: `volumetricCloud`, `pixelSort`.
  */
 export const DISABLED = new Set<string>(["volumetricCloud", "pixelSort", "colorLookup"]);
+
+const LABEL_OVERRIDES: Record<string, string> = {
+  pixelate: "Hentai",
+};
 
 const registry = new Map<string, Entry>();
 for (const [path, mod] of Object.entries(modules)) {
@@ -40,7 +44,8 @@ for (const [path, mod] of Object.entries(modules)) {
   if (!ctor) continue;
   const info = metaFromPath(path);
   if (DISABLED.has(info.id)) continue;
-  if (registry.has(info.id)) console.warn(`[registry] duplicate plugin id "${info.id}" — overwriting`);
+  if (info.id in LABEL_OVERRIDES) info.label = LABEL_OVERRIDES[info.id];
+  if (registry.has(info.id)) console.warn(`[registry] duplicate plugin id "${info.id}"  -  overwriting`);
   registry.set(info.id, { ...info, ctor });
 }
 
@@ -48,7 +53,7 @@ function isPluginClass(x: unknown): x is new () => Plugin {
   return typeof x === "function" && x.prototype instanceof Plugin;
 }
 
-/** id/label/kind from a module path — the only source of plugin metadata. */
+/** id/label/kind from a module path  -  the only source of plugin metadata. */
 function metaFromPath(path: string): PluginInfo {
   const file = path.split("/").pop()!.replace(/Layer\.ts$/, "").replace(/\.ts$/, "");
   return {
@@ -58,7 +63,7 @@ function metaFromPath(path: string): PluginInfo {
   };
 }
 
-/** Display label for a plugin id. UI must use this, never `constructor.name` — class names minify
+/** Display label for a plugin id. UI must use this, never `constructor.name`  -  class names minify
  *  in production builds ("LandscapeLayer" → "el"). */
 export function labelOf(id: string): string {
   return registry.get(id)?.label ?? id;
@@ -88,7 +93,7 @@ function stampNames(plugin: Plugin): void {
 /**
  * Author the db's code-sourced rows from the registry: one `plugins` row per entry and one
  * read-only `params` row per declared field, harvested from a throwaway instance (declarations are
- * field initialisers, so they only exist on instances — constructors are cheap: a canvas + empty
+ * field initialisers, so they only exist on instances  -  constructors are cheap: a canvas + empty
  * state, no rendering).
  */
 export function harvestRegistrations(): CodeRegistration {
@@ -100,14 +105,14 @@ export function harvestRegistrations(): CodeRegistration {
     try {
       plugin = new ctor();
     } catch {
-      // A constructor body may need GL/p5 the harvest environment lacks — the declarations are
+      // A constructor body may need GL/p5 the harvest environment lacks  -  the declarations are
       // field initialisers and already sit on the under-construction instance.
       plugin = Plugin.underConstruction!;
     }
     let order = 0;
     for (const [key, value] of Object.entries(plugin)) {
       if (!(value instanceof Param || value instanceof ButtonParam)) continue;
-      // The factory `color` cycle recolors a *layer* (the Stage reads the generator's) — an
+      // The factory `color` cycle recolors a *layer* (the Stage reads the generator's)  -  an
       // effect's own copy is dead weight, so it gets no row: invisible and unbindable.
       if (kind === "effect" && value === plugin.color) continue;
       paramRows.push({ id: paramId(id, key), pluginId: id, name: key, order: order++, control: value.control });
@@ -115,7 +120,7 @@ export function harvestRegistrations(): CodeRegistration {
     try {
       plugin.dispose();
     } catch {
-      /* partially-constructed throwaway — nothing to release */
+      /* partially-constructed throwaway  -  nothing to release */
     }
   }
   return { plugins: pluginRows, params: paramRows };

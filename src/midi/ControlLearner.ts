@@ -31,7 +31,7 @@ export interface ControlSource {
 /**
  * What a learning pass produced: the (possibly new) control plus the events the manager should
  * emit. Keeping emission in the manager keeps the learner a pure state machine over the
- * controls/overrides maps — easy to reason about and test.
+ * controls/overrides maps  -  easy to reason about and test.
  */
 export interface LearnResult {
   control: MidiControl;
@@ -48,7 +48,7 @@ export interface LearnResult {
  */
 export class ControlLearner {
   private controls = new Map<string, MidiControl>();
-  /** User overrides (name + kind) keyed by control id — the saved preset, pushed down here so
+  /** User overrides (name + kind) keyed by control id  -  the saved preset, pushed down here so
    * retyping a control actually changes how its messages are interpreted, not just its label. */
   private overrides = new Map<string, ControlOverride>();
 
@@ -105,7 +105,7 @@ export class ControlLearner {
   learnControl(src: ControlSource, msg: CCMessage | PitchBendMessage, now: number): LearnResult | null {
     const isCC = msg.kind === "cc";
     const id = isCC ? `cc:${msg.channel}:${msg.number}` : `pb:${msg.channel}`;
-    if (this.overrides.get(id)?.disabled) return null; // faulty control — drop its messages
+    if (this.overrides.get(id)?.disabled) return null; // faulty control  -  drop its messages
 
     const raw = isCC ? msg.raw : msg.raw14;
     const rawMax = isCC ? 127 : 16383;
@@ -135,7 +135,7 @@ export class ControlLearner {
     let edge: "press" | "release" | null = null;
 
     if (ov?.kind) {
-      // User-authoritative interpretation — overrides the auto-detection entirely.
+      // User-authoritative interpretation  -  overrides the auto-detection entirely.
       const beh = KIND_BEHAVIOR[ov.kind];
       ctl.subtype = subtypeForKind(ov.kind);
       ctl.continuous = beh.continuous;
@@ -179,7 +179,7 @@ export class ControlLearner {
   learnNote(src: ControlSource, msg: NoteMessage, now: number): LearnResult | null {
     const on = msg.kind === "noteon";
     const id = `note:${msg.channel}:${msg.note}`;
-    if (this.overrides.get(id)?.disabled) return null; // faulty control — drop its messages
+    if (this.overrides.get(id)?.disabled) return null; // faulty control  -  drop its messages
 
     const { ctl, isNew } = this.ensure(id, () => ({
       id,
@@ -211,7 +211,7 @@ export class ControlLearner {
     return { control: ctl, isNew, kind: msg.kind, edge: on ? "press" : "release" };
   }
 
-  /** Drop all learned controls (overrides are retained — see MidiManager.dispose). */
+  /** Drop all learned controls (overrides are retained  -  see MidiManager.dispose). */
   clear(): void {
     this.controls.clear();
   }

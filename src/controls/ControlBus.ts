@@ -16,8 +16,8 @@ export class ControlBus {
     return this.slots.get(slot) ?? EMPTY;
   }
 
-  /** Fires on ANY control activity (any `drive`/`fire`, any slot). For coarse liveness signals —
-   *  e.g. the exhibition's inactivity reset — that don't care which control was touched. */
+  /** Fires on ANY control activity (any `drive`/`fire`, any slot). For coarse liveness signals  - 
+   *  e.g. the exhibition's inactivity reset  -  that don't care which control was touched. */
   onActivity(fn: () => void): () => void {
     this.activitySubs.add(fn);
     return () => this.activitySubs.delete(fn);

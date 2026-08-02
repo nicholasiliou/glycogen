@@ -8,7 +8,7 @@ import { useLive } from "@/ui/app/LiveProvider";
 import { SurfaceModeContext, SetSurfaceModeContext, type SurfaceMode } from "@/ui/controller/widgets";
 
 /**
- * The controller overlay: an *assignment surface* — an inert map of the pop-out surface that you
+ * The controller overlay: an *assignment surface*  -  an inert map of the pop-out surface that you
  * drag functions onto (from the assign sidebar) or drag occupants off of. It never drives the bus;
  * performing happens on the pop-out and the main sidebar. Right-click learn still works (the learn
  * toast + last-MIDI readout give feedback); hardware kind overrides live on the `#db` page.
@@ -37,15 +37,15 @@ export function MidiSettingsDialog() {
             <span className="text-amber-400">Web MIDI unavailable</span>
           ) : status === "denied" ? (
             <button className="text-ink-dim hover:text-ink" onClick={() => midi.enable()}>
-              Access denied — retry
+              Access denied  -  retry
             </button>
           ) : status === "unavailable" ? (
             <button
               className="text-amber-400 hover:text-ink"
               onClick={() => midi.enable()}
-              title="Permission is fine, but the MIDI backend failed to start. On Linux/Chromium this usually means the ALSA sequencer isn't loaded — run `sudo modprobe snd-seq`, then retry. Also make sure the page is served over https or localhost."
+              title="Permission is fine, but the MIDI backend failed to start. On Linux/Chromium this usually means the ALSA sequencer isn't loaded  -  run `sudo modprobe snd-seq`, then retry. Also make sure the page is served over https or localhost."
             >
-              MIDI backend unavailable — retry
+              MIDI backend unavailable  -  retry
             </button>
           ) : devices.length === 0 ? (
             <span className="text-ink-dim/70">No controller connected</span>
@@ -73,7 +73,7 @@ export function MidiSettingsDialog() {
               "px-2.5 py-1.5 transition-colors",
               surfaceMode === "assign" ? "text-accent" : "bg-transparent text-ink-dim hover:text-ink",
             )}
-            title="MIDI assignment mode — click or drag widgets to map controls"
+            title="MIDI assignment mode  -  click or drag widgets to map controls"
           >
             Assign
           </button>
@@ -84,7 +84,7 @@ export function MidiSettingsDialog() {
               "px-2.5 py-1.5 transition-colors",
               surfaceMode === "live" ? " text-accent" : "bg-transparent text-ink-dim hover:text-ink",
             )}
-            title="Emulator mode — use the on-screen controller to play live"
+            title="Emulator mode  -  use the on-screen controller to play live"
           >
             Emulator
           </button>

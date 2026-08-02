@@ -59,7 +59,7 @@ export function fieldToMask(
   }
 }
 
-// ── Reaction–Diffusion injections ──
+// ── Reaction - Diffusion injections ──
 
 /** grow/fill init: stamp V-rich seed cells where the mask is set. */
 export function rdSeedAlongMask(u: Float32Array, v: Float32Array, mask: Float32Array, n: number): void {

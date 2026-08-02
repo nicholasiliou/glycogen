@@ -41,7 +41,7 @@ interface LiveCtx {
   selectedShaderIndex: number;
   stepPlugin: (delta: number) => void;
   stepShader: (delta: number) => void;
-  /** Raw sub-step jog progress in [-ITEM_H, +ITEM_H] px — for instant wheel visual feedback. */
+  /** Raw sub-step jog progress in [-ITEM_H, +ITEM_H] px  -  for instant wheel visual feedback. */
   jogPluginPx: number;
   jogShaderPx: number;
   banks: Stage["banks"];
@@ -50,21 +50,21 @@ interface LiveCtx {
   setFocusPart: (p: FocusPart) => void;
   load: (bank?: number) => void;
   selectBank: (bank: number) => void;
-  /** Reorder the bank row (header dot drag) — bank order is composite order. */
+  /** Reorder the bank row (header dot drag)  -  bank order is composite order. */
   moveBank: (from: number, to: number) => void;
   clearBank: (bank?: number) => void;
   clearShader: () => void;
-  /** Master audio mute — silences the master bus without stopping the engine. */
+  /** Master audio mute  -  silences the master bus without stopping the engine. */
   muted: boolean;
   toggleMute: () => void;
-  /** Audio/visual gate — the intro is dismissed once started. */
+  /** Audio/visual gate  -  the intro is dismissed once started. */
   started: boolean;
   start: () => void;
   /** The hardware MIDI connection (device status, live control snapshots). */
   midi: MidiManager;
   /** MIDI learn: slot currently armed for one-shot hardware capture, or null. */
   learnSlot: SlotId | null;
-  /** Arm a slot for MIDI learn — next hardware touch binds it and clears. */
+  /** Arm a slot for MIDI learn  -  next hardware touch binds it and clears. */
   armLearn: (slot: SlotId) => void;
   /** Cancel any pending learn. */
   cancelLearn: () => void;
@@ -88,7 +88,7 @@ export function useLive(): LiveCtx {
   return ctx;
 }
 
-/** Accumulated jog delta that fires one browse step per this many units — deliberately coarse
+/** Accumulated jog delta that fires one browse step per this many units  -  deliberately coarse
  *  (~most of a platter revolution) so a flick can't overshoot into loading the wrong plugin. */
 const JOG_STEP = 30;
 
@@ -115,7 +115,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   useHardwareSync(midi);
 
   // The device status getter (midi.status) is read directly by the settings dialog, but it's a
-  // plain field — React won't re-render when it changes. Subscribe to the status/devices events and
+  // plain field  -  React won't re-render when it changes. Subscribe to the status/devices events and
   // bump the render tick, so a late-resolving enable() (e.g. the ALSA/PipeWire seq client wasn't
   // ready on the first attempt) actually clears a stale "unavailable" and shows "ready".
   useEffect(() => {
@@ -134,7 +134,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   // Held in a ref so effects can call the latest without re-subscribing.
   const randomizeScene = () => {
     const gens = [...browse.generators];
-    const fx = browse.effects; // always load a shader — "none" is the passthrough, never null
+    const fx = browse.effects; // always load a shader  -  "none" is the passthrough, never null
     if (gens.length === 0) return;
     const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
@@ -151,7 +151,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
           } else if (p.intent === "toggle") {
             p.on = Math.random() < 0.5;
           }
-          // triggers are one-shot — not sensible to randomize
+          // triggers are one-shot  -  not sensible to randomize
         }
       }
     };
@@ -164,6 +164,8 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     const bankIndices = Array.from({ length: stage.banks.length }, (_, i) => i);
     const bankA = bankIndices.splice(Math.floor(Math.random() * bankIndices.length), 1)[0];
     const bankB = bankIndices.splice(Math.floor(Math.random() * bankIndices.length), 1)[0];
+    // Clear all banks before loading so no previous plugins bleed through.
+    for (let i = 0; i < stage.banks.length; i++) stage.clearBank(i);
     const pairs: Array<{ gen: PluginInfo; bank: number; randomParams: boolean }> = [
       { gen: randomGen, bank: bankA, randomParams: true },
       ...(textInfo ? [{ gen: textInfo, bank: bankB, randomParams: false }] : []),
@@ -249,7 +251,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
           stepRef.current(target, steps);
         }
         // Expose sub-step progress as pixels for instant wheel visual feedback.
-        const px = -(acc / JOG_STEP) * ITEM_H;
+        const px = (acc / JOG_STEP) * ITEM_H;
         jogPxRef.current[target] = px;
         if (target === "plugin") setJogPluginPx(px);
         else setJogShaderPx(px);

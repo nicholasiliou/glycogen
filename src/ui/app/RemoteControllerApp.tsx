@@ -35,7 +35,7 @@ class RemoteBus extends ControlBus {
 }
 
 /**
- * The pop-out controller: a live performance surface (mode `"live"` — the default — so widgets
+ * The pop-out controller: a live performance surface (mode `"live"`  -  the default  -  so widgets
  * drive), relaying input to the host window. Assignment happens only on the host's overlay; this
  * window renders labels/lighting from the mirrored snapshot.
  */
@@ -54,7 +54,7 @@ export function RemoteControllerApp() {
     if (!chan) return;
     const onMsg = (e: MessageEvent<RemoteMessage>) => {
       if (e.data.kind === "snapshot") setSnapshot(e.data.snapshot);
-      // A reloaded host asks who's here — re-announce so it knows the emulator is still open.
+      // A reloaded host asks who's here  -  re-announce so it knows the emulator is still open.
       else if (e.data.kind === "ping") chan.postMessage({ kind: "hello" } satisfies RemoteMessage);
     };
     chan.addEventListener("message", onMsg);

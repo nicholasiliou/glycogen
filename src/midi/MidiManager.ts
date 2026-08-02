@@ -12,8 +12,8 @@ import { ControlLearner, type LearnResult } from "./ControlLearner";
 /**
  * Wraps the Web MIDI API into a normalized, framework-agnostic stream of controls. Like
  * the engine's InputManager it just collects state and emits events; the UI and the
- * audio/mapping layers consume it. The actual "learning" — turning every CC/note into a
- * {@link MidiControl} the first time it is touched — lives in {@link ControlLearner}; this class
+ * audio/mapping layers consume it. The actual "learning"  -  turning every CC/note into a
+ * {@link MidiControl} the first time it is touched  -  lives in {@link ControlLearner}; this class
  * owns the device connection, decodes bytes via {@link parseMidiMessage}, and emits the events.
  */
 export class MidiManager {
@@ -88,7 +88,7 @@ export class MidiManager {
     // Coalesce concurrent calls: a second enable() while the first is still awaiting
     // requestMIDIAccess must NOT start its own request. Two requests yield two *distinct* access
     // objects for the same physical port, and binding onmidimessage on both makes every message
-    // fire twice — which silently no-ops toggle actions (a toggle flips twice → back to start).
+    // fire twice  -  which silently no-ops toggle actions (a toggle flips twice → back to start).
     // This is exactly what React StrictMode's mount→unmount→mount double-invoke triggers.
     if (this.enabling) return this.enabling;
     if (!this.supported) {
@@ -105,7 +105,7 @@ export class MidiManager {
         this.setStatus("ready");
       } catch (err) {
         // requestMIDIAccess rejects for two very different reasons that we must not conflate:
-        // a genuine permission refusal (SecurityError / NotAllowedError — user blocked it or an
+        // a genuine permission refusal (SecurityError / NotAllowedError  -  user blocked it or an
         // insecure origin) vs. the MIDI backend failing to initialize (e.g. Linux/Chromium with no
         // ALSA sequencer). Only the former is really "denied"; blaming the permission for the latter
         // sends people to re-grant an already-granted permission. See the Ubuntu snd-seq case.

@@ -7,7 +7,7 @@ import type { ControlOverride } from "@/midi/types";
  * Keep the MidiManager's interpretation in sync with the `hardwareControls` table: every row's
  * name/kind/disabled is pushed down as an override so a corrected control type takes effect live
  * (a CC reclassified as a button switches to edge detection, etc.). Runs at mount and on every
- * table change — the db is the source of truth, the learner is just its live projection.
+ * table change  -  the db is the source of truth, the learner is just its live projection.
  */
 export function useHardwareSync(midi: MidiManager): void {
   useEffect(() => {

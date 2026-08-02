@@ -1,5 +1,5 @@
 /**
- * Pure decoder for the raw MIDI byte stream. It does no learning and holds no state — it just
+ * Pure decoder for the raw MIDI byte stream. It does no learning and holds no state  -  it just
  * recognizes the four message shapes the manager cares about (CC, note-on, note-off, pitch-bend)
  * and returns a tidy discriminated union. {@link MidiManager} feeds it bytes and routes the result
  * into the {@link ControlLearner}.

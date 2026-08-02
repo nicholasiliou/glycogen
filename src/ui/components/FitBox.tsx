@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 /**
  * Scales its (fixed-size) content uniformly so it fits inside the available space without scrolling
- * and without distorting aspect — a single `transform: scale(k)` where k is the smaller of the
+ * and without distorting aspect  -  a single `transform: scale(k)` where k is the smaller of the
  * width/height ratios (capped at `max`, default 1, so it shrinks but never blows content up). Used
  * to fit the skeuomorphic controller surface inside the masked overlay at any window size.
  */

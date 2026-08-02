@@ -48,7 +48,7 @@ export function ExportProvider({ children }: { children: ReactNode }) {
 
   const setRatioId = (id: AspectRatioId) => {
     setRatioIdRaw(id);
-    // Preset ratios have known canonical sizes — apply them directly.
+    // Preset ratios have known canonical sizes  -  apply them directly.
     const presets: Partial<Record<AspectRatioId, { w: number; h: number }>> = {
       "16:9": { w: 1920, h: 1080 },
       "9:16": { w: 1080, h: 1920 },

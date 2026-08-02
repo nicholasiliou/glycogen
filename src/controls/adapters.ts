@@ -1,6 +1,6 @@
 /**
  * Signal adapters: the layer that lets any widget drive any (compatible) param. Every widget emits
- * one of three signal classes — an absolute position, a relative step, or a press — and every
+ * one of three signal classes  -  an absolute position, a relative step, or a press  -  and every
  * param declares what it is (see `ParamControl` in the db schema). An adapter on the binding row
  * converts between the two; {@link legalAdapters} is the single source of truth for which
  * conversions exist, used both by the drop UI and by the db's paramBindings validator.
@@ -34,7 +34,7 @@ export interface AdapterSpec {
 }
 
 /**
- * Every adapter that can convert `widgetKind`'s signal into `control`'s input — empty means the
+ * Every adapter that can convert `widgetKind`'s signal into `control`'s input  -  empty means the
  * combination is illegal (the UI rejects the drop). First entry is the sensible default.
  */
 export function legalAdapters(control: ParamControl, widgetKind: ControlKind): AdapterKind[] {
@@ -43,7 +43,7 @@ export function legalAdapters(control: ParamControl, widgetKind: ControlKind): A
     case "number":
       if (signal === "abs") return ["absolute"];
       if (signal === "rel") return ["relative"];
-      // a press can only step a quantised range (wrapping) — continuous ranges have no press shape
+      // a press can only step a quantised range (wrapping)  -  continuous ranges have no press shape
       return control.step > 0 ? ["cycle"] : [];
     case "toggle":
       if (signal === "press") return ["toggle", "momentary"];
@@ -102,7 +102,7 @@ export class ParamDriver {
         return;
       }
       // toggle / trigger / cycle all consume the press stream; the declared param intent decides
-      // what a press *means* (flip .on, pulse .fired, advance .pick) — except cycle on a stepped
+      // what a press *means* (flip .on, pulse .fired, advance .pick)  -  except cycle on a stepped
       // number param, which steps the quantised range with wraparound.
       case "toggle":
       case "trigger":

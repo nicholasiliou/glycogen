@@ -6,7 +6,7 @@ import { BANK_COUNT, type FocusPart, type Stage } from "@/runtime/Stage";
 /**
  * Scene snapshots: the full bank row (each generator + its layer shader, with every param value) as
  * plain JSON. A still export embeds this into the PNG itself, so dropping the image back onto the
- * stage reloads exactly the layers that rendered it — the image *is* the save file. Param values
+ * stage reloads exactly the layers that rendered it  -  the image *is* the save file. Param values
  * are stored by field name, so a scene survives params being added/reordered; a renamed plugin or
  * param is simply skipped on load.
  */
@@ -15,7 +15,7 @@ import { BANK_COUNT, type FocusPart, type Stage } from "@/runtime/Stage";
 export const SCENE_PNG_KEYWORD = "glycogen:scene";
 
 /**
- * Read-side compatibility with stills exported before the glycogen rename — the ONLY place the
+ * Read-side compatibility with stills exported before the glycogen rename  -  the ONLY place the
  * old app name may appear. Cycle params (e.g. the text presets) store a press count, not the
  * option text, so an old scene simply lands on whichever option now sits at that index.
  */
@@ -78,7 +78,7 @@ function revivePlugin(state: ScenePlugin): Plugin | null {
   try {
     plugin = create(state.id);
   } catch {
-    console.warn(`[scene] unknown plugin "${state.id}" — skipping`);
+    console.warn(`[scene] unknown plugin "${state.id}"  -  skipping`);
     return null;
   }
   const byName = new Map(plugin.params.map((p) => [p.name, p]));
@@ -87,7 +87,7 @@ function revivePlugin(state: ScenePlugin): Plugin | null {
     if (!target) continue;
     if (target instanceof Param && typeof saved.value === "number") {
       target.set(saved.value);
-      target.snap(); // land immediately — a scene load shouldn't ease in from the defaults
+      target.snap(); // land immediately  -  a scene load shouldn't ease in from the defaults
     } else if (target instanceof ButtonParam) {
       if (typeof saved.count === "number") target.count = saved.count;
       if (typeof saved.on === "boolean") target.on = saved.on;
@@ -107,7 +107,7 @@ export function applyScene(stage: Stage, scene: SceneData): void {
     stage.loadBank(i, plugin);
     if (bank.shader) stage.setShader(i, revivePlugin(bank.shader));
   }
-  // loadBank moved focus as it went — restore the scene's own selection last.
+  // loadBank moved focus as it went  -  restore the scene's own selection last.
   const active = Math.min(BANK_COUNT - 1, Math.max(0, scene.active | 0));
   if (stage.banks[active].plugin) stage.selectBank(active);
   stage.focusPart = scene.focus === "shader" && stage.banks[stage.active].shader ? "shader" : "plugin";

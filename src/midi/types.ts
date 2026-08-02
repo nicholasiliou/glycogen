@@ -1,8 +1,8 @@
 /**
  * Normalized MIDI model. We deliberately reduce the raw protocol to one load-bearing
  * distinction that the auto-mapper cares about: **continuous** controls (knobs, faders,
- * jog wheels, pitch-bend — anything that sweeps a range) vs **momentary** controls (pads,
- * keys, buttons — note on/off). Ranges can only be driven by continuous controls; toggles
+ * jog wheels, pitch-bend  -  anything that sweeps a range) vs **momentary** controls (pads,
+ * keys, buttons  -  note on/off). Ranges can only be driven by continuous controls; toggles
  * and triggers by momentary ones. Everything else (the prettier knob/fader/pad label) is
  * cosmetic and user-overridable.
  */
@@ -18,7 +18,7 @@ export type ControlSubtype =
   | "unknown";
 
 /**
- * The user-facing input *type* of a physical control — what the settings menu lets you pick
+ * The user-facing input *type* of a physical control  -  what the settings menu lets you pick
  * to correct a wrong auto-detection. Unlike {@link ControlSubtype} (a passive detection hint),
  * a `ControlKind` is authoritative: choosing it changes how the manager *interprets* the
  * control's messages (absolute vs relative, continuous vs momentary).
@@ -32,7 +32,7 @@ export type ControlSubtype =
 export type ControlKind = "fader" | "knob" | "encoder" | "jog" | "button";
 
 /**
- * Intrinsic behaviour of each kind — the single source of truth the manager uses to interpret
+ * Intrinsic behaviour of each kind  -  the single source of truth the manager uses to interpret
  * messages and that {@link KIND_META} reuses for its labels. `continuous`: sweeps a range vs. a
  * momentary press. `relative`: reports signed steps rather than an absolute position.
  */
@@ -61,7 +61,7 @@ export const KIND_META: Record<ControlKind, KindMeta> = {
   button: { label: "Button", icon: "Square", hint: "momentary press" },
 };
 
-/** Best guess of a kind from what the manager auto-detected — the starting point a user edits. */
+/** Best guess of a kind from what the manager auto-detected  -  the starting point a user edits. */
 export function defaultKindFor(ctl: Pick<MidiControl, "continuous" | "relative" | "subtype">): ControlKind {
   if (!ctl.continuous) return "button";
   if (ctl.relative) return ctl.subtype === "jog" ? "jog" : "encoder";
@@ -72,7 +72,7 @@ export function defaultKindFor(ctl: Pick<MidiControl, "continuous" | "relative" 
 export interface ControlOverride {
   name?: string;
   kind?: ControlKind;
-  /** Ignore this control entirely (faulty / noisy) — the manager drops its messages. */
+  /** Ignore this control entirely (faulty / noisy)  -  the manager drops its messages. */
   disabled?: boolean;
 }
 
@@ -80,7 +80,7 @@ export interface ControlOverride {
 export interface MidiControl {
   /** Stable key, e.g. "cc:0:7", "note:0:36", "pb:0". */
   id: string;
-  /** Human label, e.g. "CC 7" — overridable for nice device maps. */
+  /** Human label, e.g. "CC 7"  -  overridable for nice device maps. */
   label: string;
   /** The one thing the mapper branches on. */
   continuous: boolean;
@@ -102,7 +102,7 @@ export interface MidiControl {
   /** Source input id + name (which device this came from). */
   deviceId: string;
   deviceName: string;
-  /** Number of messages seen — used for relative detection & "most active" sorting. */
+  /** Number of messages seen  -  used for relative detection & "most active" sorting. */
   hits: number;
   lastSeen: number;
 }
@@ -118,7 +118,7 @@ export interface MidiDeviceInfo {
  * - `idle`        not yet requested
  * - `unsupported` the browser has no `requestMIDIAccess` at all
  * - `denied`      the user (or browser policy) refused the MIDI permission
- * - `unavailable` permission wasn't the problem — the MIDI backend failed to start
+ * - `unavailable` permission wasn't the problem  -  the MIDI backend failed to start
  *                 (e.g. no ALSA sequencer on Linux, or an insecure origin)
  * - `ready`       access granted and bound
  */
@@ -138,7 +138,7 @@ export interface MidiManagerEvents {
   discover: MidiControl;
   /** Any value change. */
   control: MidiEvent;
-  /** Momentary press (note-on / button down) — the trigger signal. */
+  /** Momentary press (note-on / button down)  -  the trigger signal. */
   trigger: MidiControl;
   /** Momentary release. */
   release: MidiControl;

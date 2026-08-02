@@ -7,7 +7,7 @@ import { activeRing, dragWith, SlotFrame, useSlot } from "./shared";
 /**
  * Skeuomorphic endless encoder. Unlike a potentiometer (the {@link Knob}/{@link Fader}, which have
  * a fixed absolute position), this turns indefinitely and only ever emits *relative* deltas, so the
- * bound param accumulates them — matching a hardware encoder. Its rotation just stores how far it
+ * bound param accumulates them  -  matching a hardware encoder. Its rotation just stores how far it
  * has been spun; no end-stop, no absolute value to snap to.
  */
 export function SmoothKnob({ slot, label, size = 32 }: { slot: number; label?: string; size?: number }) {

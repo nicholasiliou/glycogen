@@ -11,14 +11,14 @@ document.fonts.ready.then(() => {
   const hash = window.location.hash;
   const remote = isRemoteWindow();
 
-  // #db — binding-db dev page (tables + hardware kind override), boots db so tables are populated
+  // #db  -  binding-db dev page (tables + hardware kind override), boots db so tables are populated
   if (hash.startsWith("#db")) {
     bootDb(harvestRegistrations());
     createRoot(document.getElementById("root")!).render(<DbPage />);
     return;
   }
 
-  // The pop-out controller window boots at `#controller`: just the surface, relaying to the host —
+  // The pop-out controller window boots at `#controller`: just the surface, relaying to the host  - 
   // it never touches the binding db, so only the host window boots it.
   if (!remote) bootDb(harvestRegistrations());
   const App = remote ? RemoteControllerApp : LiveApp;

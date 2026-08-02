@@ -1,14 +1,14 @@
 /**
- * A tiny synchronous relational table engine — the storage layer under {@link ../db/schema}.
+ * A tiny synchronous relational table engine  -  the storage layer under {@link ../db/schema}.
  *
  * Deliberately not a database *product*: no async, no SQL, no dependencies. What it keeps from the
- * relational model is exactly what the app needs — typed rows, primary keys, foreign keys with
+ * relational model is exactly what the app needs  -  typed rows, primary keys, foreign keys with
  * cascade/restrict, uniqueness, secondary indexes for hot-path lookups, and per-table change
  * subscription for the React layer. User-mutable tables persist to localStorage; code-sourced
  * tables are re-seeded from typed registrations every boot and never stored.
  *
  * Mutations are synchronous and validate eagerly (throw on violation) so the schema is the last
- * line of defence behind the UI. Rows are treated as immutable — `update` replaces the object.
+ * line of defence behind the UI. Rows are treated as immutable  -  `update` replaces the object.
  */
 
 export interface RowBase {
@@ -38,7 +38,7 @@ export interface TableOptions<Row extends RowBase> {
     sanitize: (raw: unknown) => Row | null;
   };
   fks?: ForeignKey<Row>[];
-  /** Semantic constraint beyond FKs — return an error message to reject, null to accept. */
+  /** Semantic constraint beyond FKs  -  return an error message to reject, null to accept. */
   validate?: (row: Row) => string | null;
   /** Secondary lookups for hot paths, e.g. `{ plugin: (r) => r.pluginId }`. */
   indexes?: Record<string, (row: Row) => string>;
@@ -47,7 +47,7 @@ export interface TableOptions<Row extends RowBase> {
 }
 
 export class Table<Row extends RowBase> {
-  /** Bumps on every mutation — consumers cache derived structures against it. */
+  /** Bumps on every mutation  -  consumers cache derived structures against it. */
   version = 0;
 
   private rows = new Map<string, Row>();
@@ -79,7 +79,7 @@ export class Table<Row extends RowBase> {
     return this.rows.size;
   }
 
-  /** Rows whose index key matches — O(1) after the first read per version. */
+  /** Rows whose index key matches  -  O(1) after the first read per version. */
   by(index: string, key: string): Row[] {
     const keyOf = this.opts.indexes?.[index];
     if (!keyOf) throw new Error(`[db.${this.name}] unknown index "${index}"`);
@@ -149,7 +149,7 @@ export class Table<Row extends RowBase> {
   }
 
   /**
-   * Seeding primitive: swap the entire contents. Rows are checked (FKs must already be seeded —
+   * Seeding primitive: swap the entire contents. Rows are checked (FKs must already be seeded  - 
    * declare/seed referenced tables first) but nothing cascades into other tables.
    */
   replaceAll(rows: Row[]): void {
@@ -169,7 +169,7 @@ export class Table<Row extends RowBase> {
 
   // ── persistence (user-mutable tables only) ────────────────────────────────────────────────────
 
-  /** Load stored rows unchecked — {@link Db.load} FK-prunes afterwards, once every table is in. */
+  /** Load stored rows unchecked  -  {@link Db.load} FK-prunes afterwards, once every table is in. */
   loadPersisted(): void {
     const p = this.opts.persist;
     if (!p || typeof localStorage === "undefined") return;

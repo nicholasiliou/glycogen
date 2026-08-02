@@ -9,7 +9,7 @@ import { createInstrument, instrumentSpec } from "./instruments/registry";
 /**
  * Bridges the runtime {@link Stage} and the audio engine. Once per animation frame it looks at the
  * loaded banks, ensures every voiced plugin has an instrument, and pushes that plugin's *live param
- * values* into the instrument — so what you hear is literally driven by what you see. Voices are
+ * values* into the instrument  -  so what you hear is literally driven by what you see. Voices are
  * created/disposed as plugins are loaded/cleared, and each layer's audio presence follows its own
  * opacity (fading a layer out fades its sound).
  *
@@ -91,7 +91,7 @@ export class LivePerformer {
   }
 }
 
-/** A plugin's live control values keyed by their field name — the same numbers the renderer draws with. */
+/** A plugin's live control values keyed by their field name  -  the same numbers the renderer draws with. */
 function paramProps(plugin: Plugin): Record<string, PropertyValue> {
   const out: Record<string, PropertyValue> = {};
   for (const p of plugin.params) {

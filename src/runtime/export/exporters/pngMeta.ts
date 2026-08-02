@@ -1,7 +1,7 @@
 /**
  * Minimal PNG text-chunk codec, so a still export can carry the scene that produced it. We write
- * one iTXt chunk (UTF-8, uncompressed) right after IHDR — ancillary, so every PNG reader ignores
- * it — and read back both iTXt and tEXt for tolerance. No dependency, no full PNG parse: chunks
+ * one iTXt chunk (UTF-8, uncompressed) right after IHDR  -  ancillary, so every PNG reader ignores
+ * it  -  and read back both iTXt and tEXt for tolerance. No dependency, no full PNG parse: chunks
  * are length-prefixed, so we can walk and splice them directly.
  */
 
@@ -82,7 +82,7 @@ export function readPngText(data: Uint8Array, keyword: string): string | null {
       if (nul >= 0 && new TextDecoder().decode(payload.subarray(0, nul)) === keyword) {
         if (type === "tEXt") return new TextDecoder("latin1").decode(payload.subarray(nul + 1));
         // iTXt: skip compression flag/method, then two more nul-terminated fields.
-        if (payload[nul + 1] !== 0) return null; // compressed text — we never write it, skip
+        if (payload[nul + 1] !== 0) return null; // compressed text  -  we never write it, skip
         let p = nul + 3;
         for (let fields = 0; fields < 2 && p < payload.length; p++) if (payload[p] === 0) fields++;
         return new TextDecoder().decode(payload.subarray(p));

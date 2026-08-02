@@ -20,9 +20,9 @@ export const BANK_COUNT = 6;
 /**
  * The runtime host and compositor: one flat row of {@link BANK_COUNT} banks. Each bank holds a
  * generator plugin with an optional per-layer shader on its output, and every loaded bank is
- * composited in order — each at its plugin's own `opacity` (the factory param that replaced the
+ * composited in order  -  each at its plugin's own `opacity` (the factory param that replaced the
  * deck crossfade). One bank is *active* (focused): each frame the bus drives that bank's plugin
- * — or its shader, per {@link focusPart} — then all banks render and composite to the output.
+ *  -  or its shader, per {@link focusPart}  -  then all banks render and composite to the output.
  */
 export class Stage {
   readonly canvas: HTMLCanvasElement;
@@ -41,7 +41,7 @@ export class Stage {
   focusPart: FocusPart = "plugin";
   /** Bake the QR watermark into the output canvas (so exports carry it by default). */
   watermark = true;
-  /** Export aspect (w/h), synced from the export panel — the watermark anchors inside its crop. */
+  /** Export aspect (w/h), synced from the export panel  -  the watermark anchors inside its crop. */
   exportRatio = 16 / 9;
 
   private raf = 0;
@@ -173,7 +173,7 @@ export class Stage {
 
   /**
    * The text field for sims to react to, sourced from *any* loaded TextLayer anywhere on the stage.
-   * A stage-wide field is what makes text interaction (fill/attract) reachable from any bank — it
+   * A stage-wide field is what makes text interaction (fill/attract) reachable from any bank  -  it
    * restores the old "text sits below everything" behaviour. A TextLayer in an earlier bank still
    * overrides this for later banks (see the threading in {@link tick}).
    */
@@ -192,7 +192,7 @@ export class Stage {
    */
   private resolveDrivers(plugin: Plugin): ParamDriver[] {
     // Filler bindings depend on actionBindings too (an action frees/occupies widgets), so the cache
-    // key folds both table versions — a remap on either re-derives next frame.
+    // key folds both table versions  -  a remap on either re-derives next frame.
     const version = paramBindings.version + actionBindings.version;
     const cached = this.drivers.get(plugin);
     if (cached && cached.at === version) return cached.list;
@@ -246,12 +246,12 @@ export class Stage {
       const alpha = clamp01(plugin.opacity.value);
       if (alpha <= 0) continue;
 
-      // Per-layer shader: blend dry (plugin) and wet (shader) by the shader's own opacity — at the
+      // Per-layer shader: blend dry (plugin) and wet (shader) by the shader's own opacity  -  at the
       // default 1 the shader fully replaces the layer's output, matching the old global slot.
       const shaded = bank.shader ? bank.shader.render({ ...frame, input: out, textField: null }) : null;
       const wet = bank.shader ? clamp01(bank.shader.opacity.value) : 0;
       // The layer's factory color (independent of the shader slot) recolors the *final* layer
-      // output — dry+wet are folded into a scratch first so shader and tint stack.
+      // output  -  dry+wet are folded into a scratch first so shader and tint stack.
       const tint = plugin.tintHex();
       if (tint) {
         const l = this.lctx;
@@ -290,7 +290,7 @@ export class Stage {
 
     // The watermark lives on the output canvas itself, so stills and video pick it up for free.
     // Anchored to the mask's bottom edge INSIDE the export crop (the framed region the guide
-    // shows and exports capture) — not the arbitrary-aspect canvas bottom.
+    // shows and exports capture)  -  not the arbitrary-aspect canvas bottom.
     const wm = this.watermark ? getWatermark() : null;
     if (wm) {
       const crop = cropRect(w, h, this.exportRatio);

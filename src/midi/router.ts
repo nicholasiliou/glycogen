@@ -12,7 +12,7 @@ export interface MidiActionHandlers {
 /**
  * Wire hardware MIDI onto the {@link ControlBus}, through the binding db. This is the whole
  * MIDI→runtime path: every message resolves `hardwareBindings` by the control's id and drives the
- * bound widget's bus slot — everything downstream (params, app actions, browse) hangs off the bus.
+ * bound widget's bus slot  -  everything downstream (params, app actions, browse) hangs off the bus.
  * Newly seen controls auto-register a `hardwareControls` row so they surface without a separate
  * learn step.
  *
@@ -37,7 +37,7 @@ export function attachMidiRouter(midi: MidiManager, bus: ControlBus, handlers: M
   });
 }
 
-/** First sighting of a physical control becomes a db row (identity only — no binding). */
+/** First sighting of a physical control becomes a db row (identity only  -  no binding). */
 function register(ctl: MidiControl): void {
   if (hardwareControls.has(ctl.id)) return;
   hardwareControls.insert({

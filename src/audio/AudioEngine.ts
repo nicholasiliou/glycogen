@@ -9,7 +9,7 @@ import {
 /**
  * Owns the single AudioContext, the master bus and the shared musical clock + key. Every
  * instrument connects its dry signal to {@link out} and optional sends to {@link reverbSend}
- * / {@link delaySend}, and schedules rhythmic events on {@link transport} — so the whole
+ * / {@link delaySend}, and schedules rhythmic events on {@link transport}  -  so the whole
  * ensemble shares one tempo and one key and always sounds intentional together.
  *
  * Nothing here depends on the visual engine; the LivePerformer is what bridges the two.
@@ -26,7 +26,7 @@ export class AudioEngine {
   private delay!: Tone.FeedbackDelay;
   /** Instrument dry-signal destination. */
   out!: Tone.Gain;
-  /** Reverb send input — instruments connect a send gain here. */
+  /** Reverb send input  -  instruments connect a send gain here. */
   reverbSend!: Tone.Gain;
   /** Delay send input. */
   delaySend!: Tone.Gain;

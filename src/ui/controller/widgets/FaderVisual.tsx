@@ -1,4 +1,4 @@
-// ── fader — presentation only (no slot / bus) ─────────────────────────────────────────────────
+// ── fader  -  presentation only (no slot / bus) ─────────────────────────────────────────────────
 import * as React from "react";
 
 /**

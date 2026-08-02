@@ -35,7 +35,7 @@ describe("actionBindings + occupancy", () => {
   it("rejects non-press widgets", () => {
     expect(() => actionBindings.insert({ id: uid(), widgetId: "knob:0", actionId: "clear" })).toThrow(/press/);
     expect(() => actionBindings.insert({ id: uid(), widgetId: "fader:0", actionId: "clear" })).toThrow(/press/);
-    actionBindings.insert({ id: uid(), widgetId: "button:0", actionId: "clear" }); // buttons are press — fine
+    actionBindings.insert({ id: uid(), widgetId: "button:0", actionId: "clear" }); // buttons are press  -  fine
   });
 
   it("setActionBinding replaces both sides and evicts params across ALL plugins", () => {

@@ -14,7 +14,7 @@ import { seedActionBindings, seedCodeTables, seedParamBindings } from "./seeds";
 
 /**
  * Exhibition fillers: for a focused plugin, every otherwise-empty widget should phantom-drive one of
- * that plugin's own params so no control is dead — without ever colliding with a real binding, an
+ * that plugin's own params so no control is dead  -  without ever colliding with a real binding, an
  * app action, or a reserved role.
  */
 describe("fillerBindings against the real registry", () => {
@@ -77,7 +77,7 @@ describe("fillerBindings against the real registry", () => {
 
   it("re-derives when an app action frees a widget", () => {
     const before = new Set(fillerBindings("boids").map((f) => f.widgetId));
-    // pad:1 is a bank action out of the box — move it away and that widget becomes fillable.
+    // pad:1 is a bank action out of the box  -  move it away and that widget becomes fillable.
     const row = actionBindings.all().find((r) => r.widgetId === "pad:1")!;
     actionBindings.delete(row.id);
     const after = new Set(fillerBindings("boids").map((f) => f.widgetId));

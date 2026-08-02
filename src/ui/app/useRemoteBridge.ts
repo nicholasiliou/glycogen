@@ -45,7 +45,7 @@ export function useRemoteBridge(opts: {
     const onMsg = (e: MessageEvent<RemoteMessage>) => {
       const m = e.data;
       if (m.kind === "bye") return setRemoteConnected(false);
-      if (m.kind === "snapshot") return; // our own broadcasts echo back — not remote presence
+      if (m.kind === "snapshot") return; // our own broadcasts echo back  -  not remote presence
       setRemoteConnected(true);
       if (m.kind === "drive") bus.drive(m.slot, m.input);
       else if (m.kind === "fire") bus.fire(m.slot);
@@ -53,7 +53,7 @@ export function useRemoteBridge(opts: {
       else if (m.kind === "hello") chan.postMessage({ kind: "snapshot", snapshot: snapshotRef.current } satisfies RemoteMessage);
     };
     chan.addEventListener("message", onMsg);
-    // Ask whether a pop-out is already open (e.g. the host was reloaded under it) — it replies
+    // Ask whether a pop-out is already open (e.g. the host was reloaded under it)  -  it replies
     // with a hello, which marks presence above.
     chan.postMessage({ kind: "ping" } satisfies RemoteMessage);
     return () => {

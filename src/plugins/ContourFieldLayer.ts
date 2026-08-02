@@ -50,7 +50,7 @@ const LINE = [40, 40, 255, 255];
  * adds a swirling "floating on water" motion.
  */
 export class ContourFieldLayer extends Plugin {
-  override nativeColor = "#2828FF"; // matches LINE — colors the bank dot / "native" on the color cycle
+  override nativeColor = "#2828FF"; // matches LINE  -  colors the bank dot / "native" on the color cycle
   scale = this.number({ min: 1, max: 16, default: 6 });
   octaves = this.number({ min: 1, max: 4, step: 1, default: 4 });
   warp = this.number({ min: 0, max: 2, default: 0.4 });
@@ -152,7 +152,7 @@ export class ContourFieldLayer extends Plugin {
     }
   }
 
-  /** Grid density as a fraction of canvas size — fixed (no longer a param). */
+  /** Grid density as a fraction of canvas size  -  fixed (no longer a param). */
   private static readonly RESOLUTION = 0.25;
 
   render(f: Frame): HTMLCanvasElement {

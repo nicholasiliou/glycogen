@@ -71,7 +71,7 @@ const stubCanvas = () => ({ width: 64, height: 64, getContext: () => fakeCtx() }
 let bus: ControlBus;
 let stage: Stage;
 beforeEach(() => {
-  // The test plugins' rows: Gen.level sits on fader:0, Fx.amount on knob:0 — the same layouts the
+  // The test plugins' rows: Gen.level sits on fader:0, Fx.amount on knob:0  -  the same layouts the
   // old hardcoded slots expressed.
   seedCodeTables();
   plugins.replaceAll([
@@ -115,7 +115,7 @@ describe("Stage banks", () => {
 
   it("drives only the active bank's plugin from the bus", () => {
     // The controller drives one layer at a time. Param state is retained per instance, so a setting
-    // made while focused persists after focus moves — text interaction doesn't need live tracking.
+    // made while focused persists after focus moves  -  text interaction doesn't need live tracking.
     const a = make(Gen, "gen");
     const b = make(Gen, "gen");
     stage.loadBank(0, a);

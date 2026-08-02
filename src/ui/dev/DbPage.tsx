@@ -18,9 +18,9 @@ import { MidiManager } from "@/midi/MidiManager";
 import { CONTROL_KINDS, type ControlKind } from "@/midi/types";
 
 /**
- * `#db` — the binding-db dev page: every table, live, with row delete on the user-mutable ones and
+ * `#db`  -  the binding-db dev page: every table, live, with row delete on the user-mutable ones and
  * a `kind` select on hardwareControls rows. That select is the home of the "learned a jog as a
- * knob" override (the main window's useHardwareSync projects the row back onto the MidiManager —
+ * knob" override (the main window's useHardwareSync projects the row back onto the MidiManager  - 
  * reload the app window after editing here, the two windows don't share a live db).
  */
 
@@ -38,7 +38,7 @@ const TABLES = {
 } as const;
 type TableName = keyof typeof TABLES;
 
-/** Persisted tables — the user's rows, safe to delete here. Code-sourced tables are read-only. */
+/** Persisted tables  -  the user's rows, safe to delete here. Code-sourced tables are read-only. */
 const MUTABLE: TableName[] = ["hardwareControls", "hardwareBindings", "paramBindings", "actionBindings", "paramDefaults", "presets"];
 
 function DeviceStatus() {
@@ -71,7 +71,7 @@ function DeviceStatus() {
 
 /**
  * Export the whole user-mutable db as the committed baseline. Under the dev server this POSTs to the
- * `snapshot-writer` plugin, which writes `src/db/seed.snapshot.json` directly — just commit after.
+ * `snapshot-writer` plugin, which writes `src/db/seed.snapshot.json` directly  -  just commit after.
  * On the static build that endpoint is absent, so it falls back to copying the JSON to the clipboard.
  */
 function SnapshotExport() {
@@ -86,7 +86,7 @@ function SnapshotExport() {
       const res = await fetch("/__write-snapshot", { method: "POST", body: json });
       if (res.ok) return flash("written");
     } catch {
-      /* no dev endpoint (static build) — fall back to clipboard */
+      /* no dev endpoint (static build)  -  fall back to clipboard */
     }
     void navigator.clipboard?.writeText(json);
     flash("copied");
@@ -108,7 +108,7 @@ function RowGrid({ name }: { name: TableName }) {
   const rows = useTable(table, (t) => t.all());
   const mutable = MUTABLE.includes(name);
 
-  if (!rows.length) return <p style={{ color: "#666", margin: 0 }}>— empty —</p>;
+  if (!rows.length) return <p style={{ color: "#666", margin: 0 }}> -  empty  - </p>;
   const keys = [...new Set(rows.flatMap((r) => Object.keys(r)))];
 
   return (

@@ -1,6 +1,6 @@
 /**
  * The abstract control surface every plugin binds against. A plugin never names a MIDI CC or a
- * device — it binds to a logical *slot* (`fader 0`, `knob 2`, `pad 5`…). The learn system maps
+ * device  -  it binds to a logical *slot* (`fader 0`, `knob 2`, `pad 5`…). The learn system maps
  * real hardware OR an on-screen controller widget onto those slots, so bindings survive a change
  * of controller.
  */
@@ -24,7 +24,7 @@ export interface SlotLive {
   relative: boolean;
   /** Current button/pad hold state. */
   pressed: boolean;
-  /** Count of distinct press (rising) events — decouples buttons from the host's poll rate. */
+  /** Count of distinct press (rising) events  -  decouples buttons from the host's poll rate. */
   presses: number;
   /** Monotonic message counter so consumers can detect "moved since last tick". */
   hits: number;

@@ -1,14 +1,14 @@
 /**
  * Seed data for the code-sourced tables and the default layouts.
  *
- * `WIDGET_CATALOG` is the authoritative description of the controller surface — it matches what
- * `Controller.tsx` actually renders (left pads 4–12, right pads 17–25, mixer pads 26–28,
- * encoders 0–5, faders 0–3, buttons 0–1) plus the hardware-only knobs 8–9 and the app-reserved
+ * `WIDGET_CATALOG` is the authoritative description of the controller surface  -  it matches what
+ * `Controller.tsx` actually renders (left pads 4 - 12, right pads 17 - 25, mixer pads 26 - 28,
+ * encoders 0 - 5, faders 0 - 3, buttons 0 - 1) plus the hardware-only knobs 8 - 9 and the app-reserved
  * browse dials (jog:0/jog:1).
  *
  * `DEFAULT_LAYOUTS` is the per-plugin factory layout: which widget each param sits on out of the
  * box. It is only materialised into `paramBindings` rows for a plugin the user hasn't remapped yet
- * (copy-on-first-touch) — after that the rows are the user's, and "Reset to default" re-seeds.
+ * (copy-on-first-touch)  -  after that the rows are the user's, and "Reset to default" re-seeds.
  */
 import { defaultAdapter } from "@/controls/adapters";
 import { slotId, type SlotId } from "@/controls/types";
@@ -38,14 +38,14 @@ function range(kind: WidgetRow["kind"], from: number, to: number): WidgetRow[] {
 
 export const WIDGET_CATALOG: WidgetRow[] = [
   ...range("fader", 0, 3),
-  ...range("knob", 0, 9), // knobs 8–9 have no on-screen widget (hardware-only) but are real slots
+  ...range("knob", 0, 9), // knobs 8 - 9 have no on-screen widget (hardware-only) but are real slots
   ...range("encoder", 0, 5),
   // The jog wheels are the two always-live browse dials (plugins left, shaders right).
   { id: "jog:0", kind: "jog", index: 0, reserved: "browsePlugin" },
   { id: "jog:1", kind: "jog", index: 1, reserved: "browseShader" },
   ...range("button", 0, 1),
-  ...range("pad", 0, 12), // left panel (0..3 = top row, factory home of Clear/Bank 1–3)
-  ...range("pad", 13, 25), // right panel (13..16 = top row, factory home of Bank 4–6)
+  ...range("pad", 0, 12), // left panel (0..3 = top row, factory home of Clear/Bank 1 - 3)
+  ...range("pad", 13, 25), // right panel (13..16 = top row, factory home of Bank 4 - 6)
   ...range("pad", 26, 28), // mixer
 ];
 
@@ -135,7 +135,7 @@ deepGlow: {
     str2: "knob:5", mix: "knob:6",
   },
   fisheye: { strength: "knob:0", zoom: "knob:1" },
-  none: {}, // passthrough shader — nothing to bind
+  none: {}, // passthrough shader  -  nothing to bind
   pixelSort: { threshold: "knob:0", horizontal: "pad:4", reverse: "pad:5" },
   pixelStretch: { threshold: "knob:0", amount: "knob:1", horizontal: "pad:4" },
   pixelate: { size: "knob:0" },
@@ -183,7 +183,7 @@ export function seedPluginBindings(pluginId: string): void {
 
 /**
  * Copy-on-first-touch for the app functions: only when the user has never placed any (the table is
- * empty) does the factory layout materialise — after that the rows are the user's.
+ * empty) does the factory layout materialise  -  after that the rows are the user's.
  */
 export function seedActionBindings(): void {
   if (actionBindings.size > 0) return;
@@ -194,7 +194,7 @@ export function seedActionBindings(): void {
 
 /**
  * Copy-on-first-touch: plugins with no user rows get their factory layout. `opacity` is an ordinary
- * assignable param now — it ships unbound (no factory widget) like `seed`/`textStrength`.
+ * assignable param now  -  it ships unbound (no factory widget) like `seed`/`textStrength`.
  */
 export function seedParamBindings(): void {
   for (const plugin of plugins.all()) {

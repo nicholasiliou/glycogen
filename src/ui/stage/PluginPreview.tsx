@@ -21,7 +21,7 @@ const ICONS: Record<string, string> = {
   plant: "Sprout",
   // effects
   none: "Ban",
-  pixelate: "Aperture",
+  pixelate: "Grid3x3",
   bayer: "Grid2x2",
   ascii: "Hash",
 deepGlow: "Crosshair",

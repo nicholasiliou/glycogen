@@ -1,7 +1,7 @@
 import { Plugin, type Frame } from "./Plugin";
 
 /**
- * A harmonograph: two damped oscillators per axis trace spirograph-like curves — an oscilloscope /
+ * A harmonograph: two damped oscillators per axis trace spirograph-like curves  -  an oscilloscope /
  * EGA vibe. Fully parametric and deterministic; animate `phase` to make the figure breathe.
  */
 export class HarmonographLayer extends Plugin {

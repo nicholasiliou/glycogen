@@ -7,7 +7,7 @@ import { MASK_COUNTS } from "./masks";
  * optional alpha mask cut into it. The source is cover-fitted (centered crop) into the target so
  * no bars appear; the mask (a white-on-transparent SVG) keeps only its white region.
  *
- * For video, the same target canvas is reused across frames — call `drawInto` each frame rather
+ * For video, the same target canvas is reused across frames  -  call `drawInto` each frame rather
  * than allocating a new canvas (see videoExporter).
  */
 export interface ExportFrameOptions {
@@ -82,7 +82,7 @@ export function drawFrameInto(target: HTMLCanvasElement, src: CanvasImageSource,
     ctx.globalCompositeOperation = "destination-in";
     ctx.drawImage(mask, 0, 0, ratio.width, ratio.height);
     ctx.globalCompositeOperation = "source-over";
-    // Video has no alpha — paint the cut region with the background so it reads as a clean edge.
+    // Video has no alpha  -  paint the cut region with the background so it reads as a clean edge.
     if (background) {
       ctx.globalCompositeOperation = "destination-over";
       ctx.fillStyle = background;

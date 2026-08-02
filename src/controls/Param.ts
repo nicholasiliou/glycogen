@@ -2,7 +2,7 @@ import type { ParamControl } from "@/db/schema";
 import { clamp01 } from "./types";
 
 /**
- * Param handles. A plugin declares a field — `spin = this.number({...})`, `wrap = this.toggle()` —
+ * Param handles. A plugin declares a field  -  `spin = this.number({...})`, `wrap = this.toggle()`  - 
  * and the returned param *is* that field: `render` reads `param.value` / `.on` / `.fired` /
  * `.pick([...])`. Params carry no slot: which widget/hardware drives them is a `paramBindings` row
  * in the db, executed by a `ParamDriver` (see adapters.ts). Params keep working with nothing bound
@@ -85,7 +85,7 @@ export class Param {
     return span ? (this.value - this.min) / span : 0;
   }
 
-  /** Advance smoothing one frame — call once per frame whether or not anything drove the param. */
+  /** Advance smoothing one frame  -  call once per frame whether or not anything drove the param. */
   tick(): void {
     if (this.smooth > 0 && this.value !== this.target) {
       this.value += (this.target - this.value) * (1 - this.smooth);
@@ -100,21 +100,21 @@ export class Param {
   }
 }
 
-/** What a press *means* for this param — declared so the db can derive adapter legality. */
+/** What a press *means* for this param  -  declared so the db can derive adapter legality. */
 export type ButtonIntent = "toggle" | "trigger" | "cycle";
 
 /**
  * A discrete parameter driven by presses. The declared {@link intent} names what the plugin reads
- * — `.on` (toggle), `.fired` (trigger), `.pick([...])` / `.count` (cycle) — but every facet stays
+ *  -  `.on` (toggle), `.fired` (trigger), `.pick([...])` / `.count` (cycle)  -  but every facet stays
  * live regardless, so reads don't need to match pedantically (a cycle can also check `.held`).
  */
 export class ButtonParam {
   /** The plugin field this was assigned to, filled in by the registry. */
   name = "";
   readonly intent: ButtonIntent;
-  /** Declared cycle option labels (empty for toggle/trigger) — drives the UI chips + legality. */
+  /** Declared cycle option labels (empty for toggle/trigger)  -  drives the UI chips + legality. */
   readonly cycle: readonly string[];
-  /** Total presses since creation — `pick()` and any counter derive from this. */
+  /** Total presses since creation  -  `pick()` and any counter derive from this. */
   count = 0;
   /** Toggle state: flips on every press. */
   on: boolean;
@@ -148,7 +148,7 @@ export class ButtonParam {
     return this.firedFrame;
   }
 
-  /** Queue presses — applied (and `fired` pulsed) by the next {@link tick}. */
+  /** Queue presses  -  applied (and `fired` pulsed) by the next {@link tick}. */
   press(n = 1): void {
     this.pending += n;
   }
@@ -162,7 +162,7 @@ export class ButtonParam {
     this.on = v;
   }
 
-  /** Consume queued presses — call once per frame whether or not anything drove the param. */
+  /** Consume queued presses  -  call once per frame whether or not anything drove the param. */
   tick(): void {
     const n = this.pending;
     this.pending = 0;

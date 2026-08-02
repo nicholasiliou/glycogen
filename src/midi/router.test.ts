@@ -6,7 +6,7 @@ import { attachMidiRouter } from "./router";
 import type { MidiManager } from "./MidiManager";
 import type { MidiControl, MidiEvent } from "./types";
 
-/** The router only needs `on("control", fn)` — a hand-rolled emitter stands in for the manager. */
+/** The router only needs `on("control", fn)`  -  a hand-rolled emitter stands in for the manager. */
 function fakeMidi() {
   let handler: ((ev: MidiEvent) => void) | null = null;
   const midi = {

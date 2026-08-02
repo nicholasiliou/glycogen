@@ -54,7 +54,7 @@ const HIGH = [192, 252, 4, 255];
 
 /**
  * Procedural fBm noise field, rendered into a downsampled buffer (`detail`) and upscaled. 3D Perlin,
- * so the third axis is time — it evolves smoothly and is deterministic. Optional banding gives a
+ * so the third axis is time  -  it evolves smoothly and is deterministic. Optional banding gives a
  * topographic look.
  */
 export class NoiseLayer extends Plugin {

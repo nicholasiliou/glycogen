@@ -7,7 +7,7 @@ import { Voice, num, norm, lerp, clamp01 } from "./util";
 /**
  * A breathy, evolving pad for the volumetric cloud: a soft saw/triangle stack washed through a
  * slow filter and heavy reverb, plus a bed of filtered noise. Drift speed sets the chord rate,
- * coverage/density open the filter and noise bed — denser, faster cloud = thicker, brighter wash.
+ * coverage/density open the filter and noise bed  -  denser, faster cloud = thicker, brighter wash.
  */
 export function createCloudPad(engine: AudioEngine): Instrument {
   const voice = new Voice(engine, { reverb: 0.9, delay: 0.25 });
@@ -20,7 +20,7 @@ export function createCloudPad(engine: AudioEngine): Instrument {
     volume: -16,
   }).connect(chorus);
 
-  // A whispering noise bed under the chord — the "air" of the cloud.
+  // A whispering noise bed under the chord  -  the "air" of the cloud.
   const noiseFilter = new Tone.Filter({ type: "bandpass", frequency: 1200, Q: 0.7 }).connect(voice.vca);
   const noiseGain = new Tone.Gain(0).connect(noiseFilter);
   const noise = new Tone.Noise("pink").connect(noiseGain).start();

@@ -29,7 +29,7 @@ interface AgentParams {
 /**
  * Physarum polycephalum (slime mould) transport-network sim. Thousands of agents crawl over a
  * chemo-attractant trail map, steering toward the strongest scent and depositing their own trail,
- * which diffuses and decays — self-organising into branching vein networks.
+ * which diffuses and decays  -  self-organising into branching vein networks.
  */
 export class PhysarumLayer extends Plugin {
   count = this.number({ min: 200, max: HARD_MAX, step: 100, default: 5000 });
@@ -241,7 +241,7 @@ export class PhysarumLayer extends Plugin {
       this.lastCount = count;
       this.lastSeed = seed;
       this.lastReseed = this.reseed.count;
-      // A pure resize (e.g. an export locking the render size) must NOT wipe the evolved network —
+      // A pure resize (e.g. an export locking the render size) must NOT wipe the evolved network  - 
       // resample the trail and rescale agent positions into the new grid. Only a real
       // count/seed/reseed/mode change re-seeds from scratch.
       if (resized && !reseeded && hadState) this.resample(prev);

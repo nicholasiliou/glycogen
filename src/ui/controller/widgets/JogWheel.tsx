@@ -6,7 +6,7 @@ import { slotId } from "@/controls/types";
 import { asset } from "@/lib/asset";
 import { dragWith, SlotFrame, useSlot } from "./shared";
 
-/** Angular drag → bus delta gain. The pop-out controller is a dedicated performance surface —
+/** Angular drag → bus delta gain. The pop-out controller is a dedicated performance surface  - 
  *  bigger physical strokes feel right there, so it runs hotter than the inline overlay wheel. */
 const JOG_GAIN = isRemoteWindow() ? 12 : 6;
 
@@ -60,7 +60,7 @@ export function JogWheel({ slot, label, size = 360 }: { slot: number; label?: st
         className="relative touch-none cursor-grab active:cursor-grabbing rounded-full select-none"
         style={{ width: size, height: size }}
       >
-        {/* outer rim – image sequence (5 frames, ~3° per frame) */}
+        {/* outer rim  -  image sequence (5 frames, ~3° per frame) */}
         {(() => {
           const frameIndex = ((Math.floor(spin / 5) % 5) + 5) % 5;
           return Array.from({ length: 5 }, (_, i) => (

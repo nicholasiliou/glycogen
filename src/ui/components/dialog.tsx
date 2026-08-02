@@ -8,7 +8,7 @@ export const DialogClose = DialogPrimitive.Close;
 
 /**
  * Dialogs portal into the element carrying this id (the stage/canvas area) when present, so they
- * center on the canvas — not the whole page — and re-center as the controls drawer resizes it.
+ * center on the canvas  -  not the whole page  -  and re-center as the controls drawer resizes it.
  * Falls back to a body portal (viewport-centered) when no such element exists.
  */
 export const DIALOG_PORTAL_ID = "dialog-portal-area";

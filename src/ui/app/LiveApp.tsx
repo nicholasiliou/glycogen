@@ -24,7 +24,7 @@ export function LiveApp() {
 
 /**
  * Demo stub: skip the click-to-start intro and boot straight into the preview. The whole StartGate
- * below is left intact — flip this back to `false` to restore the audio-gesture gate.
+ * below is left intact  -  flip this back to `false` to restore the audio-gesture gate.
  *
  * Note: browsers suspend the AudioContext until a real user gesture, so with the intro skipped audio
  * may not sound until the first click/keypress anywhere in the page; the visuals run regardless.
@@ -34,7 +34,7 @@ const SKIP_INTRO = true;
 /** The intro gate: two blinds meeting at the middle that retract to the top/bottom edges on start. */
 function StartGate() {
   const { started, start } = useLive();
-  // Auto-start once on mount when the intro is skipped — no blinds, no button.
+  // Auto-start once on mount when the intro is skipped  -  no blinds, no button.
   const autoStarted = useRef(false);
   useEffect(() => {
     if (SKIP_INTRO && !autoStarted.current) {
@@ -101,7 +101,7 @@ function IdleResetToast() {
     <div className="pointer-events-none absolute bottom-4 left-1/2 z-50 -translate-x-1/2 flex items-center gap-2 rounded-lg bg-black/60 px-4 py-2 text-sm text-ink backdrop-blur">
       <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
       <span>
-        Resetting to a fresh scene in <span className="font-mono text-accent">{idleCountdown}s</span> — touch any control to keep this one
+        Resetting to a fresh scene in <span className="font-mono text-accent">{idleCountdown}s</span>  -  touch any control to keep this one
       </span>
     </div>
   );
@@ -142,7 +142,7 @@ function PipStage() {
     const cy = window.innerHeight / 2;
     const right = x >= cx;
     const top = y < cy;
-    // Top-right overlaps the header bar buttons — redirect to bottom-right instead.
+    // Top-right overlaps the header bar buttons  -  redirect to bottom-right instead.
     const snapY = (right && top) ? window.innerHeight - PIP_H - PIP_MARGIN : (top ? PIP_MARGIN : window.innerHeight - PIP_H - PIP_MARGIN);
     return clamp(right ? window.innerWidth - PIP_W - PIP_MARGIN : PIP_MARGIN, snapY);
   };
@@ -186,7 +186,14 @@ function PipStage() {
 }
 
 function LiveShell() {
-  const { load, midi, remoteConnected } = useLive();
+  const { load, midi, remoteConnected, randomizeScene } = useLive();
+  const [shuffling, setShuffling] = useState(false);
+
+  const handleShuffle = () => setShuffling(true);
+  const handleFadeOutDone = () => {
+    randomizeScene();
+    setShuffling(false);
+  };
   const [controllerOpen, setControllerOpen] = useState(false);
   // Right-side controls drawer. When open it takes width from the stage row, so the canvas (sized
   // by a ResizeObserver on its host) re-fits to the narrower area automatically.
@@ -241,7 +248,7 @@ function LiveShell() {
       const prevHadController = localStorage.getItem("glycogen.hadController");
       const nowStr = hasController ? "true" : "false";
       if (prevHadController === null || prevHadController !== nowStr) {
-        // Device availability changed (or first visit) — override to the sensible default.
+        // Device availability changed (or first visit)  -  override to the sensible default.
         localStorage.setItem("glycogen.hadController", nowStr);
         setControlsOpen(!hasController);
       }
@@ -283,7 +290,7 @@ function LiveShell() {
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-black text-ink">
-      <HeaderBar controllerOpen={controllerOpen} onControllerToggle={() => setControllerOpen((o) => !o)} stageRect={controllerOpen ? null : stageRect} />
+      <HeaderBar controllerOpen={controllerOpen} onControllerToggle={() => setControllerOpen((o) => !o)} stageRect={controllerOpen ? null : stageRect} onShuffle={handleShuffle} />
       <div className="flex min-h-0 flex-1">
         {controllerOpen ? (
           <>
@@ -315,7 +322,7 @@ function LiveShell() {
         ) : (
           /* Normal mode: stage fills the flex area. */
           <div ref={stageCallbackRef} id={DIALOG_PORTAL_ID} className="relative min-h-0 flex-1">
-            <Stage />
+            <Stage fadingOut={shuffling} onFadeOutDone={handleFadeOutDone} />
             <StartGate />
             <LearnToast />
             <IdleResetToast />

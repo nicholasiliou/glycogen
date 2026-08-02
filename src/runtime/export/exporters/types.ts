@@ -27,7 +27,7 @@ export const VIDEO_FORMATS: Record<VideoFormatId, VideoFormat> = {
     id: "mp4",
     label: "MP4",
     ext: "mp4",
-    // H.264 in MP4 — supported by Safari's MediaRecorder and recent Chrome.
+    // H.264 in MP4  -  supported by Safari's MediaRecorder and recent Chrome.
     mimes: ["video/mp4;codecs=avc1.640028", "video/mp4;codecs=avc1.42E01E", "video/mp4"],
   },
 };
@@ -44,7 +44,7 @@ export interface ExportProgress {
   fraction: number;
 }
 
-/** What the user chose in the export panel — passed to the Exporter on each export. */
+/** What the user chose in the export panel  -  passed to the Exporter on each export. */
 export interface ExportSettings {
   /** Exact pixel dimensions for the export frame. */
   width: number;
@@ -53,7 +53,7 @@ export interface ExportSettings {
   maskEnabled: boolean;
   /** Index into masksFor(aspectRatio); ignored when masks are off or none exist. */
   maskVariant?: number;
-  /** Aspect ratio id — used to look up masks; "custom" when the user typed their own px size. */
+  /** Aspect ratio id  -  used to look up masks; "custom" when the user typed their own px size. */
   aspectRatio: AspectRatioId;
   /** Seconds of live footage to capture for a video export. */
   videoDurationSec?: number;

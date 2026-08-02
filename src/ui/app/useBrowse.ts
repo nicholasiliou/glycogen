@@ -18,7 +18,7 @@ export interface Browse {
 }
 
 /**
- * The two browse dials and bank loading. Plugins and shaders live side by side — no mode switch:
+ * The two browse dials and bank loading. Plugins and shaders live side by side  -  no mode switch:
  * stepping the plugin dial loads the browsed generator into the active bank; stepping the shader
  * dial applies the browsed effect to the active bank's output (and focuses it, so its params are
  * immediately editable). Pure orchestration over the imperative {@link Stage}.
@@ -36,7 +36,7 @@ export function useBrowse({ stage, refresh }: { stage: Stage; refresh: () => voi
   const [selShader, setSelShader] = useState(0);
 
   // Apply a shader entry live to the active bank. "none" loads the passthrough (NoneLayer) so
-  // there is always a shader slot to edit — the switch in the controls panel stays enabled.
+  // there is always a shader slot to edit  -  the switch in the controls panel stays enabled.
   const applyShader = (info: PluginInfo | undefined) => {
     if (!info) return;
     stage.setShader(stage.active, create(info.id));
@@ -72,7 +72,7 @@ export function useBrowse({ stage, refresh }: { stage: Stage; refresh: () => voi
 
   const selectBank = (bank: number) => {
     stage.selectBank(bank);
-    // Sync the dials/previews to what the newly active bank actually holds — otherwise the header
+    // Sync the dials/previews to what the newly active bank actually holds  -  otherwise the header
     // keeps showing whatever was browsed on the previous bank.
     const state = stage.banks[stage.active];
     const pIdx = state?.plugin ? generators.findIndex((g) => g.id === state.plugin!.id) : -1;

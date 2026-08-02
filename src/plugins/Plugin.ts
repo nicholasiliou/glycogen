@@ -8,14 +8,14 @@ import { COLOR_CYCLE, cycleHex, DEFAULT_COLOR } from "./colors";
  *
  * `key` identifies the field's *content* so consumers can cache a rasterised mask and only rebuild
  * it when the content actually changes. A fresh closure is returned every frame, so its identity
- * (or `String(fn)`) is useless as a cache key — read `fn.key` instead. Omitted ⇒ treat as volatile.
+ * (or `String(fn)`) is useless as a cache key  -  read `fn.key` instead. Omitted ⇒ treat as volatile.
  */
 export interface FieldFn {
   (x: number, y: number, z: number): number;
   key?: string;
 }
 
-/** Real-time per-frame context handed to every plugin. No timeline — this is a live instrument. */
+/** Real-time per-frame context handed to every plugin. No timeline  -  this is a live instrument. */
 export interface Frame {
   width: number;
   height: number;
@@ -37,7 +37,7 @@ export type AnyParam = Param | ButtonParam;
 
 /**
  * The plugin factory. Every visual plugin extends this and, in its field initialisers, declares the
- * params it wants — `spin = this.number({ min: -360, max: 360 })`, `wrap = this.toggle()`. A param
+ * params it wants  -  `spin = this.number({ min: -360, max: 360 })`, `wrap = this.toggle()`. A param
  * declaration says what the field *is* (range, step, button intent), never which control drives it:
  * at boot every declaration becomes a read-only row in the db's `params` table, and which
  * widget/hardware drives it is a remappable `paramBindings` row (factory layouts live in
@@ -47,7 +47,7 @@ export type AnyParam = Param | ButtonParam;
 export abstract class Plugin {
   /**
    * The instance currently being constructed. Param declarations are field initialisers, which run
-   * right after the base constructor — so even when a subclass constructor *body* throws (e.g. a
+   * right after the base constructor  -  so even when a subclass constructor *body* throws (e.g. a
    * GL/p5-backed plugin in a headless boot harvest), the declarations are already complete on this
    * instance and the harvest can recover them.
    */
@@ -55,21 +55,21 @@ export abstract class Plugin {
 
   /** Registry id (derived from the file path), stamped on by `create()`. Drives instrument lookup. */
   id = "";
-  /** Every declared param, in declaration order — harvested into the db and shown by the panel. */
+  /** Every declared param, in declaration order  -  harvested into the db and shown by the panel. */
   readonly params: AnyParam[] = [];
   /** A plugin owns its output surface; generators draw here, effects usually return a shader canvas. */
   protected canvas: HTMLCanvasElement = document.createElement("canvas");
 
-  /** Layer opacity 0..1 — the Stage composites this plugin's output at this alpha every frame.
+  /** Layer opacity 0..1  -  the Stage composites this plugin's output at this alpha every frame.
    *  An ordinary assignable param (the per-plugin mixing control); ships unbound like any other. */
   opacity = this.bind(new Param({ min: 0, max: 1, default: 1 }));
 
   /** The plugin's native draw color (a {@link COLOR_PRESETS} hex). Subclasses override where they
-   *  draw differently — it colors the bank dot and is what "native" on the `color` cycle means. */
+   *  draw differently  -  it colors the bank dot and is what "native" on the `color` cycle means. */
   nativeColor = DEFAULT_COLOR;
 
   /** Factory per-layer recolor (the old Color shader, now independent of the shader slot): "native"
-   *  leaves the plugin's own look; any preset makes the Stage recolor the layer's final output —
+   *  leaves the plugin's own look; any preset makes the Stage recolor the layer's final output  - 
    *  after its shader, so a shader and a color are active at the same time. Generators only:
    *  effects' rows are skipped at harvest, so the cycle never surfaces for them. */
   color = this.cycle(COLOR_CYCLE);
@@ -91,11 +91,11 @@ export abstract class Plugin {
   // ── param declarations ──────────────────────────────────────────────────────────────────────
   /** A continuous (or, with `step`, quantised) numeric parameter. */
   protected number(o: NumOpts = {}): Param { return this.bind(new Param(o)); }
-  /** An on/off parameter — read `.on`. */
+  /** An on/off parameter  -  read `.on`. */
   protected toggle(def = false): ButtonParam { return this.bind(new ButtonParam("toggle", { default: def })); }
-  /** A one-shot parameter — read `.fired` (or diff `.count`). */
+  /** A one-shot parameter  -  read `.fired` (or diff `.count`). */
   protected trigger(): ButtonParam { return this.bind(new ButtonParam("trigger")); }
-  /** A parameter cycling through named options — read `.pick([...])` (labels drive the UI chips). */
+  /** A parameter cycling through named options  -  read `.pick([...])` (labels drive the UI chips). */
   protected cycle(options: readonly string[]): ButtonParam { return this.bind(new ButtonParam("cycle", { options })); }
 
   /**

@@ -8,7 +8,7 @@ if (typeof window !== "undefined") {
 
 /**
  * An L-system plant rendered into a self-hosted offscreen p5 WEBGL canvas. Deterministic from
- * `seed` — the same seed always yields the same plant; turn `autoEvolve` on to advance the seed
+ * `seed`  -  the same seed always yields the same plant; turn `autoEvolve` on to advance the seed
  * with time. Grammar / palette / Phi / turtle maths are the original sketch's, untouched.
  */
 export class PlantLayer extends Plugin {
