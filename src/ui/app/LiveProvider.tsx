@@ -8,6 +8,7 @@ import { actionBindings, appActions, bankOf, paramBindings, params, setActionBin
 import { fillerBindings } from "@/db/filler";
 import { useTable } from "@/db/useDb";
 import type { Plugin } from "@/plugins/Plugin";
+import { COLOR_CYCLE } from "@/plugins/colors";
 import type { PluginInfo } from "@/plugins/registry";
 import { create } from "@/plugins/registry";
 import { Stage, type FocusPart } from "@/runtime/Stage";
@@ -138,10 +139,13 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     if (gens.length === 0) return;
     const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
-    const randomizeParams = (plugin: Plugin) => {
+    const randomizeParams = (plugin: Plugin, skip: readonly string[] = []) => {
       for (const p of plugin.params) {
-        // Skip unnamed or opacity/reserved params
-        if (!p.name || p.name === "opacity") continue;
+        // Skip unnamed, opacity, or color params (color is assigned via palette below).
+        // `showBackdrop` gates whether the layer underneath is drawn at all (Tracker): flipping it
+        // off makes the whole layer look invisible until you re-toggle the shader, so leave it on.
+        if (!p.name || p.name === "opacity" || p.name === "color" || p.name === "showBackdrop") continue;
+        if (skip.includes(p.name)) continue;
         if (p instanceof Param) {
           p.setNorm(Math.random());
           p.snap();
@@ -154,30 +158,70 @@ export function LiveProvider({ children }: { children: ReactNode }) {
           // triggers are one-shot  -  not sensible to randomize
         }
       }
+      // PixelStretch with a high amount stretches bright pixels far off-screen, making any
+      // overlapping text layer invisible. Keep amount in a safe visual range.
+      if (plugin.id === "pixelStretch") {
+        const amount = plugin.params.find((p) => p.name === "amount");
+        if (amount instanceof Param) { amount.setNorm(Math.random() * 0.25); amount.snap(); }
+      }
     };
 
-    // One bank: text plugin (always). One bank: a random generator (not text).
+    // Harmonious color palettes: each entry ties a color scheme to a text font for the scene.
+    const PALETTES: readonly { colors: readonly string[]; font: string }[] = [
+      { colors: ["mint", "violet", "white"], font: "Sekgen" },
+      { colors: ["pink", "white"],           font: "NuCore" },
+      { colors: ["blue", "green"],           font: "BitcountPropSingle" },
+      { colors: ["red"],                     font: "HinaMincho" },
+      { colors: ["orange", "white"],         font: "SpaceMono" },
+      { colors: ["blue", "white", "lemon"],  font: "UESC" },
+    ];
+    const palette = pick(PALETTES);
+    let paletteIdx = 0;
+    const nextPaletteColor = (): number => {
+      const name = palette.colors[paletteIdx++ % palette.colors.length];
+      const idx = COLOR_CYCLE.indexOf(name);
+      return idx >= 0 ? idx : 0;
+    };
+
+    // Decide how many banks to fill: 5% chance of 4, else 3.
+    const targetCount = Math.random() < 0.05 ? 4 : 3;
+
     const textInfo = gens.find((g) => g.id === "text");
     const nonText = gens.filter((g) => g.id !== "text");
-    const randomGen = nonText.length ? nonText.splice(Math.floor(Math.random() * nonText.length), 1)[0] : gens[0];
-    // Pick two distinct random bank slots.
-    const bankIndices = Array.from({ length: stage.banks.length }, (_, i) => i);
-    const bankA = bankIndices.splice(Math.floor(Math.random() * bankIndices.length), 1)[0];
-    const bankB = bankIndices.splice(Math.floor(Math.random() * bankIndices.length), 1)[0];
+
+    // Always include text as one slot; fill the rest from non-text generators.
+    const extraCount = Math.max(0, targetCount - (textInfo ? 1 : 0));
+    const shuffled = nonText.slice().sort(() => Math.random() - 0.5);
+    const extraGens = shuffled.slice(0, extraCount);
+
+    // Pick `targetCount` distinct random bank slots.
+    const bankIndices = Array.from({ length: stage.banks.length }, (_, i) => i).sort(() => Math.random() - 0.5);
+    const chosenBanks = bankIndices.slice(0, targetCount);
+    const bankA = chosenBanks[0];
+
     // Clear all banks before loading so no previous plugins bleed through.
     for (let i = 0; i < stage.banks.length; i++) stage.clearBank(i);
-    const pairs: Array<{ gen: PluginInfo; bank: number; randomParams: boolean }> = [
-      { gen: randomGen, bank: bankA, randomParams: true },
-      ...(textInfo ? [{ gen: textInfo, bank: bankB, randomParams: false }] : []),
+    const pairs: Array<{ gen: PluginInfo; bank: number }> = [
+      ...extraGens.map((gen, i) => ({ gen, bank: chosenBanks[i] })),
+      ...(textInfo ? [{ gen: textInfo, bank: chosenBanks[extraGens.length] }] : []),
     ];
-    for (const { gen, bank, randomParams } of pairs) {
+    for (const { gen, bank } of pairs) {
       const plugin = create(gen.id);
-      if (randomParams) randomizeParams(plugin);
+      // Text keeps its default size/position/tracking  -  only font and color vary per scene.
+      randomizeParams(plugin, gen.id === "text" ? ["fontSize", "x", "y", "tracking"] : []);
+      plugin.color.count = nextPaletteColor();
+      if (gen.id === "text") {
+        const fontParam = plugin.params.find((p) => p.name === "font");
+        if (fontParam instanceof ButtonParam && fontParam.cycle.length > 0) {
+          const fontIdx = fontParam.cycle.indexOf(palette.font);
+          if (fontIdx >= 0) fontParam.count = fontIdx;
+        }
+      }
       stage.loadBank(bank, plugin);
       const shader = fx.length ? pick(fx) : undefined;
       if (shader) {
         const shaderPlugin = create(shader.id);
-        if (randomParams) randomizeParams(shaderPlugin);
+        randomizeParams(shaderPlugin);
         stage.setShader(bank, shaderPlugin);
       }
     }

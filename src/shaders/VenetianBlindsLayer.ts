@@ -20,7 +20,7 @@ void main() {
 }`;
 
 export class VenetianBlindsLayer extends Plugin {
-  bands = this.number({ min: 1, max: 40, step: 1, default: 8 });
+  bands = this.number({ min: 1, max: 5, step: 1, default: 5 });
   offset = this.number({ min: 0, max: 1, default: 0 });
   angle = this.number({ min: -180, max: 180, default: 0 });
   fade = this.number({ min: 0, max: 0.49, default: 0.05 });
