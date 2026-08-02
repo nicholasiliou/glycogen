@@ -23,10 +23,11 @@ import { pendingForAction, pendingForParam } from "./assign";
  * reappears in the list). Presets snapshot the whole binding state.
  */
 export function AssignPanel() {
-  const { stage } = useLive();
+  const { stage, focusPart, setFocusPart, banks, activeBank } = useLive();
   const assign = useContext(AssignContext);
   const managed = stage.managed();
   const pluginId = managed?.id ?? "";
+  const hasShader = !!banks[activeBank]?.shader;
 
   // Unassigned = no binding row. Locked (opacity) rows count as assigned — they never surface here.
   const pbVersion = useTable(paramBindings, (t) => t.version);
@@ -66,6 +67,34 @@ export function AssignPanel() {
       onDragOver={(e) => { if (e.dataTransfer.types.includes(ASSIGN_MIME)) e.preventDefault(); }}
       onDrop={onDrop}
     >
+      {/* Plugin / Shader focus toggle — swaps which half of the active bank is being assigned */}
+      <div className="flex shrink-0 gap-px p-2">
+        <button
+          onClick={() => setFocusPart("plugin")}
+          className={
+            "flex-1 rounded-l py-1.5 text-xs font-medium transition-colors " +
+            (focusPart === "plugin"
+              ? "text-bg"
+              : "bg-surface text-ink-dim hover:text-ink")
+          }
+        >
+          Plugin
+        </button>
+        <button
+          onClick={() => hasShader && setFocusPart("shader")}
+          disabled={!hasShader}
+          className={
+            "flex-1 rounded-r py-1.5 text-xs font-medium transition-colors " +
+            (focusPart === "shader"
+              ? "text-bg"
+              : hasShader
+                ? "bg-surface text-ink-dim hover:text-ink"
+                : "bg-surface text-ink-dim/30 cursor-not-allowed")
+          }
+        >
+          Shader
+        </button>
+      </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         <Section title={managed ? `Params — ${labelOf(managed.id)}` : "Params"}>
           {!managed ? (

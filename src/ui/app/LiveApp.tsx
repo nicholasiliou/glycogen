@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight, Power } from "lucide-react";
 import { LiveProvider, useLive } from "@/ui/app/LiveProvider";
 import { ExportProvider } from "@/ui/export/ExportContext";
 import { asset } from "@/lib/asset";
-import { cn } from "@/ui/lib/cn";
 import { HeaderBar } from "@/ui/stage/HeaderBar";
 import { Stage } from "@/ui/stage/Stage";
 import { ControlsPanel } from "@/ui/controls/ControlsPanel";
@@ -107,8 +106,75 @@ function IdleResetToast() {
   );
 }
 
+const PIP_W = 280;
+const PIP_H = Math.round(PIP_W * 9 / 16);
+const PIP_MARGIN = 16;
+
+/** Draggable picture-in-picture stage window that snaps to the nearest corner on release. */
+function PipStage() {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const dragging = useRef(false);
+  const offset = useRef({ x: 0, y: 0 });
+  const elRef = useRef<HTMLDivElement>(null);
+
+  // Place in bottom-right on first render once we know the viewport.
+  useEffect(() => {
+    setPos({
+      x: window.innerWidth - PIP_W - PIP_MARGIN,
+      y: window.innerHeight - PIP_H - PIP_MARGIN,
+    });
+  }, []);
+
+  const clamp = (x: number, y: number) => ({
+    x: Math.max(PIP_MARGIN, Math.min(window.innerWidth - PIP_W - PIP_MARGIN, x)),
+    y: Math.max(PIP_MARGIN, Math.min(window.innerHeight - PIP_H - PIP_MARGIN, y)),
+  });
+
+  const snapToCorner = (x: number, y: number) => {
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    return clamp(
+      x < cx ? PIP_MARGIN : window.innerWidth - PIP_W - PIP_MARGIN,
+      y < cy ? PIP_MARGIN : window.innerHeight - PIP_H - PIP_MARGIN,
+    );
+  };
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (!elRef.current || !pos) return;
+    dragging.current = true;
+    offset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+    elRef.current.setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    setPos(clamp(e.clientX - offset.current.x, e.clientY - offset.current.y));
+  };
+
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (!dragging.current || !pos) return;
+    dragging.current = false;
+    setPos(snapToCorner(e.clientX - offset.current.x, e.clientY - offset.current.y));
+  };
+
+  if (!pos) return null;
+
+  return (
+    <div
+      ref={elRef}
+      className="fixed z-50 overflow-hidden rounded-lg shadow-2xl ring-1 ring-white/10 cursor-grab active:cursor-grabbing select-none"
+      style={{ left: pos.x, top: pos.y, width: PIP_W, height: PIP_H, transition: dragging.current ? "none" : "left 180ms ease, top 180ms ease" }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+    >
+      <Stage />
+    </div>
+  );
+}
+
 function LiveShell() {
-  const { load, midi, remoteConnected, controllerConnected } = useLive();
+  const { load, midi, remoteConnected } = useLive();
   const [controllerOpen, setControllerOpen] = useState(false);
   // Right-side controls drawer. When open it takes width from the stage row, so the canvas (sized
   // by a ResizeObserver on its host) re-fits to the narrower area automatically.
@@ -119,19 +185,23 @@ function LiveShell() {
   });
 
   // Track the stage container's left offset and width so HeaderBar can center its controls over it.
+  // Use a ref callback so the observer re-attaches whenever the element mounts (it unmounts/remounts
+  // when controllerOpen toggles, which breaks a plain useEffect with [] deps).
   const stageContainerRef = useRef<HTMLDivElement>(null);
   const [stageRect, setStageRect] = useState<{ left: number; width: number } | null>(null);
-  useEffect(() => {
-    const el = stageContainerRef.current;
-    if (!el) return;
+  const stageRoRef = useRef<ResizeObserver | null>(null);
+  const stageCallbackRef = useCallback((el: HTMLDivElement | null) => {
+    (stageContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+    stageRoRef.current?.disconnect();
+    stageRoRef.current = null;
+    if (!el) { setStageRect(null); return; }
     const update = () => {
       const r = el.getBoundingClientRect();
       setStageRect({ left: r.left, width: r.width });
     };
     update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
+    stageRoRef.current = new ResizeObserver(update);
+    stageRoRef.current.observe(el);
   }, []);
 
   // Boot default: without a controller (hardware or emulator) the on-screen sliders are the only
@@ -181,57 +251,51 @@ function LiveShell() {
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-black text-ink">
-      <HeaderBar controllerOpen={controllerOpen} onControllerToggle={() => setControllerOpen((o) => !o)} stageRect={stageRect} />
+      <HeaderBar controllerOpen={controllerOpen} onControllerToggle={() => setControllerOpen((o) => !o)} stageRect={controllerOpen ? null : stageRect} />
       <div className="flex min-h-0 flex-1">
-        {/* Also the dialog portal target: dialogs center on the canvas, not the page. */}
-        <div ref={stageContainerRef} id={DIALOG_PORTAL_ID} className="relative min-h-0 flex-1">
-          <Stage />
-          <StartGate />
-          <LearnToast />
-          <IdleResetToast />
-          {/* Drawer toggle: a little arrow on the right edge of the stage. */}
-          <button
-            onClick={() => setControlsOpen((o) => !o)}
-            title={controlsOpen ? "Hide controls" : "Show controls"}
-            className="absolute right-0 top-1/2 z-30 flex h-16 w-6 -translate-y-1/2 items-center justify-center rounded-l-md text-ink-dim backdrop-blur transition-colors hover:text-ink"
-          >
-            {controlsOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </button>
-        {controllerOpen && (
-          <div
-            className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center"
-            style={{ containerType: "size" }}
-          >
-            {/* Contain a true 16:9 box in the stage area (container-query units): on screens wider
-                than 16:9 the height caps the width, so the mask never stretches and the header
-                stays inside it. */}
+        {controllerOpen ? (
+          <>
+            {/* Stage shrinks to a floating pip; the controller panel fills the full area. */}
+            <PipStage />
             <div
-              // While assignment is locked the live canvas is fully blacked out (an opaque
-              // backdrop) — translucency + the locked surface's own blur reads as clutter.
-              className={cn(
-                "animate-overlay-in pointer-events-auto relative overflow-hidden",
-                controllerConnected ? "bg-black/80 backdrop-blur-xs" : "bg-black",
-              )}
-              style={{
-                width: "min(100cqw, calc(100cqh * 16 / 9))",
-                aspectRatio: "16 / 9",
-                maskImage: `url(${asset("/masks/16x9/1.svg")})`,
-                maskSize: "100% 100%",
-                maskPosition: "0 0",
-                maskRepeat: "no-repeat",
-              }}
+              id={DIALOG_PORTAL_ID}
+              className="relative flex min-h-0 flex-1 items-center justify-center bg-black"
+              style={{ containerType: "size" }}
             >
-              {/* The mask notches the top/bottom edges (30px deep on the 1920×1080 artwork) and
-                  rounds the corners, so the dialog content is inset past the notch band on every
-                  side. Percent padding scales with the box like the mask does — vertical percent
-                  padding resolves against the WIDTH, so the notch depth is 30/1920 = 1.5625%. */}
-              <div className="absolute inset-0" style={{ padding: "1.5625% 3.5%" }}>
-                <MidiSettingsDialog />
+              <div
+                className="animate-overlay-in relative overflow-hidden bg-black"
+                style={{
+                  width: "min(100cqw, calc(100cqh * 16 / 9))",
+                  aspectRatio: "16 / 9",
+                  maskImage: `url(${asset("/masks/16x9/1.svg")})`,
+                  maskSize: "100% 100%",
+                  maskPosition: "0 0",
+                  maskRepeat: "no-repeat",
+                }}
+              >
+                <div className="absolute inset-0" style={{ padding: "1.5625% 3.5%" }}>
+                  <MidiSettingsDialog />
+                </div>
               </div>
             </div>
+          </>
+        ) : (
+          /* Normal mode: stage fills the flex area. */
+          <div ref={stageCallbackRef} id={DIALOG_PORTAL_ID} className="relative min-h-0 flex-1">
+            <Stage />
+            <StartGate />
+            <LearnToast />
+            <IdleResetToast />
+            {/* Drawer toggle: a little arrow on the right edge of the stage. */}
+            <button
+              onClick={() => setControlsOpen((o) => !o)}
+              title={controlsOpen ? "Hide controls" : "Show controls"}
+              className="absolute right-0 top-1/2 z-30 flex h-16 w-6 -translate-y-1/2 items-center justify-center rounded-l-md text-ink-dim backdrop-blur transition-colors hover:text-ink"
+            >
+              {controlsOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </button>
           </div>
         )}
-        </div>
 
         {/* Right-side drawer. Lives in the flex row, so opening it narrows the stage (the canvas
             re-fits via its ResizeObserver, which also animates thanks to the width transition).

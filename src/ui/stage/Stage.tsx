@@ -134,14 +134,18 @@ export function Stage() {
     if (canvas.width !== w || canvas.height !== h) stage.resize(w, h);
   }, [stage, ex.outputSize.width, ex.outputSize.height]);
 
-  // Reactive host mask: follows the selected export ratio so the canvas shape matches the export.
+  // Reactive host mask: follows the selected export ratio and maskEnabled toggle.
   useLayoutEffect(() => {
     const host = hostRef.current;
     if (!host) return;
+    if (!ex.maskEnabled) {
+      host.style.maskImage = "";
+      return;
+    }
     const variant = masksFor(ex.ratioId)[0];
     const url = variant ? (variant.url.endsWith(".svg") ? variant.url : `${variant.url}/1.svg`) : asset("/masks/16x9/1.svg");
     host.style.maskImage = `url(${url})`;
-  }, [ex.ratioId]);
+  }, [ex.ratioId, ex.maskEnabled]);
 
   // Export crop, computed over the full viewport (the canvas fills the host).
   const ratioWH = ex.ratio.width / ex.ratio.height;

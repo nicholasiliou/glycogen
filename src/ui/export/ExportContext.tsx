@@ -37,7 +37,7 @@ export function ExportProvider({ children }: { children: ReactNode }) {
   const [maskEnabled, setMaskEnabled] = useState(true);
   const [maskVariant, setMaskVariant] = useState(0);
   const [watermarkEnabled, setWatermarkEnabled] = useState(false);
-  const [videoQuality, setVideoQuality] = useState<VideoQualityId>("high");
+  const [videoQuality, setVideoQuality] = useState<VideoQualityId>("draft");
   const [videoFormat, setVideoFormat] = useState<VideoFormatId>("webm");
 
   const ratio = useMemo(

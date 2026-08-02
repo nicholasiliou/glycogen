@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { Controller } from "@/ui/controller/Controller";
 import { FitBox } from "@/ui/components/FitBox";
 import { REMOTE_HASH } from "@/controls/remoteChannel";
 import { cn } from "@/ui/lib/cn";
 import { useLive } from "@/ui/app/LiveProvider";
-import { SurfaceModeContext } from "@/ui/controller/widgets";
+import { SurfaceModeContext, type SurfaceMode } from "@/ui/controller/widgets";
 
 /**
  * The controller overlay: an *assignment surface* — an inert map of the pop-out surface that you
@@ -17,6 +18,7 @@ import { SurfaceModeContext } from "@/ui/controller/widgets";
  */
 export function MidiSettingsDialog() {
   const { midi, remoteConnected, controllerConnected } = useLive();
+  const [surfaceMode, setSurfaceMode] = useState<SurfaceMode>("assign");
   const status = midi.status;
   const devices = midi.devices();
   console.warn("[midi] dialog render; status", status, "devices", devices.length);
@@ -63,22 +65,46 @@ export function MidiSettingsDialog() {
           )}
         </div>
         <div className="flex-1" />
+        {/* Mode toggle: Assign (drag functions onto widgets) vs Emulator (play live) */}
+        <div className="flex items-center rounded border border-edge text-[10px] uppercase tracking-wide overflow-hidden">
+          <button
+            onClick={() => setSurfaceMode("assign")}
+            className={cn(
+              "px-2.5 py-1.5 transition-colors",
+              surfaceMode === "assign" ? "bg-accent/20 text-accent" : "text-ink-dim hover:text-ink",
+            )}
+            title="MIDI assignment mode — click or drag widgets to map controls"
+          >
+            Assign
+          </button>
+          <div className="w-px h-4 bg-edge" />
+          <button
+            onClick={() => setSurfaceMode("live")}
+            className={cn(
+              "px-2.5 py-1.5 transition-colors",
+              surfaceMode === "live" ? "bg-accent/20 text-accent" : "text-ink-dim hover:text-ink",
+            )}
+            title="Emulator mode — use the on-screen controller to play live"
+          >
+            Emulator
+          </button>
+        </div>
         <button
           onClick={openEmulator}
           className="ml-1 flex items-center gap-1.5 rounded px-2.5 py-1.5 text-[10px] uppercase tracking-wide text-ink transition-colors hover:border-accent/60 hover:text-accent"
           title="Pop out the live controller emulator into a separate window"
         >
           <ExternalLink className="h-3.5 w-3.5" />
-          Controller emulator
+          Pop out
         </button>
       </div>
 
-      <SurfaceModeContext.Provider value="assign">
+      <SurfaceModeContext.Provider value={surfaceMode}>
         <div className="relative min-h-0 flex-1">
-          <FitBox className={cn("h-full w-full p-2", !unlocked && "pointer-events-none opacity-50 blur-sm")}>
+          <FitBox className={cn("h-full w-full p-2", surfaceMode === "assign" && !unlocked && "pointer-events-none opacity-50 blur-sm")}>
             <Controller />
           </FitBox>
-          {!unlocked && (
+          {surfaceMode === "assign" && !unlocked && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center">
               <span className="text-[10px] uppercase tracking-wide text-ink-dim">Assignment locked</span>
               <span className="max-w-xs text-xs text-ink">
