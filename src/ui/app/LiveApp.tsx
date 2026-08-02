@@ -188,12 +188,19 @@ function PipStage() {
 function LiveShell() {
   const { load, midi, remoteConnected, randomizeScene } = useLive();
   const [shuffling, setShuffling] = useState(false);
+  const shuffleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleShuffle = () => setShuffling(true);
-  const handleFadeOutDone = () => {
-    randomizeScene();
-    setShuffling(false);
+  const handleShuffle = () => {
+    if (shuffleTimerRef.current !== null) return;
+    setShuffling(true);
+    // 380ms matches the CSS fade-out duration; randomize at the dark frame
+    shuffleTimerRef.current = setTimeout(() => {
+      randomizeScene();
+      setShuffling(false);
+      shuffleTimerRef.current = null;
+    }, 200);
   };
+  const handleFadeOutDone = () => {};
   const [controllerOpen, setControllerOpen] = useState(false);
   // Right-side controls drawer. When open it takes width from the stage row, so the canvas (sized
   // by a ResizeObserver on its host) re-fits to the narrower area automatically.

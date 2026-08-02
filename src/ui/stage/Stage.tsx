@@ -242,7 +242,7 @@ export function Stage({ fadingOut = false, onFadeOutDone }: { fadingOut?: boolea
         className="pointer-events-none absolute inset-0 z-5 bg-black"
         style={{
           opacity: fadeIn || fadingOut ? 1 : 0,
-          transition: fadeIn ? "none" : "opacity 380ms ease-in-out",
+          transition: fadeIn ? "none" : "opacity 200ms ease-in-out",
         }}
         onTransitionEnd={() => { if (fadingOut) onFadeOutDone?.(); }}
       />
