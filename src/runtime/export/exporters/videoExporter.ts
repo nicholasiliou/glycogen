@@ -1,13 +1,13 @@
 import { pickMime, triggerDownload } from "./download";
 import { drawFrameInto, type ExportFrameOptions } from "./frameCanvas";
-import { scaledExportSize, VIDEO_FORMATS, VIDEO_QUALITIES, type ExportProgress, type VideoFormatId, type VideoQualityId } from "./types";
+import { VIDEO_FORMATS, type ExportProgress, type VideoFormatId } from "./types";
 
 export interface VideoExportInput {
   /** The live engine canvas, redrawn into the export frame each tick while it plays. */
   source: HTMLCanvasElement;
   frame: ExportFrameOptions;
-  /** Quality preset (fps, supersampling, bitrate). Defaults to "high". */
-  quality?: VideoQualityId;
+  /** Capture frame rate. */
+  fps: number;
   /** Container/codec. Defaults to "webm" (always recordable). */
   format?: VideoFormatId;
   /** Wall-clock seconds of live footage to capture. */
@@ -41,20 +41,18 @@ export async function exportVideo(input: VideoExportInput): Promise<Blob> {
   if (!mime) throw new Error(`${format.label} recording isn't supported in this browser.`);
 
   const { source, frame, durationSec, baseName } = input;
-  const q = VIDEO_QUALITIES[input.quality ?? "high"];
-  const fps = q.fps;
+  const fps = input.fps;
   // Video has no alpha — paint masked-out regions black.
   const opts: ExportFrameOptions = { ...frame, background: "#000" };
 
-  // Supersample: render the target larger than the chosen ratio, then encode at that resolution.
-  const { width: outW, height: outH } = scaledExportSize(frame.ratio, q.id);
+  const outW = frame.ratio.width;
+  const outH = frame.ratio.height;
   const target = document.createElement("canvas");
   target.width = outW;
   target.height = outH;
-  // drawFrameInto sizes the canvas to ratio.width/height, so feed it a scaled ratio.
   const scaledOpts: ExportFrameOptions = { ...opts, ratio: { ...frame.ratio, width: outW, height: outH } };
 
-  const bitrate = targetBitrate(outW, outH, fps, q.bitrateFactor);
+  const bitrate = targetBitrate(outW, outH, fps, 1);
   // Capture with an explicit per-frame push (`requestFrame`), not `captureStream(fps)`: the
   // fps-throttled stream only samples the canvas when the browser notices a repaint, so under
   // load frames land unevenly and the recording stutters below the nominal rate. With frameRate 0

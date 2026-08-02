@@ -60,7 +60,6 @@ const HIGH = [192, 252, 4, 255];
 export class NoiseLayer extends Plugin {
   detail = this.number({ min: 0.05, max: 1, default: 0.25 });
   scale = this.number({ min: 1, max: 12, default: 3 });
-  octaves = this.number({ min: 1, max: 8, step: 1, default: 3 });
   persistence = this.number({ min: 0.1, max: 0.9, default: 0.5 });
   lacunarity = this.number({ min: 1, max: 4, default: 2 });
   contrast = this.number({ min: 0.2, max: 4, default: 1 });
@@ -94,7 +93,7 @@ export class NoiseLayer extends Plugin {
     }
 
     const scale = this.scale.value;
-    const octaves = Math.max(1, Math.min(8, Math.round(this.octaves.value)));
+    const octaves = 1;
     const gain = this.persistence.value;
     const lac = this.lacunarity.value;
     const contrast = this.contrast.value;

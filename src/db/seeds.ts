@@ -98,8 +98,8 @@ export const DEFAULT_LAYOUTS: Record<string, Record<string, SlotId>> = {
     tiltZ: "fader:2", spin: "encoder:0", filled: "pad:4", depthShade: "pad:5",
   },
   noise: {
-    detail: "knob:0", scale: "knob:1", octaves: "knob:2", persistence: "knob:3", lacunarity: "knob:4",
-    contrast: "knob:5", bands: "knob:6", speed: "knob:7",
+    detail: "knob:0", scale: "knob:1", persistence: "knob:2", lacunarity: "knob:3",
+    contrast: "knob:4", bands: "knob:5", speed: "knob:6",
   },
   physarum: {
     count: "knob:0", sensorDist: "knob:1", sensorAngle: "knob:2", turnAngle: "knob:3", stepSize: "knob:4",

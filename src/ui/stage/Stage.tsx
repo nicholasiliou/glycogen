@@ -23,8 +23,9 @@ export function Stage() {
   const hostRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
   // Preview is always-on: render at the true export resolution so framing and pixel quality match.
-  const previewRef = useRef<{ width: number; height: number }>(ex.outputSize);
-  previewRef.current = ex.outputSize;
+  const outputSize = { width: ex.pixelWidth, height: ex.pixelHeight };
+  const previewRef = useRef<{ width: number; height: number }>(outputSize);
+  previewRef.current = outputSize;
   const [dropNote, setDropNote] = useState<string | null>(null);
   const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -132,7 +133,7 @@ export function Stage() {
     canvas.style.objectFit = "contain";
     const { width: w, height: h } = previewRef.current;
     if (canvas.width !== w || canvas.height !== h) stage.resize(w, h);
-  }, [stage, ex.outputSize.width, ex.outputSize.height]);
+  }, [stage, ex.pixelWidth, ex.pixelHeight]);
 
   // Reactive host mask: follows the selected export ratio and maskEnabled toggle.
   useLayoutEffect(() => {
@@ -148,7 +149,7 @@ export function Stage() {
   }, [ex.ratioId, ex.maskEnabled]);
 
   // Export crop, computed over the full viewport (the canvas fills the host).
-  const ratioWH = ex.ratio.width / ex.ratio.height;
+  const ratioWH = ex.pixelWidth / ex.pixelHeight;
   const canvasWH = size.w / size.h;
   const cropW = ratioWH > canvasWH ? size.w : size.h * ratioWH;
   const cropH = ratioWH > canvasWH ? size.w / ratioWH : size.h;

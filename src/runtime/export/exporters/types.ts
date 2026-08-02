@@ -2,37 +2,6 @@ import type { AspectRatioId } from "./aspectRatios";
 
 export type StillFormat = "png" | "jpeg";
 
-/** Video quality preset — trades file size/CPU for fidelity. */
-export type VideoQualityId = "draft" | "standard" | "high" | "max";
-
-export interface VideoQuality {
-  id: VideoQualityId;
-  label: string;
-  /** Capture frame rate. */
-  fps: number;
-  /** Supersample factor: the target canvas is rendered this much larger than the chosen ratio,
-   *  then encoded at that higher resolution for crisper edges. */
-  scale: number;
-  /** Multiplier on the resolution-derived target bitrate (1 = baseline). */
-  bitrateFactor: number;
-}
-
-/** Quality presets in display order. `standard` matches the previous fixed behaviour. */
-export const VIDEO_QUALITIES: Record<VideoQualityId, VideoQuality> = {
-  draft: { id: "draft", label: "Draft", fps: 30, scale: 1, bitrateFactor: 0.5 },
-  standard: { id: "standard", label: "Standard", fps: 60, scale: 1, bitrateFactor: 1 },
-  high: { id: "high", label: "High", fps: 60, scale: 1.5, bitrateFactor: 1.6 },
-  max: { id: "max", label: "Max", fps: 60, scale: 2, bitrateFactor: 2.4 },
-};
-
-export const VIDEO_QUALITY_LIST: VideoQuality[] = Object.values(VIDEO_QUALITIES);
-
-/** The actual output pixel size for a ratio at a quality preset's supersample scale — the single
- *  source of truth used by the exporters, the panel's size readout, and the live canvas preview. */
-export function scaledExportSize(ratio: { width: number; height: number }, quality: VideoQualityId = "high"): { width: number; height: number } {
-  const q = VIDEO_QUALITIES[quality];
-  return { width: Math.round(ratio.width * q.scale), height: Math.round(ratio.height * q.scale) };
-}
 
 /** Container/codec choice for video exports. */
 export type VideoFormatId = "webm" | "mp4";
@@ -77,19 +46,19 @@ export interface ExportProgress {
 
 /** What the user chose in the export panel — passed to the Exporter on each export. */
 export interface ExportSettings {
-  aspectRatio: AspectRatioId;
-  /** Concrete size when `aspectRatio === "custom"`. */
-  custom?: { width: number; height: number };
+  /** Exact pixel dimensions for the export frame. */
+  width: number;
+  height: number;
   /** Whether to bake a mask into the frame. */
   maskEnabled: boolean;
   /** Index into masksFor(aspectRatio); ignored when masks are off or none exist. */
   maskVariant?: number;
-  /** Seconds of live footage to capture for a video export (the instrument runs forever, so a
-   * video is "record the next N seconds", not a bounded work area). */
+  /** Aspect ratio id — used to look up masks; "custom" when the user typed their own px size. */
+  aspectRatio: AspectRatioId;
+  /** Seconds of live footage to capture for a video export. */
   videoDurationSec?: number;
-  /** Quality preset; the resolution scale applies to BOTH video and still exports (fps/bitrate
-   * are video-only). Defaults to "high". */
-  videoQuality?: VideoQualityId;
+  /** Capture frame rate for video exports. */
+  fps: number;
   /** Container/codec for a video export; defaults to "webm". */
   videoFormat?: VideoFormatId;
 }

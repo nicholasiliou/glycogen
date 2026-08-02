@@ -5,7 +5,7 @@ import { FitBox } from "@/ui/components/FitBox";
 import { REMOTE_HASH } from "@/controls/remoteChannel";
 import { cn } from "@/ui/lib/cn";
 import { useLive } from "@/ui/app/LiveProvider";
-import { SurfaceModeContext, type SurfaceMode } from "@/ui/controller/widgets";
+import { SurfaceModeContext, SetSurfaceModeContext, type SurfaceMode } from "@/ui/controller/widgets";
 
 /**
  * The controller overlay: an *assignment surface* — an inert map of the pop-out surface that you
@@ -18,7 +18,7 @@ import { SurfaceModeContext, type SurfaceMode } from "@/ui/controller/widgets";
  */
 export function MidiSettingsDialog() {
   const { midi, remoteConnected, controllerConnected } = useLive();
-  const [surfaceMode, setSurfaceMode] = useState<SurfaceMode>("assign");
+  const [surfaceMode, setSurfaceMode] = useState<SurfaceMode>("live");
   const status = midi.status;
   const devices = midi.devices();
   console.warn("[midi] dialog render; status", status, "devices", devices.length);
@@ -99,6 +99,7 @@ export function MidiSettingsDialog() {
         </button>
       </div>
 
+      <SetSurfaceModeContext.Provider value={setSurfaceMode}>
       <SurfaceModeContext.Provider value={surfaceMode}>
         <div className="relative min-h-0 flex-1">
           <FitBox className={cn("h-full w-full p-2", surfaceMode === "assign" && !unlocked && "pointer-events-none opacity-50 blur-sm")}>
@@ -121,6 +122,7 @@ export function MidiSettingsDialog() {
           )}
         </div>
       </SurfaceModeContext.Provider>
+      </SetSurfaceModeContext.Provider>
     </div>
   );
 }

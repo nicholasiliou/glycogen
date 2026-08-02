@@ -18,6 +18,8 @@ export const ControlBusContext = createContext<ControlBus | null>(null);
  */
 export type SurfaceMode = "live" | "assign";
 export const SurfaceModeContext = createContext<SurfaceMode>("live");
+/** Setter for SurfaceMode — provided by MidiSettingsDialog so SlotFrame can switch modes. */
+export const SetSurfaceModeContext = createContext<((m: SurfaceMode) => void) | null>(null);
 
 /** Slot → label (the focused plugin's bound variable name). Updates as focus changes. */
 export const SlotLabelContext = createContext<Partial<Record<SlotId, string>>>({});
@@ -136,7 +138,8 @@ export function useSlot(slot: SlotId): SlotView {
     pressed: live.pressed,
     active: live.lastSeen > 0 && performance.now() - live.lastSeen < 300,
     armed,
-    arm,
+    // MIDI learn only available in assign mode; in emulator (live) mode arm is a no-op
+    arm: inert ? arm : () => {},
     drive: inert ? () => {} : (input) => bus.drive(slot, input),
     fire: inert ? () => {} : () => bus.fire(slot),
   };
@@ -183,6 +186,7 @@ export function SlotFrame({
 }) {
   const assign = useContext(AssignContext);
   const mode = useContext(SurfaceModeContext);
+  const setSurfaceMode = useContext(SetSurfaceModeContext);
   const occupants = useContext(SlotOccupantContext);
   const occupant = slot ? occupants[slot] : undefined;
   const pending = slot ? assign.pending : null;
@@ -191,6 +195,8 @@ export function SlotFrame({
   const capture = (e: React.SyntheticEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    // If a sidebar item is dropped onto the live emulator surface, switch to assign mode first.
+    if (mode === "live" && pending) { setSurfaceMode?.("assign"); return; }
     if (legal) assign.assignTo(slot!);
     else assign.cancel();
   };

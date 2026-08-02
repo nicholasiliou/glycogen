@@ -5,7 +5,7 @@ import { masksFor } from "./exporters/masks";
 import { loadMaskImage, type ExportFrameOptions } from "./exporters/frameCanvas";
 import { exportStill } from "./exporters/stillExporter";
 import { exportVideo } from "./exporters/videoExporter";
-import { scaledExportSize, type ExportProgress, type ExportSettings, type StillFormat } from "./exporters/types";
+import { type ExportProgress, type ExportSettings, type StillFormat } from "./exporters/types";
 
 export type { StillFormat, ExportProgress, ExportSettings } from "./exporters/types";
 
@@ -27,34 +27,31 @@ export class Exporter {
 
   /** Build the reframe + mask options for the chosen export settings (loads the SVG mask). */
   private async frameOptions(settings: ExportSettings): Promise<ExportFrameOptions> {
-    const ratio = resolveAspectRatio(settings.aspectRatio, settings.custom);
+    const ratio = resolveAspectRatio(settings.aspectRatio, { width: settings.width, height: settings.height });
+    // Override with exact user-specified pixel dimensions.
+    const sized = { ...ratio, width: settings.width, height: settings.height };
     let mask = null;
     if (settings.maskEnabled) {
       const variants = masksFor(settings.aspectRatio);
       const variant = variants[settings.maskVariant ?? 0] ?? variants[0];
       if (variant) mask = await loadMaskImage(variant);
     }
-    return { ratio, mask };
+    return { ratio: sized, mask };
   }
 
   /** Snapshot the current live frame as a still image (does not pause the runtime). */
   async still(settings: ExportSettings, format: StillFormat = "png", quality = 0.95): Promise<Blob> {
     const frame = await this.frameOptions(settings);
-    // The quality preset applies to stills too: render one frame at the scaled output resolution
-    // and save at that size, instead of upscaling the viewport-sized canvas.
-    const { width: outW, height: outH } = scaledExportSize(frame.ratio, settings.videoQuality);
-    this.stage.lockRenderSize(outW, outH);
+    this.stage.lockRenderSize(settings.width, settings.height);
     try {
-      // Force one fresh render at the export resolution so the snapshot is current.
       this.stage.tick();
       return await exportStill({
         source: this.canvas,
-        frame: { ...frame, ratio: { ...frame.ratio, width: outW, height: outH } },
+        frame,
         format,
         quality,
         baseName: "glycogen",
         frameNumber: this.frameCounter++,
-        // A PNG carries the scene that rendered it — drop it back on the stage to keep editing.
         meta: { keyword: SCENE_PNG_KEYWORD, text: JSON.stringify(serializeScene(this.stage)) },
       });
     } finally {
@@ -65,15 +62,12 @@ export class Exporter {
   /** Record the next `videoDurationSec` seconds of live playback as a WebM video, reframed + masked. */
   async video(settings: ExportSettings, opts?: { onProgress?: (p: ExportProgress) => void }): Promise<Blob> {
     const frame = await this.frameOptions(settings);
-    // Render the stage at the encode resolution for the duration of the capture: the quality
-    // preset must mean "recorded at this resolution", not "the on-screen canvas upscaled".
-    const encode = scaledExportSize(frame.ratio, settings.videoQuality);
-    this.stage.lockRenderSize(encode.width, encode.height);
+    this.stage.lockRenderSize(settings.width, settings.height);
     try {
       return await exportVideo({
         source: this.canvas,
         frame,
-        quality: settings.videoQuality,
+        fps: settings.fps,
         format: settings.videoFormat,
         durationSec: settings.videoDurationSec ?? 10,
         baseName: "glycogen",

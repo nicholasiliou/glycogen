@@ -1,12 +1,55 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Download, Image as ImageIcon, Video } from "lucide-react";
-import { Exporter, isPrintRatio, masksFor, PRINT_RATIO_LIST, SCREEN_RATIO_LIST, supportedVideoFormats, VIDEO_QUALITIES, VIDEO_QUALITY_LIST } from "@/runtime/export";
+import { ChevronDown, Download, Image as ImageIcon, Link, Link2Off, Video } from "lucide-react";
+import { Exporter, isPrintRatio, masksFor, PRINT_RATIO_LIST, SCREEN_RATIO_LIST, supportedVideoFormats } from "@/runtime/export";
 import { useLive } from "@/ui/app/LiveProvider";
 import { Button } from "@/ui/components/button";
 import { Switch } from "@/ui/components/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/ui/components/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/components/select";
 import { useExportSettings } from "@/ui/export/ExportContext";
+import type { AspectRatioId } from "@/runtime/export";
+
+const MIN_PX = 480;
+
+/** Controlled number input that shows a live-typed value and commits on blur/Enter. */
+function PxInput({
+  value,
+  onChange,
+  label,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+  label: string;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const ref = useRef<HTMLInputElement>(null);
+
+  const commit = (raw: string) => {
+    const n = parseInt(raw, 10);
+    if (!isNaN(n)) onChange(Math.max(MIN_PX, n));
+    setDraft(null);
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <span className="text-[9px] uppercase tracking-wide text-ink-dim/50">{label}</span>
+      <input
+        ref={ref}
+        type="number"
+        min={MIN_PX}
+        value={draft ?? value}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={(e) => commit(e.target.value)}
+        onFocus={() => setDraft(String(value))}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { commit((e.target as HTMLInputElement).value); ref.current?.blur(); }
+          if (e.key === "Escape") { setDraft(null); ref.current?.blur(); }
+        }}
+        className="w-16 rounded border border-edge bg-transparent px-1 py-0.5 text-center font-mono text-[11px] outline-none focus:border-accent/60"
+      />
+    </div>
+  );
+}
 
 export function ExportPanel() {
   const { stage } = useLive();
@@ -19,18 +62,14 @@ export function ExportPanel() {
   const [error, setError] = useState<string | null>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
-  // Inline ratio editing state
-  const [ratioEditing, setRatioEditing] = useState<{ w: string; h: string } | null>(null);
-  const ratioWRef = useRef<HTMLInputElement>(null);
-
   const variants = masksFor(ex.ratioId);
   const videoFormats = useMemo(() => supportedVideoFormats(), []);
   const print = isPrintRatio(ex.ratioId);
 
   useEffect(() => {
     stage.watermark = ex.watermarkEnabled;
-    stage.exportRatio = ex.ratio.width / ex.ratio.height;
-  }, [stage, ex.watermarkEnabled, ex.ratio]);
+    stage.exportRatio = ex.pixelWidth / ex.pixelHeight;
+  }, [stage, ex.watermarkEnabled, ex.pixelWidth, ex.pixelHeight]);
 
   const run = async (kind: "still" | "video") => {
     if (busy || (kind === "video" && print)) return;
@@ -38,7 +77,7 @@ export function ExportPanel() {
     setBusy(kind);
     setProgress(0);
     try {
-      if (kind === "still") await exporter.still(ex.settings(), "png");
+      if (kind === "still") await exporter.still(ex.settings());
       else await exporter.video(ex.settings(videoSec), { onProgress: (p) => setProgress(p.fraction) });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -47,27 +86,6 @@ export function ExportPanel() {
       setProgress(0);
     }
   };
-
-  // Commit inline ratio edit
-  const commitRatioEdit = () => {
-    if (!ratioEditing) return;
-    const w = Math.max(1, parseInt(ratioEditing.w, 10) || 1);
-    const h = Math.max(1, parseInt(ratioEditing.h, 10) || 1);
-    ex.setRatioId("custom");
-    ex.setCustom({ width: w, height: h });
-    setRatioEditing(null);
-  };
-
-  // Start inline ratio edit from the pill
-  const startRatioEdit = () => {
-    const current = ex.ratioId === "custom"
-      ? { w: String(ex.custom.width), h: String(ex.custom.height) }
-      : { w: String(ex.ratio.width), h: String(ex.ratio.height) };
-    setRatioEditing(current);
-    setTimeout(() => ratioWRef.current?.select(), 0);
-  };
-
-  const q = VIDEO_QUALITIES[ex.videoQuality];
 
   return (
     <Popover>
@@ -78,79 +96,53 @@ export function ExportPanel() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72 space-y-3 text-[11px] text-ink">
 
-        {/* ── ratio ─────────────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-2">
-          <Select
-            value={ex.ratioId === "custom" ? "custom" : ex.ratioId}
-            onValueChange={(v) => {
-              setRatioEditing(null);
-              ex.setRatioId(v as typeof ex.ratioId);
-            }}
+        {/* ── ratio preset ──────────────────────────────────────────────────── */}
+        <Select
+          value={ex.ratioId}
+          onValueChange={(v) => ex.setRatioId(v as AspectRatioId)}
+        >
+          <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {ex.ratioId === "custom" && <SelectItem value="custom">Custom</SelectItem>}
+            {SCREEN_RATIO_LIST.map((r) => <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>)}
+            {PRINT_RATIO_LIST.map((r) => <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        {/* ── W × H + link + fps ────────────────────────────────────────────── */}
+        <div className="flex items-end gap-1.5">
+          <PxInput value={ex.pixelWidth} onChange={ex.setPixelWidth} label="W" />
+
+          {/* link toggle */}
+          <button
+            onClick={() => ex.setLinked(!ex.linked)}
+            title={ex.linked ? "Unlink aspect ratio" : "Link aspect ratio"}
+            className={
+              "mb-0.5 rounded p-0.5 transition-colors " +
+              (ex.linked ? "text-ink hover:text-ink-dim" : "text-ink-dim/40 hover:text-ink-dim")
+            }
           >
-            <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {ex.ratioId === "custom" && <SelectItem value="custom">Custom</SelectItem>}
-              {SCREEN_RATIO_LIST.map((r) => <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>)}
-              {PRINT_RATIO_LIST.map((r) => <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
+            {ex.linked
+              ? <Link className="h-3.5 w-3.5" />
+              : <Link2Off className="h-3.5 w-3.5" />
+            }
+          </button>
 
-          {/* editable size pill — click to go custom */}
-          {ratioEditing ? (
-            <div className="flex items-center gap-0.5 rounded bg-panel-raised px-1 py-0.5 font-mono text-[10px]">
-              <input
-                ref={ratioWRef}
-                type="number"
-                min={1}
-                value={ratioEditing.w}
-                onChange={(e) => setRatioEditing({ ...ratioEditing, w: e.target.value })}
-                onBlur={commitRatioEdit}
-                onKeyDown={(e) => { if (e.key === "Enter") commitRatioEdit(); if (e.key === "Escape") setRatioEditing(null); }}
-                className="w-10 bg-transparent text-center outline-none"
-              />
-              <span className="text-ink-dim">×</span>
-              <input
-                type="number"
-                min={1}
-                value={ratioEditing.h}
-                onChange={(e) => setRatioEditing({ ...ratioEditing, h: e.target.value })}
-                onBlur={commitRatioEdit}
-                onKeyDown={(e) => { if (e.key === "Enter") commitRatioEdit(); if (e.key === "Escape") setRatioEditing(null); }}
-                className="w-10 bg-transparent text-center outline-none"
-              />
-            </div>
-          ) : (
-            <button
-              onClick={startRatioEdit}
-              title="Click to set custom size"
-              className="shrink-0 rounded bg-panel-raised px-1.5 py-0.5 font-mono text-[10px] text-ink-dim hover:text-ink transition-colors cursor-text"
-            >
-              {ex.outputSize.width}×{ex.outputSize.height}
-            </button>
-          )}
-        </div>
+          <PxInput value={ex.pixelHeight} onChange={ex.setPixelHeight} label="H" />
 
-        {/* ── quality ───────────────────────────────────────────────────────── */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="w-12 shrink-0 text-ink-dim">Quality</span>
-            <div className="flex flex-1 rounded border border-edge overflow-hidden">
-              {VIDEO_QUALITY_LIST.map((qp) => (
-                <button
-                  key={qp.id}
-                  onClick={() => ex.setVideoQuality(qp.id)}
-                  className={
-                    "flex-1 py-0.5 text-[10px] transition-colors " +
-                    (ex.videoQuality === qp.id ? "bg-panel-raised text-ink" : "text-ink-dim hover:text-ink")
-                  }
-                >
-                  {qp.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="pl-14 text-[10px] text-ink-dim/60">
-            {q.fps} fps · {ex.outputSize.width}×{ex.outputSize.height}px{q.scale > 1 ? ` (${q.scale}× super)` : ""}
+          <div className="flex flex-col items-center gap-0.5 ml-1">
+            <span className="text-[9px] uppercase tracking-wide text-ink-dim/50">FPS</span>
+            <input
+              type="number"
+              min={1}
+              max={120}
+              value={ex.fps}
+              onChange={(e) => {
+                const n = parseInt(e.target.value, 10);
+                if (!isNaN(n)) ex.setFps(n);
+              }}
+              className="w-12 rounded border border-edge bg-transparent px-1 py-0.5 text-center font-mono text-[11px] outline-none focus:border-accent/60"
+            />
           </div>
         </div>
 
@@ -159,18 +151,16 @@ export function ExportPanel() {
           <Button size="sm" variant="outline" className="flex-1 gap-1" disabled={!!busy} onClick={() => void run("still")}>
             <ImageIcon className="h-3.5 w-3.5" /> Still
           </Button>
-          <div className="flex flex-1 items-center gap-1">
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 gap-1"
-              disabled={!!busy || print}
-              title={print ? "Poster sizes export as stills" : undefined}
-              onClick={() => void run("video")}
-            >
-              <Video className="h-3.5 w-3.5" /> Video
-            </Button>
-          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 gap-1"
+            disabled={!!busy || print}
+            title={print ? "Poster sizes export as stills" : undefined}
+            onClick={() => void run("video")}
+          >
+            <Video className="h-3.5 w-3.5" /> Video
+          </Button>
         </div>
 
         {busy === "video" && (

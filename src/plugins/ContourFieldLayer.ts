@@ -52,9 +52,9 @@ const LINE = [40, 40, 255, 255];
 export class ContourFieldLayer extends Plugin {
   override nativeColor = "#2828FF"; // matches LINE — colors the bank dot / "native" on the color cycle
   scale = this.number({ min: 1, max: 16, default: 6 });
-  octaves = this.number({ min: 1, max: 8, step: 1, default: 4 });
+  octaves = this.number({ min: 1, max: 4, step: 1, default: 4 });
   warp = this.number({ min: 0, max: 2, default: 0.4 });
-  levels = this.number({ min: 2, max: 60, step: 1, default: 18 });
+  levels = this.number({ min: 2, max: 12, step: 1, default: 12 });
   evolveSpeed = this.number({ min: 0, max: 4, default: 1 });
   swirlSpeed = this.number({ min: 0, max: 4, default: 0.6 });
   lineWidth = this.number({ min: 0.25, max: 6, default: 1 });
@@ -162,9 +162,9 @@ export class ContourFieldLayer extends Plugin {
 
     const seed = Math.round(this.seed.value);
     const scale = Math.max(1, this.scale.value);
-    const octaves = Math.max(1, Math.min(8, Math.round(this.octaves.value)));
+    const octaves = Math.max(1, Math.min(4, Math.round(this.octaves.value)));
     const warp = Math.max(0, this.warp.value);
-    const levels = Math.max(2, Math.min(60, Math.round(this.levels.value)));
+    const levels = Math.max(2, Math.min(12, Math.round(this.levels.value)));
     const zEvo = f.time * this.evolveSpeed.value * 0.6;
     const zWarp = f.time * this.swirlSpeed.value * 0.6;
 

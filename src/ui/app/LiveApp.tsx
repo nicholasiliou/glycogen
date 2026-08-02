@@ -277,6 +277,7 @@ function LiveShell() {
                   <MidiSettingsDialog />
                 </div>
               </div>
+              <LearnToast />
             </div>
           </>
         ) : (
