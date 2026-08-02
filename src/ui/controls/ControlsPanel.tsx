@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { ButtonParam, Param } from "@/controls/Param";
-import { clamp01 } from "@/controls/types";
+import { clamp01, type ControlKind } from "@/controls/types";
 import { clearDefaults, hasDefaults, isAdmin, saveDefaults } from "@/db/appDefaults";
-import { params, type ParamRow } from "@/db/schema";
+import { paramBindings, params, type ParamRow, widgets } from "@/db/schema";
 import type { Plugin } from "@/plugins/Plugin";
 import { TextLayer, TEXT_PRESETS } from "@/plugins/TextLayer";
 import { labelOf } from "@/plugins/registry";
@@ -12,6 +12,8 @@ import { useTable } from "@/db/useDb";
 import { useLive } from "@/ui/app/LiveProvider";
 import { FaderVisual } from "@/ui/controller/widgets/FaderVisual";
 import { dragWith } from "@/ui/controller/widgets/shared";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/components/select";
+import { Switch } from "@/ui/components/switch";
 
 /** ~30fps tick so live values (faders, cycle states) stay in sync while the panel is mounted. */
 function useRaf(): void {
@@ -35,6 +37,8 @@ function ParamSection({ plugin, focusPart }: { plugin: Plugin; focusPart: "plugi
   const pluginId = plugin.id;
   const rows = useTable(params, (t) => [...t.by("plugin", pluginId)].sort((a, b) => a.order - b.order), [pluginId]);
   const liveByName = new Map(plugin.params.map((p) => [p.name, p]));
+  // Reactive read of paramBindings version so widget-kind lookups update when bindings change.
+  useTable(paramBindings, (t) => t.version);
 
   const toggle = () => {
     const next = !open;
@@ -55,15 +59,14 @@ function ParamSection({ plugin, focusPart }: { plugin: Plugin; focusPart: "plugi
       {open && (
         <div className="px-4 pb-3">
           {plugin instanceof TextLayer && <CustomTextField layer={plugin} />}
-          <div className="space-y-3">
+          <div className="space-y-4">
             {rows.map((row) => {
               const live = liveByName.get(row.name);
-              return (
-                <div key={row.id} className="flex flex-col gap-1">
-                  <span className="min-w-0 flex-1 truncate text-xs text-ink-dim">{row.name}</span>
-                  {live && <ValueEditor row={row} live={live} />}
-                </div>
-              );
+              if (!live) return null;
+              // Resolve the widget kind assigned to this param for this plugin.
+              const binding = paramBindings.by("plugin", pluginId).find((b) => b.paramId === row.id);
+              const widgetKind = binding ? widgets.get(binding.widgetId)?.kind : undefined;
+              return <ValueEditor key={row.id} row={row} live={live} label={row.name} widgetKind={widgetKind} />;
             })}
           </div>
         </div>
@@ -117,7 +120,7 @@ function CustomTextField({ layer }: { layer: TextLayer }) {
   useEffect(() => setValue(layer.customText), [layer]);
   return (
     <div className="mb-4 flex flex-col gap-1">
-      <span className="text-xs text-ink-dim">text override</span>
+      <span className="text-[10px] uppercase tracking-wide text-ink-dim/60">text override</span>
       <textarea
         rows={2}
         value={value}
@@ -134,9 +137,7 @@ function CustomTextField({ layer }: { layer: TextLayer }) {
 }
 
 /**
- * The `#admin` dev surface: freeze the FOCUSED plugin's current values as its load-time defaults
- * (`paramDefaults` rows applied on every `create()`). Focus is per bank-half, so a generator and
- * its shader are saved separately — focus the fx preview to author the shader's defaults.
+ * The `#admin` dev surface: freeze the FOCUSED plugin's current values as its load-time defaults.
  */
 function AdminDefaults({ managed }: { managed: Plugin }) {
   const { stage } = useLive();
@@ -174,58 +175,124 @@ function AdminDefaults({ managed }: { managed: Plugin }) {
 
 // ── live value editors (drive the param directly — bound or not) ────────────────────────────────
 
-export function ValueEditor({ row, live }: { row: ParamRow; live: Param | ButtonParam }) {
-  if (live instanceof Param) {
-    return (
-      <div className="flex items-center gap-3">
-        <ParamFader param={live} />
-        <span className="w-14 shrink-0 text-right font-mono text-xs text-ink-dim">
-          {live.step >= 1 ? Math.round(live.value) : live.value.toFixed(2)}
-        </span>
-      </div>
-    );
-  }
-  const cycleStates = row.control.type === "cycle" ? row.control.options : undefined;
-  if (cycleStates?.length) {
-    return (
-      <div className="flex flex-wrap gap-1">
-        {cycleStates.map((label, i) => {
-          const active = live.count % cycleStates.length === i;
-          return (
-            <button
-              key={label}
-              onClick={() => {
-                const steps = ((i - (live.count % cycleStates.length)) + cycleStates.length) % cycleStates.length;
-                if (steps > 0) live.press(steps);
-              }}
-              className={
-                "rounded px-2 py-0.5 text-xs transition-colors " +
-                (active ? "border-accent bg-accent/20 text-accent" : "border-edge text-ink-dim hover:border-accent/50 hover:text-ink")
-              }
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
-    );
-  }
+/** Annotation row: label left, editable value right — rendered below the widget. */
+function Annotation({ label, param }: { label?: string; param: Param }) {
   return (
-    <button
-      onClick={() => live.press()}
-      className={
-        "self-start rounded px-3 py-1 text-xs transition-colors " +
-        (live.intent !== "trigger" && live.on
-          ? "border-accent bg-accent/20 text-accent"
-          : "border-edge text-ink-dim hover:border-accent/50 hover:text-ink")
-      }
-    >
-      {live.intent === "trigger" ? "FIRE" : live.on ? "ON" : "OFF"}
-    </button>
+    <div className="flex items-center justify-between px-0.5">
+      <span className="min-w-0 flex-1 truncate text-[10px] uppercase tracking-wide text-ink-dim/50">{label}</span>
+      <ParamValueInput param={param} />
+    </div>
   );
 }
 
-/** A horizontal skeuomorphic fader (same look as the controller) driving a plugin {@link Param}. */
+export function ValueEditor({
+  row,
+  live,
+  label,
+  widgetKind,
+}: {
+  row: ParamRow;
+  live: Param | ButtonParam;
+  label?: string;
+  widgetKind?: ControlKind;
+}) {
+  // ── continuous numeric param ──────────────────────────────────────────────
+  if (live instanceof Param) {
+    const widget = resolveNumericWidget(live, widgetKind);
+    return (
+      <div className="flex flex-col items-center gap-1.5">
+        {widget}
+        <Annotation label={label} param={live} />
+      </div>
+    );
+  }
+
+  // ── cycle param ───────────────────────────────────────────────────────────
+  const cycleStates = row.control.type === "cycle" ? row.control.options : undefined;
+  if (cycleStates?.length) {
+    const activeIdx = live.count % cycleStates.length;
+    return (
+      <div className="flex flex-col gap-1">
+        <span className="text-[10px] uppercase tracking-wide text-ink-dim/50">{label}</span>
+        {cycleStates.length >= 5 ? (
+          <Select
+            value={String(activeIdx)}
+            onValueChange={(v) => {
+              const i = Number(v);
+              const steps = ((i - activeIdx) + cycleStates.length) % cycleStates.length;
+              if (steps > 0) live.press(steps);
+            }}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {cycleStates.map((opt, i) => (
+                <SelectItem key={opt} value={String(i)}>{opt}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <div className="flex flex-wrap gap-1">
+            {cycleStates.map((opt, i) => {
+              const active = activeIdx === i;
+              return (
+                <button
+                  key={opt}
+                  onClick={() => {
+                    const steps = ((i - activeIdx) + cycleStates.length) % cycleStates.length;
+                    if (steps > 0) live.press(steps);
+                  }}
+                  className={
+                    "rounded px-2 py-0.5 text-xs transition-colors " +
+                    (active ? "border-accent bg-accent/20 text-accent" : "border-edge text-ink-dim hover:border-accent/50 hover:text-ink")
+                  }
+                >
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── toggle param → Switch ─────────────────────────────────────────────────
+  if (live.intent === "toggle") {
+    return (
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] uppercase tracking-wide text-ink-dim/50">{label}</span>
+        <Switch checked={live.on} onCheckedChange={() => live.press()} />
+      </div>
+    );
+  }
+
+  // ── trigger param → FIRE button ───────────────────────────────────────────
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-[10px] uppercase tracking-wide text-ink-dim/50">{label}</span>
+      <button
+        onClick={() => live.press()}
+        className="self-start rounded border border-edge px-3 py-1 text-xs text-ink-dim transition-colors hover:border-accent/50 hover:text-ink"
+      >
+        FIRE
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Picks the right numeric widget based on the assigned controller widget kind.
+ * Falls back to a horizontal fader when unbound or kind is "fader".
+ */
+function resolveNumericWidget(param: Param, kind?: ControlKind) {
+  if (kind === "knob") return <ParamKnob param={param} />;
+  if (kind === "encoder") return <ParamEncoder param={param} />;
+  return <ParamFader param={param} />;
+}
+
+// ── numeric widget implementations ────────────────────────────────────────────────────────────
+
+/** Horizontal skeuomorphic fader (default — same look as the controller). */
 function ParamFader({ param }: { param: Param }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const onDown = (e: ReactPointerEvent) => {
@@ -241,8 +308,135 @@ function ParamFader({ param }: { param: Param }) {
   };
 
   return (
-    <div className="min-w-0 flex-1">
+    <div className="w-full">
       <FaderVisual norm={param.norm} orient="horizontal" length={200} trackRef={trackRef} onPointerDown={onDown} />
     </div>
   );
 }
+
+/** Skeuomorphic knob (potentiometer: vertical drag → absolute position). */
+function ParamKnob({ param, size = 40 }: { param: Param; size?: number }) {
+  const angle = -135 + param.norm * 270;
+  const onDown = (e: ReactPointerEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startNorm = param.norm;
+    dragWith((ev) => {
+      param.setNorm(clamp01(startNorm - (ev.clientY - startY) / 180));
+    });
+  };
+
+  return (
+    <div
+      onPointerDown={onDown}
+      className="relative touch-none cursor-ns-resize rounded-full"
+      style={{ width: size, height: size }}
+    >
+      <div
+        className="absolute inset-0 rounded-full"
+        style={{
+          background: "radial-gradient(circle at 50% 32%, #45484d 0%, #25272a 55%, #131416 100%)",
+          border: "1px solid #050505",
+          boxShadow: "inset 0 1px 1px rgba(255,255,255,.18), inset 0 -3px 5px rgba(0,0,0,.55), 0 1px 2px rgba(0,0,0,.6)",
+        }}
+      />
+      <div className="absolute inset-0" style={{ transform: `rotate(${angle}deg)` }}>
+        <div className="absolute left-1/2 top-[10%] h-[32%] w-[2px] -translate-x-1/2 rounded-full bg-ink" />
+      </div>
+    </div>
+  );
+}
+
+/** Skeuomorphic endless encoder (relative drag → nudge). */
+function ParamEncoder({ param, size = 40 }: { param: Param; size?: number }) {
+  const [spin, setSpin] = useState(0);
+  const onDown = (e: ReactPointerEvent) => {
+    e.preventDefault();
+    let lastY = e.clientY;
+    dragWith((ev) => {
+      const dy = lastY - ev.clientY;
+      lastY = ev.clientY;
+      if (dy === 0) return;
+      const delta = dy / 4;
+      setSpin((d) => d + delta * 18);
+      param.nudge(delta);
+    });
+  };
+
+  return (
+    <div
+      onPointerDown={onDown}
+      className="relative touch-none cursor-ns-resize"
+      style={{ width: size, height: size }}
+    >
+      <div className="absolute" style={{ inset: size * 0.08, transform: `rotate(${spin}deg)` }}>
+        {Array.from({ length: 32 }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute left-1/2 top-1/2"
+            style={{
+              width: "2px",
+              height: "6px",
+              background: i % 2 ? "#555" : "transparent",
+              transform: `translate(-50%, -50%) rotate(${i * 11.25}deg) translateY(${-size / 2 + 4}px)`,
+            }}
+          />
+        ))}
+      </div>
+      <div
+        className="absolute rounded-full"
+        style={{
+          inset: size * 0.14,
+          background: "radial-gradient(circle at 50% 28%, #5a5d62 0%, #323438 55%, #18191b 100%)",
+          border: "1px solid #111",
+          boxShadow: "inset 0 2px 3px rgba(255,255,255,.18), inset 0 -4px 8px rgba(0,0,0,.6)",
+        }}
+      />
+    </div>
+  );
+}
+
+/** Inline editable number input for a Param value. Invisible border until focused. */
+function ParamValueInput({ param }: { param: Param }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  const formatted = param.step >= 1 ? String(Math.round(param.value)) : param.value.toFixed(2);
+
+  const commit = (raw: string) => {
+    const n = parseFloat(raw);
+    if (!isNaN(n)) {
+      const clamped = Math.max(param.min, Math.min(param.max, n));
+      param.setNorm((clamped - param.min) / (param.max - param.min));
+    }
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <input
+        type="number"
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={(e) => commit(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit((e.target as HTMLInputElement).value);
+          if (e.key === "Escape") setEditing(false);
+        }}
+        className="w-14 shrink-0 rounded border border-accent/60 bg-panel-raised px-1 text-right font-mono text-[10px] text-ink outline-none"
+      />
+    );
+  }
+
+  return (
+    <button
+      onClick={() => { setDraft(formatted); setEditing(true); }}
+      className="w-14 shrink-0 text-right font-mono text-[10px] text-ink-dim/60 hover:text-ink-dim"
+      title="Click to edit"
+    >
+      {formatted}
+    </button>
+  );
+}
+

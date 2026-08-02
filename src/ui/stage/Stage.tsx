@@ -22,9 +22,9 @@ export function Stage() {
   const ex = useExportSettings();
   const hostRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
-  // The render-size target for resize handlers that live inside the mount effect.
-  const previewRef = useRef<{ width: number; height: number } | null>(null);
-  previewRef.current = ex.previewEnabled ? ex.outputSize : null;
+  // Preview is always-on: render at the true export resolution so framing and pixel quality match.
+  const previewRef = useRef<{ width: number; height: number }>(ex.outputSize);
+  previewRef.current = ex.outputSize;
   const [dropNote, setDropNote] = useState<string | null>(null);
   const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -64,7 +64,6 @@ export function Stage() {
     canvas.style.objectFit = "cover";
     canvas.style.pointerEvents = "none";
     canvas.style.boxShadow = "0 0 80px rgba(0,0,0,0.6)";
-    host.style.maskImage = `url(${asset("/masks/16x9/1.svg")})`;
     host.style.maskSize = "100% 100%";
     host.style.maskPosition = "0 0";
     host.style.maskRepeat = "no-repeat";
@@ -78,11 +77,11 @@ export function Stage() {
     let first = true;
 
     const applyResize = () => {
-      // In export preview the render size is pinned to the output resolution — viewport resizes
-      // only re-fit the CSS box, so skip the (expensive) pixel resize when the target is unchanged.
+      // Render size is always pinned to the export output resolution — viewport resizes only
+      // re-fit the CSS box, so skip the (expensive) pixel resize when the target is unchanged.
       const preview = previewRef.current;
-      const w = preview ? preview.width : host.clientWidth;
-      const h = preview ? preview.height : host.clientHeight;
+      const w = preview.width;
+      const h = preview.height;
       if (canvas.width === w && canvas.height === h) {
         first = false;
         return;
@@ -125,19 +124,24 @@ export function Stage() {
     };
   }, [stage]);
 
-  // React to the export-preview toggle (and its resolution changing under quality/ratio edits):
-  // preview pins the render size to the true export resolution and letterboxes it; live mode
-  // returns the canvas to viewport tracking.
+  // Reacts to output resolution changes (quality/ratio edits): letterboxes the canvas to contain.
   useLayoutEffect(() => {
     const host = hostRef.current;
     if (!host) return;
     const canvas = stage.canvas;
-    const preview = previewRef.current;
-    canvas.style.objectFit = preview ? "contain" : "cover";
-    const w = preview ? preview.width : host.clientWidth;
-    const h = preview ? preview.height : host.clientHeight;
+    canvas.style.objectFit = "contain";
+    const { width: w, height: h } = previewRef.current;
     if (canvas.width !== w || canvas.height !== h) stage.resize(w, h);
-  }, [stage, ex.previewEnabled, ex.outputSize.width, ex.outputSize.height]);
+  }, [stage, ex.outputSize.width, ex.outputSize.height]);
+
+  // Reactive host mask: follows the selected export ratio so the canvas shape matches the export.
+  useLayoutEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const variant = masksFor(ex.ratioId)[0];
+    const url = variant ? (variant.url.endsWith(".svg") ? variant.url : `${variant.url}/1.svg`) : asset("/masks/16x9/1.svg");
+    host.style.maskImage = `url(${url})`;
+  }, [ex.ratioId]);
 
   // Export crop, computed over the full viewport (the canvas fills the host).
   const ratioWH = ex.ratio.width / ex.ratio.height;

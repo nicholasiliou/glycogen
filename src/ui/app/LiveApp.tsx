@@ -10,6 +10,7 @@ import { ControlsPanel } from "@/ui/controls/ControlsPanel";
 import { AssignPanel } from "@/ui/controls/AssignPanel";
 import { MidiSettingsDialog } from "@/ui/settings/MidiSettingsDialog";
 import { DIALOG_PORTAL_ID } from "@/ui/components/dialog";
+import { dragWith } from "@/ui/controller/widgets/shared";
 
 export function LiveApp() {
   return (
@@ -112,6 +113,10 @@ function LiveShell() {
   // Right-side controls drawer. When open it takes width from the stage row, so the canvas (sized
   // by a ResizeObserver on its host) re-fits to the narrower area automatically.
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [drawerWidth, setDrawerWidth] = useState(() => {
+    const saved = localStorage.getItem("glycogen.drawerWidth");
+    return saved ? Math.max(200, Math.min(480, Number(saved))) : 288;
+  });
 
   // Track the stage container's left offset and width so HeaderBar can center its controls over it.
   const stageContainerRef = useRef<HTMLDivElement>(null);
@@ -233,12 +238,27 @@ function LiveShell() {
             While the controller overlay is open it shows the assign sidebar; otherwise the value
             editors. Kept mounted so the drawer can slide instead of popping. */}
         <aside
-          className={cn(
-            "flex h-full shrink-0 flex-col overflow-hidden transition-[width] duration-220 ease-out",
-            controlsOpen ? "w-72" : "w-0",
-          )}
+          className="flex h-full shrink-0 flex-col overflow-hidden transition-[width] duration-220 ease-out"
+          style={{ width: controlsOpen ? drawerWidth : 0 }}
         >
-          <div className="flex h-full w-72 shrink-0 flex-col pt-3">
+          <div
+            className="relative flex h-full shrink-0 flex-col pt-3"
+            style={{ width: drawerWidth }}
+          >
+            {/* Drag handle on the left edge — resize the drawer by dragging. */}
+            <div
+              className="absolute left-0 top-0 z-10 h-full w-1 cursor-col-resize hover:bg-accent/30"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                const startX = e.clientX;
+                const startW = drawerWidth;
+                dragWith((ev) => {
+                  const next = Math.max(200, Math.min(480, startW - (ev.clientX - startX)));
+                  setDrawerWidth(next);
+                  localStorage.setItem("glycogen.drawerWidth", String(next));
+                });
+              }}
+            />
             {controllerOpen ? <AssignPanel /> : <ControlsPanel />}
           </div>
         </aside>

@@ -1,20 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Download, Image as ImageIcon, Video } from "lucide-react";
+import { Download, Image as ImageIcon, Video } from "lucide-react";
 import { Exporter, isPrintRatio, masksFor, PRINT_RATIO_LIST, SCREEN_RATIO_LIST, supportedVideoFormats, VIDEO_QUALITIES, VIDEO_QUALITY_LIST } from "@/runtime/export";
 import { useLive } from "@/ui/app/LiveProvider";
 import { Button } from "@/ui/components/button";
 import { Switch } from "@/ui/components/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/ui/components/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/components/select";
 import { useExportSettings } from "@/ui/export/ExportContext";
-import { Slider } from "@/ui/components/slider";
-
-const chip = (selected: boolean) =>
-  `rounded border px-1.5 py-0.5 ${selected ? "border-ink text-ink" : "border-edge text-ink-dim"}`;
 
 /**
- * Export panel, split by how often a choice matters: the essentials (output size, live preview,
- * the export buttons) are visible immediately; everything fine-grained (quality, mask, watermark,
- * video length/format) sits behind a collapsed "More options" disclosure so first open stays calm.
+ * Export panel: ratio + quality selects, plain duration input, format inline beside Video button.
+ * All settings visible by default — no collapsible disclosure.
  */
 export function ExportPanel() {
   const { stage } = useLive();
@@ -25,14 +21,11 @@ export function ExportPanel() {
   const [busy, setBusy] = useState<null | "still" | "video">(null);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [moreOpen, setMoreOpen] = useState(false);
 
   const variants = masksFor(ex.ratioId);
   const videoFormats = useMemo(() => supportedVideoFormats(), []);
   const print = isPrintRatio(ex.ratioId);
 
-  // The watermark is baked into the live canvas (that's what makes it export by default), so the
-  // switch drives the Stage directly — stills and recorded video simply see what the canvas shows.
   useEffect(() => {
     stage.watermark = ex.watermarkEnabled;
     stage.exportRatio = ex.ratio.width / ex.ratio.height;
@@ -61,168 +54,147 @@ export function ExportPanel() {
           <Download className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-64 space-y-3 text-[11px] text-ink">
-        {/* ── essentials ─────────────────────────────────────────────────────── */}
+      <PopoverContent align="end" className="w-72 space-y-3 text-[11px] text-ink">
 
-        {/* output size: screen ratios + print poster sizes */}
-        <div className="space-y-1">
-          <div className="flex items-start gap-1.5">
-            <span className="w-9 shrink-0 pt-0.5 text-ink-dim">Screen</span>
-            <div className="flex flex-wrap gap-1">
-              {SCREEN_RATIO_LIST.map((r) => (
-                <button key={r.id} onClick={() => ex.setRatioId(r.id)} className={chip(ex.ratioId === r.id)}>
-                  {r.id}
-                </button>
-              ))}
-              <button onClick={() => ex.setRatioId("custom")} className={chip(ex.ratioId === "custom")}>
-                custom
-              </button>
-            </div>
+        {/* ── ratio ─────────────────────────────────────────────────────────── */}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <Select value={ex.ratioId} onValueChange={(v) => ex.setRatioId(v as typeof ex.ratioId)}>
+              <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="custom">Custom</SelectItem>
+                {SCREEN_RATIO_LIST.map((r) => <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>)}
+                {PRINT_RATIO_LIST.map((r) => <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {/* resolved pixel dimensions pill */}
+            <span className="shrink-0 rounded bg-panel-raised px-1.5 py-0.5 font-mono text-[10px] text-ink-dim">
+              {ex.outputSize.width}×{ex.outputSize.height}
+            </span>
           </div>
-          <div className="flex items-start gap-1.5">
-            <span className="w-9 shrink-0 pt-0.5 text-ink-dim">Print</span>
-            <div className="flex flex-wrap gap-1">
-              {PRINT_RATIO_LIST.map((r) => (
-                <button key={r.id} onClick={() => ex.setRatioId(r.id)} className={chip(ex.ratioId === r.id)}>
-                  {r.id}
-                </button>
-              ))}
-            </div>
-          </div>
+
+          {/* custom ratio inputs */}
           {ex.ratioId === "custom" && (
-            <div className="flex items-center gap-1 pt-1">
-              {/* A relative ratio (w:h) — the exporter resolves it to pixels (short side 1080). */}
+            <div className="flex items-center gap-1">
               <input
                 type="number"
                 value={ex.custom.width}
                 min={1}
                 onChange={(e) => ex.setCustom({ ...ex.custom, width: Math.max(1, Number(e.target.value) || 1) })}
-                className="w-16 rounded border border-edge bg-transparent px-1 py-0.5"
+                className="w-16 rounded border border-edge bg-transparent px-1 py-0.5 text-[11px]"
               />
-              <span className="text-ink">:</span>
+              <span>:</span>
               <input
                 type="number"
                 value={ex.custom.height}
                 min={1}
                 onChange={(e) => ex.setCustom({ ...ex.custom, height: Math.max(1, Number(e.target.value) || 1) })}
-                className="w-16 rounded border border-edge bg-transparent px-1 py-0.5"
+                className="w-16 rounded border border-edge bg-transparent px-1 py-0.5 text-[11px]"
               />
             </div>
           )}
         </div>
 
-        {/* live preview: render the canvas at the actual export resolution + framing */}
-        <div className="space-y-0.5">
+        {/* ── quality ───────────────────────────────────────────────────────── */}
+        <div className="flex items-center gap-2">
+          <span className="w-12 shrink-0 text-ink-dim">Quality</span>
+          <Select value={ex.videoQuality} onValueChange={(v) => ex.setVideoQuality(v as typeof ex.videoQuality)}>
+            <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {VIDEO_QUALITY_LIST.map((q) => (
+                <SelectItem key={q.id} value={q.id}>{q.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="shrink-0 text-ink-dim/60">{VIDEO_QUALITIES[ex.videoQuality].fps}fps</span>
+        </div>
+
+        {/* ── mask + watermark ──────────────────────────────────────────────── */}
+        <div className="space-y-2 border-t border-edge/40 pt-2">
           <div className="flex items-center justify-between">
-            <span className="text-ink">Preview on canvas</span>
-            <Switch checked={ex.previewEnabled} onCheckedChange={ex.setPreviewEnabled} />
+            <span className="text-ink-dim">Mask</span>
+            <Switch checked={ex.maskEnabled} onCheckedChange={ex.setMaskEnabled} disabled={variants.length === 0} />
           </div>
-          <div className="text-ink-dim/60">
-            {ex.outputSize.width}×{ex.outputSize.height}
-            {print ? " · print still" : ` · ${VIDEO_QUALITIES[ex.videoQuality].fps}fps video`}
+          {variants.length === 0 && <div className="text-[10px] text-ink-dim/50">No mask for this ratio</div>}
+          {ex.maskEnabled && variants.length > 1 && (
+            <select
+              value={ex.maskVariant}
+              onChange={(e) => ex.setMaskVariant(Number(e.target.value))}
+              className="w-full rounded border border-edge bg-transparent px-1 py-0.5 text-[11px]"
+            >
+              {variants.map((v, i) => <option key={v.id} value={i}>{v.label}</option>)}
+            </select>
+          )}
+          <div className="flex items-center justify-between">
+            <span className="text-ink-dim">Watermark</span>
+            <Switch checked={ex.watermarkEnabled} onCheckedChange={ex.setWatermarkEnabled} />
           </div>
         </div>
 
-        {/* actions */}
-        <div className="flex gap-1.5">
+        {/* ── video duration + format ───────────────────────────────────────── */}
+        {!print && (
+          <div className="flex items-center gap-2 border-t border-edge/40 pt-2">
+            <span className="shrink-0 text-ink-dim">Duration</span>
+            <input
+              type="number"
+              min={1}
+              max={15}
+              step={1}
+              value={videoSec}
+              onChange={(e) => {
+                const n = parseInt(e.target.value, 10);
+                if (!isNaN(n)) setVideoSec(Math.max(1, Math.min(15, n)));
+              }}
+              className="w-14 rounded border border-edge bg-transparent px-1 py-0.5 text-right font-mono text-[11px] outline-none focus:border-accent/60"
+            />
+            <span className="text-ink-dim/60">s</span>
+          </div>
+        )}
+
+        {/* ── actions ───────────────────────────────────────────────────────── */}
+        <div className="flex items-center gap-1.5 border-t border-edge/40 pt-2">
           <Button size="sm" variant="outline" className="flex-1 gap-1" disabled={!!busy} onClick={() => void run("still")}>
             <ImageIcon className="h-3.5 w-3.5" /> Still
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex-1 gap-1"
-            disabled={!!busy || print}
-            title={print ? "Poster sizes export as stills" : undefined}
-            onClick={() => void run("video")}
-          >
-            <Video className="h-3.5 w-3.5" /> Video
-          </Button>
+          <div className="flex flex-1 items-center gap-1">
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1 gap-1"
+              disabled={!!busy || print}
+              title={print ? "Poster sizes export as stills" : undefined}
+              onClick={() => void run("video")}
+            >
+              <Video className="h-3.5 w-3.5" /> Video
+            </Button>
+            {/* format toggle — only when multiple formats are available, shown inline */}
+            {videoFormats.length > 1 && !print && (
+              <div className="flex rounded border border-edge">
+                {videoFormats.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => ex.setVideoFormat(f.id)}
+                    className={
+                      "px-1.5 py-0.5 text-[10px] first:rounded-l last:rounded-r transition-colors " +
+                      (ex.videoFormat === f.id ? "bg-panel-raised text-ink" : "text-ink-dim hover:text-ink")
+                    }
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {busy === "video" && (
           <div className="h-1 w-full overflow-hidden rounded-full bg-edge">
-            <div className="h-full bg-ink" style={{ width: `${Math.round(progress * 100)}%` }} />
+            <div className="h-full bg-ink transition-[width]" style={{ width: `${Math.round(progress * 100)}%` }} />
           </div>
         )}
-        {busy === "still" && <div className="text-ink-dim">Rendering…</div>}
+        {busy === "still" && <div className="text-ink-dim/60">Rendering…</div>}
         {error && <div className="text-red-400">{error}</div>}
 
-        {/* ── fine-grained options ───────────────────────────────────────────── */}
-        <button
-          onClick={() => setMoreOpen((o) => !o)}
-          className="flex w-full items-center gap-1 text-ink-dim hover:text-ink"
-        >
-          {moreOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-          More options
-        </button>
-
-        {moreOpen && (
-          <div className="space-y-3 border-l border-edge pl-2">
-            {/* quality — the resolution scale applies to stills and video; fps is video-only */}
-            <div className="space-y-1">
-              <span className="text-ink">Quality</span>
-              <div className="flex gap-1">
-                {VIDEO_QUALITY_LIST.map((q) => (
-                  <button key={q.id} onClick={() => ex.setVideoQuality(q.id)} className={`flex-1 ${chip(ex.videoQuality === q.id)}`}>
-                    {q.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* mask toggle + variant */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-ink">Mask</span>
-                <Switch checked={ex.maskEnabled} onCheckedChange={ex.setMaskEnabled} disabled={variants.length === 0} />
-              </div>
-              {ex.maskEnabled && variants.length > 1 && (
-                <select
-                  value={ex.maskVariant}
-                  onChange={(e) => ex.setMaskVariant(Number(e.target.value))}
-                  className="w-full rounded border border-edge bg-transparent px-1 py-0.5"
-                >
-                  {variants.map((v, i) => (
-                    <option key={v.id} value={i}>
-                      {v.label}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {variants.length === 0 && <div className="text-ink-dim/60">No mask for this ratio</div>}
-            </div>
-
-            {/* watermark toggle */}
-            <div className="flex items-center justify-between">
-              <span className="text-ink">Watermark</span>
-              <Switch checked={ex.watermarkEnabled} onCheckedChange={ex.setWatermarkEnabled} />
-            </div>
-
-            {/* video duration slider */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-ink">Video length</span>
-                <span className="text-ink">{videoSec}s</span>
-              </div>
-              <Slider min={1} max={15} step={1} value={[videoSec]} onValueChange={([v]) => setVideoSec(v)} />
-            </div>
-
-            {/* video format — only shown when the browser can record more than one container */}
-            {videoFormats.length > 1 && (
-              <div className="space-y-1">
-                <span className="text-ink">Video format</span>
-                <div className="flex gap-1">
-                  {videoFormats.map((f) => (
-                    <button key={f.id} onClick={() => ex.setVideoFormat(f.id)} className={`flex-1 ${chip(ex.videoFormat === f.id)}`}>
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </PopoverContent>
     </Popover>
   );
