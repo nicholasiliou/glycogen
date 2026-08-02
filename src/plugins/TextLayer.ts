@@ -71,15 +71,15 @@ export class TextLayer extends Plugin {
     ctx.clearRect(0, 0, w, h);
 
     const text = this.text;
-    const size = this.fontSize.value;
     const outline = this.outline.on;
     const family = this.font.pick(AVAILABLE_FONTS as readonly string[]);
-    ctx.font = `400 ${size}px ${family}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     if ("letterSpacing" in ctx) (ctx as unknown as { letterSpacing: string }).letterSpacing = `${this.tracking.value}px`;
 
     const lines = text.split("\n");
+    // Shrink the configured size if the widest line would otherwise overflow the canvas width.
+    const size = fitSize(ctx, lines, family, this.fontSize.value, w);
     const lh = size * 1.2;
     const halfH = (lines.length * lh) / 2;
     // Clamp horizontally by the real text width (widest line), not halfH  -  text is far wider than
@@ -135,12 +135,12 @@ function rasterGrid(
   c.width = gw; c.height = gh;
   const ctx = c.getContext("2d");
   if (!ctx || !text) return { key, data, gw, gh };
-  const s = size * scale;
-  ctx.font = `400 ${s}px ${family}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   if ("letterSpacing" in ctx) (ctx as unknown as { letterSpacing: string }).letterSpacing = `${tracking * scale}px`;
   const lines = text.split("\n");
+  // Match render(): shrink to fit the grid width so the sampled field lines up with what's drawn.
+  const s = fitSize(ctx, lines, family, size * scale, gw);
   const lh = s * 1.2;
   const halfH = (lines.length * lh) / 2;
   const halfW = Math.min(gw / 2, maxLineWidth(ctx, lines) / 2);
@@ -165,4 +165,21 @@ function maxLineWidth(ctx: CanvasRenderingContext2D, lines: readonly string[]): 
   let max = 0;
   for (const line of lines) max = Math.max(max, ctx.measureText(line).width);
   return max;
+}
+
+/**
+ * Shrink `size` (in the units of the ctx's coordinate space) so the widest line fits within
+ * `maxW` for the given font. Text is drawn with `strokeText`/`fillText`, which never wrap, so a
+ * long preset in a wide font would otherwise spill off the sides. Sets the ctx font to the fitted
+ * size on return, and never scales the text UP  -  it only ever shrinks to fit.
+ */
+function fitSize(
+  ctx: CanvasRenderingContext2D, lines: readonly string[], family: string, size: number, maxW: number,
+): number {
+  ctx.font = `400 ${size}px ${family}`;
+  const w = maxLineWidth(ctx, lines);
+  if (w <= maxW || w <= 0) return size;
+  const fitted = Math.max(1, Math.floor(size * (maxW / w)));
+  ctx.font = `400 ${fitted}px ${family}`;
+  return fitted;
 }

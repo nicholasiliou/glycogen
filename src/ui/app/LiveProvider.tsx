@@ -98,6 +98,13 @@ const IDLE_RESET_MS = 5 * 60 * 1000;
 /** Show the countdown warning once this much of the idle window remains. */
 const IDLE_WARN_MS = 20 * 1000;
 
+/**
+ * Fixed text size used by the shuffle (never randomized). Chosen so a full-length preset fits inside
+ * the canvas across every font; {@link TextLayer} still auto-shrinks the drawn size as a safety net
+ * if a particularly wide line/font would overflow at this value.
+ */
+const SHUFFLE_TEXT_SIZE = 120;
+
 export function LiveProvider({ children }: { children: ReactNode }) {
   const refs = useRef<{ bus: ControlBus; stage: Stage; audio: AudioEngine; performer: LivePerformer; midi: MidiManager }>();
   if (!refs.current) {
@@ -184,7 +191,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     };
 
     // Decide how many banks to fill: 5% chance of 4, else 3.
-    const targetCount = Math.random() < 0.05 ? 4 : 3;
+    const targetCount = 2;
 
     const textInfo = gens.find((g) => g.id === "text");
     const nonText = gens.filter((g) => g.id !== "text");
@@ -194,35 +201,46 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     const shuffled = nonText.slice().sort(() => Math.random() - 0.5);
     const extraGens = shuffled.slice(0, extraCount);
 
-    // Pick `targetCount` distinct random bank slots.
+    // Pick `targetCount` distinct random bank slots, sorted ascending. Composite order = bank order
+    // (later banks draw on top), so we always put the text in the HIGHEST chosen bank: it renders
+    // last and therefore sits in front of the random layers below it.
     const bankIndices = Array.from({ length: stage.banks.length }, (_, i) => i).sort(() => Math.random() - 0.5);
-    const chosenBanks = bankIndices.slice(0, targetCount);
+    const chosenBanks = bankIndices.slice(0, targetCount).sort((a, b) => a - b);
     const bankA = chosenBanks[0];
 
     // Clear all banks before loading so no previous plugins bleed through.
     for (let i = 0; i < stage.banks.length; i++) stage.clearBank(i);
+    // Non-text generators take the lower banks; text takes the top bank so it composites in front.
     const pairs: Array<{ gen: PluginInfo; bank: number }> = [
       ...extraGens.map((gen, i) => ({ gen, bank: chosenBanks[i] })),
       ...(textInfo ? [{ gen: textInfo, bank: chosenBanks[extraGens.length] }] : []),
     ];
     for (const { gen, bank } of pairs) {
+      const isText = gen.id === "text";
       const plugin = create(gen.id);
-      // Text keeps its default size/position/tracking  -  only font and color vary per scene.
-      randomizeParams(plugin, gen.id === "text" ? ["fontSize", "x", "y", "tracking"] : []);
+      // Text keeps a fixed size/position/tracking  -  only font and color vary per scene.
+      randomizeParams(plugin, isText ? ["fontSize", "x", "y", "tracking"] : []);
       plugin.color.count = nextPaletteColor();
-      if (gen.id === "text") {
+      if (isText) {
         const fontParam = plugin.params.find((p) => p.name === "font");
         if (fontParam instanceof ButtonParam && fontParam.cycle.length > 0) {
           const fontIdx = fontParam.cycle.indexOf(palette.font);
           if (fontIdx >= 0) fontParam.count = fontIdx;
         }
+        // Fixed, canvas-safe size (TextLayer shrinks it further if a long line would still overflow).
+        const sizeParam = plugin.params.find((p) => p.name === "fontSize");
+        if (sizeParam instanceof Param) { sizeParam.set(SHUFFLE_TEXT_SIZE); }
       }
       stage.loadBank(bank, plugin);
-      const shader = fx.length ? pick(fx) : undefined;
-      if (shader) {
-        const shaderPlugin = create(shader.id);
-        randomizeParams(shaderPlugin);
-        stage.setShader(bank, shaderPlugin);
+      // The text layer stays clean  -  a random shader would recolor/distort it and defeat the point
+      // of keeping the caption legible on top. Shaders only ever land on the non-text banks.
+      if (!isText) {
+        const shader = fx.length ? pick(fx) : undefined;
+        if (shader) {
+          const shaderPlugin = create(shader.id);
+          randomizeParams(shaderPlugin);
+          stage.setShader(bank, shaderPlugin);
+        }
       }
     }
     selectBank(bankA);

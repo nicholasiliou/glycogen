@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from "react";
-import { Dices, Gamepad, GripVertical, Menu, Trash2, Volume2, VolumeX, X } from "lucide-react";
+import { Dices, Gamepad, Github, GripVertical, Menu, Trash2, Volume2, VolumeX, X } from "lucide-react";
 import { Button } from "@/ui/components/button";
 import { ConfirmDialog, isSuppressed } from "@/ui/components/confirm-dialog";
 import { cn } from "@/ui/lib/cn";
@@ -21,6 +21,9 @@ deepGlow: "Crosshair", fisheye: "Aperture",
   pixelSort: "ArrowDownUp", pixelStretch: "MoveHorizontal",
   venetianBlinds: "AlignJustify", tracker: "Crosshair",
 };
+
+/** Public source repo, opened from the header menu's GitHub button. */
+const REPO_URL = "https://github.com/nicholasiliou/glycogen";
 
 const ITEM_H = 32; // px height per row
 const VISIBLE = 3; // rows shown (prev · active · next)
@@ -427,6 +430,7 @@ export function HeaderBar({
   const drag: BankDragState = { dragFrom, setDragFrom, overTrash, setOverTrash };
 
   const [shuffleConfirmOpen, setShuffleConfirmOpen] = useState(false);
+  const [githubConfirmOpen, setGithubConfirmOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [portrait, setPortrait] = useState(() =>
     typeof window !== "undefined" &&
@@ -464,7 +468,7 @@ export function HeaderBar({
       <div
         className={cn(
           "flex items-center overflow-hidden transition-all duration-300 ease-out",
-          menuOpen ? "max-w-40 gap-3 opacity-100" : "max-w-0 gap-0 opacity-0",
+          menuOpen ? "max-w-52 gap-3 opacity-100" : "max-w-0 gap-0 opacity-0",
         )}
         aria-hidden={!menuOpen}
       >
@@ -502,8 +506,29 @@ export function HeaderBar({
         >
           <Dices className="h-4 w-4" />
         </Button>
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          title="View source on GitHub"
+          tabIndex={menuOpen ? 0 : -1}
+          className="shrink-0"
+          onClick={() => setGithubConfirmOpen(true)}
+        >
+          <Github className="h-4 w-4" />
+        </Button>
       </div>
     </div>
+  );
+
+  const githubDialog = (
+    <ConfirmDialog
+      open={githubConfirmOpen}
+      onOpenChange={setGithubConfirmOpen}
+      title="Open GitHub repository?"
+      description="If you like the project, please leave a star!"
+      confirmLabel="Open GitHub"
+      onConfirm={() => window.open(REPO_URL, "_blank", "noopener,noreferrer")}
+    />
   );
 
   if (portrait) {
@@ -536,6 +561,7 @@ export function HeaderBar({
           suppressKey="glycogen.shuffleNoWarn"
           onConfirm={onShuffle}
         />
+        {githubDialog}
       </div>
     );
   }
@@ -575,6 +601,7 @@ export function HeaderBar({
         suppressKey="glycogen.shuffleNoWarn"
         onConfirm={onShuffle}
       />
+      {githubDialog}
     </div>
   );
 }
