@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type * as React from "react";
 import { useLive } from "@/ui/app/LiveProvider";
 import { useExportSettings } from "@/ui/export/ExportContext";
@@ -22,6 +22,7 @@ export function Stage() {
   const ex = useExportSettings();
   const hostRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
+  const [fadeIn, setFadeIn] = useState(true);
   // Preview is always-on: render at the true export resolution so framing and pixel quality match.
   const outputSize = { width: ex.pixelWidth, height: ex.pixelHeight };
   const previewRef = useRef<{ width: number; height: number }>(outputSize);
@@ -162,6 +163,29 @@ export function Stage() {
     if (variant) maskUrl = variant.url.endsWith(".svg") ? variant.url : `${variant.url}/1.svg`;
   }
 
+  // Fade in from black on initial mount — one rAF tick so the black frame is actually painted first.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setFadeIn(false));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const [maskOutlineUrl, setMaskOutlineUrl] = useState<string | undefined>();
+  useEffect(() => {
+    if (!maskUrl) { setMaskOutlineUrl(undefined); return; }
+    let cancelled = false;
+    fetch(maskUrl)
+      .then((r) => r.text())
+      .then((svg) => {
+        if (cancelled) return;
+        const stroked = svg
+          .replace(/fill="white"/g, 'fill="none"')
+          .replace(/<path /, '<path stroke="rgba(255,255,255,0.18)" stroke-width="4" ');
+        setMaskOutlineUrl(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(stroked)}`);
+      })
+      .catch(() => { if (!cancelled) setMaskOutlineUrl(undefined); });
+    return () => { cancelled = true; };
+  }, [maskUrl]);
+
   return (
     <div
       ref={hostRef}
@@ -200,6 +224,27 @@ export function Stage() {
           }}
         />
       )}
+      {maskOutlineUrl && (
+        <img
+          className="pointer-events-none absolute z-6"
+          src={maskOutlineUrl}
+          style={{
+            left: cropX,
+            top: cropY,
+            width: cropW,
+            height: cropH,
+            display: "block",
+          }}
+          aria-hidden
+        />
+      )}
+      <div
+        className="pointer-events-none absolute inset-0 z-10 bg-black"
+        style={{
+          opacity: fadeIn ? 1 : 0,
+          transition: fadeIn ? "none" : "opacity 600ms ease-in-out",
+        }}
+      />
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import { ChevronLeft, ChevronRight, Power } from "lucide-react";
+import { GripVertical, Power } from "lucide-react";
 import { LiveProvider, useLive } from "@/ui/app/LiveProvider";
-import { ExportProvider } from "@/ui/export/ExportContext";
+import { ExportProvider, useExportSettings } from "@/ui/export/ExportContext";
+import { masksFor } from "@/runtime/export";
 import { asset } from "@/lib/asset";
 import { HeaderBar } from "@/ui/stage/HeaderBar";
 import { Stage } from "@/ui/stage/Stage";
@@ -112,6 +113,12 @@ const PIP_MARGIN = 16;
 
 /** Draggable picture-in-picture stage window that snaps to the nearest corner on release. */
 function PipStage() {
+  const ex = useExportSettings();
+  const maskVariant = ex.maskEnabled ? masksFor(ex.ratioId)[0] : null;
+  const maskUrl = maskVariant
+    ? (maskVariant.url.endsWith(".svg") ? maskVariant.url : `${maskVariant.url}/1.svg`)
+    : null;
+
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const dragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
@@ -164,7 +171,11 @@ function PipStage() {
     <div
       ref={elRef}
       className="fixed z-50 overflow-hidden rounded-lg shadow-2xl ring-1 ring-white/10 cursor-grab active:cursor-grabbing select-none"
-      style={{ left: pos.x, top: pos.y, width: PIP_W, height: PIP_H, transition: dragging.current ? "none" : "left 180ms ease, top 180ms ease" }}
+      style={{
+        left: pos.x, top: pos.y, width: PIP_W, height: PIP_H,
+        transition: dragging.current ? "none" : "left 180ms ease, top 180ms ease",
+        ...(maskUrl ? { maskImage: `url(${maskUrl})`, maskSize: "100% 100%", maskPosition: "0 0", maskRepeat: "no-repeat" } : {}),
+      }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -179,7 +190,17 @@ function LiveShell() {
   const [controllerOpen, setControllerOpen] = useState(false);
   // Right-side controls drawer. When open it takes width from the stage row, so the canvas (sized
   // by a ResizeObserver on its host) re-fits to the narrower area automatically.
-  const [controlsOpen, setControlsOpen] = useState(false);
+  const [controlsOpen, setControlsOpenRaw] = useState(() => {
+    const saved = localStorage.getItem("glycogen.controlsOpen");
+    return saved === null ? false : saved === "true";
+  });
+  const setControlsOpen = useCallback((next: boolean | ((prev: boolean) => boolean)) => {
+    setControlsOpenRaw((prev) => {
+      const val = typeof next === "function" ? next(prev) : next;
+      localStorage.setItem("glycogen.controlsOpen", String(val));
+      return val;
+    });
+  }, []);
   const [drawerWidth, setDrawerWidth] = useState(() => {
     const saved = localStorage.getItem("glycogen.drawerWidth");
     return saved ? Math.max(200, Math.min(480, Number(saved))) : 288;
@@ -206,16 +227,26 @@ function LiveShell() {
   }, []);
 
   // Boot default: without a controller (hardware or emulator) the on-screen sliders are the only
-  // way to play, so open the drawer; with one connected keep it closed. Decided once, shortly
-  // after MIDI enumeration settles — the delay lets an already-open emulator answer the bridge's
-  // presence ping first. After that the toggle is entirely the user's.
+  // way to play, so open the drawer; with one connected keep it closed. We only override the saved
+  // state when MIDI device availability changes from the last session, so the user's toggle
+  // persists across reloads. Decided once after MIDI enumeration settles.
   const remoteConnectedRef = useRef(remoteConnected);
   remoteConnectedRef.current = remoteConnected;
   const bootDecided = useRef(false);
   useEffect(() => {
     if (bootDecided.current || midi.status === "idle") return;
     bootDecided.current = true;
-    const t = setTimeout(() => setControlsOpen(midi.devices().length === 0 && !remoteConnectedRef.current), 300);
+    const t = setTimeout(() => {
+      const hasController = midi.devices().length > 0 || remoteConnectedRef.current;
+      const prevHadController = localStorage.getItem("glycogen.hadController");
+      const nowStr = hasController ? "true" : "false";
+      if (prevHadController === null || prevHadController !== nowStr) {
+        // Device availability changed (or first visit) — override to the sensible default.
+        localStorage.setItem("glycogen.hadController", nowStr);
+        setControlsOpen(!hasController);
+      }
+      // Otherwise leave the saved toggle state as-is.
+    }, 300);
     return () => clearTimeout(t);
   }, [midi, midi.status]);
 
@@ -288,14 +319,35 @@ function LiveShell() {
             <StartGate />
             <LearnToast />
             <IdleResetToast />
-            {/* Drawer toggle: a little arrow on the right edge of the stage. */}
-            <button
-              onClick={() => setControlsOpen((o) => !o)}
-              title={controlsOpen ? "Hide controls" : "Show controls"}
-              className="absolute right-0 top-1/2 z-30 flex h-16 w-6 -translate-y-1/2 items-center justify-center rounded-l-md text-ink-dim backdrop-blur transition-colors hover:text-ink"
+            {/* Toggle + resize handle: sits on the right edge of the stage, always visible. Click
+                to open/close; drag left to open and resize in one motion. */}
+            <div
+              className="absolute right-0 top-0 z-50 h-full w-6 cursor-col-resize group"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                const startX = e.clientX;
+                let didDrag = false;
+                const startW = controlsOpen ? drawerWidth : 0;
+                dragWith((ev) => {
+                  const delta = startX - ev.clientX;
+                  if (!didDrag && Math.abs(delta) > 4) {
+                    didDrag = true;
+                    setControlsOpen(true);
+                  }
+                  if (didDrag) {
+                    const next = Math.max(200, Math.min(480, startW + delta));
+                    setDrawerWidth(next);
+                    localStorage.setItem("glycogen.drawerWidth", String(next));
+                  }
+                }, () => {
+                  if (!didDrag) setControlsOpen((o) => !o);
+                });
+              }}
             >
-              {controlsOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </button>
+              <div className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none transition-opacity opacity-30 group-hover:opacity-100">
+                <GripVertical className="h-4 w-4 text-ink-dim" />
+              </div>
+            </div>
           </div>
         )}
 
@@ -311,20 +363,6 @@ function LiveShell() {
             className="relative flex h-full shrink-0 flex-col pt-3"
             style={{ width: drawerWidth }}
           >
-            {/* Drag handle on the left edge — resize the drawer by dragging. */}
-            <div
-              className="absolute left-0 top-0 z-10 h-full w-1 cursor-col-resize hover:bg-accent/30"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                const startX = e.clientX;
-                const startW = drawerWidth;
-                dragWith((ev) => {
-                  const next = Math.max(200, Math.min(480, startW - (ev.clientX - startX)));
-                  setDrawerWidth(next);
-                  localStorage.setItem("glycogen.drawerWidth", String(next));
-                });
-              }}
-            />
             {controllerOpen ? <AssignPanel /> : <ControlsPanel />}
           </div>
         </aside>
