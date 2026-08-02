@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from "react";
-import { Dices, Gamepad, GripVertical, Trash2, Volume2, VolumeX } from "lucide-react";
+import { Dices, Gamepad, GripVertical, Menu, Trash2, Volume2, VolumeX, X } from "lucide-react";
 import { Button } from "@/ui/components/button";
 import { ConfirmDialog, isSuppressed } from "@/ui/components/confirm-dialog";
 import { cn } from "@/ui/lib/cn";
@@ -62,8 +62,8 @@ function WheelPicker<T extends { id: string; label: string; kind?: string }>({
   // ── Mouse drag ────────────────────────────────────────────────────────────
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const onMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0) return;
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    if (e.button !== 0 && e.pointerType === "mouse") return;
     e.preventDefault();
     isDragging.current = true;
     remainder.current = 0;
@@ -73,7 +73,13 @@ function WheelPicker<T extends { id: string; label: string; kind?: string }>({
     let lastY = e.clientY;
     let moved = false;
 
+    // Capture the pointer so drags that stray outside the wheel's box keep delivering move events
+    // to it (without this, touch/pen drags stop the moment the finger leaves the element).
+    const el = e.currentTarget as HTMLElement;
+    el.setPointerCapture(e.pointerId);
+
     const onMove = (ev: PointerEvent) => {
+      if (ev.pointerId !== e.pointerId) return;
       const delta = lastY - ev.clientY;
       lastY = ev.clientY;
       if (delta !== 0) moved = true;
@@ -87,18 +93,23 @@ function WheelPicker<T extends { id: string; label: string; kind?: string }>({
       setDragOffset(remainder.current);
     };
 
-    const onUp = () => {
+    const onUp = (ev: PointerEvent) => {
+      if (ev.pointerId !== e.pointerId) return;
       isDragging.current = false;
       // A click with no movement → step forward by 1.
-      if (!moved) onStep(1);
+      if (!moved && ev.type === "pointerup") onStep(1);
       setSnapping(true);
       setDragOffset(0);
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
+      el.releasePointerCapture?.(e.pointerId);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerup", onUp);
+      el.removeEventListener("pointercancel", onUp);
     };
 
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
+    // With the pointer captured, move/up now target the element itself, not window.
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerup", onUp);
+    el.addEventListener("pointercancel", onUp);
   }, [onStep]);
 
   // Non-passive wheel handler so we can call preventDefault.
@@ -123,9 +134,9 @@ function WheelPicker<T extends { id: string; label: string; kind?: string }>({
   return (
     <div
       ref={rootRef}
-      style={{ width, height: ITEM_H * VISIBLE, cursor: "ns-resize", userSelect: "none" }}
+      style={{ width, height: ITEM_H * VISIBLE, cursor: "ns-resize", userSelect: "none", touchAction: "none" }}
       className="relative overflow-hidden"
-      onMouseDown={onMouseDown}
+      onPointerDown={onPointerDown}
     >
       {/* Edge fades */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-linear-to-b from-black/70 to-transparent" />
@@ -394,7 +405,7 @@ export function HeaderBar({
 }: {
   controllerOpen: boolean;
   onControllerToggle: () => void;
-  stageRect: { left: number; width: number } | null;
+  stageRect: { x: number; y: number; w: number; h: number } | null;
   onShuffle: () => void;
 }) {
   const {
@@ -416,20 +427,128 @@ export function HeaderBar({
   const drag: BankDragState = { dragFrom, setDragFrom, overTrash, setOverTrash };
 
   const [shuffleConfirmOpen, setShuffleConfirmOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [portrait, setPortrait] = useState(() =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(pointer: coarse) and (orientation: portrait)").matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(pointer: coarse) and (orientation: portrait)");
+    const update = () => setPortrait(mq.matches);
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  const wheelRow = (
+    <div className="flex items-center gap-2">
+      <WheelPicker items={generators} index={selectedPluginIndex} onStep={stepPlugin} jogPx={jogPluginPx} width={148} />
+      <div className="mx-1 h-6 w-px shrink-0 self-center bg-edge/40" />
+      <BankStrip drag={drag} />
+      <div className="mx-1 h-6 w-px shrink-0 self-center bg-edge/40" />
+      <WheelPicker items={effects} index={selectedShaderIndex} onStep={stepShader} jogPx={jogShaderPx} width={120} />
+    </div>
+  );
+
+  const actionCluster = (portrait: boolean) => (
+    <div className={cn("flex items-center gap-3", portrait ? "" : "ml-auto")}>
+      <TrashTarget drag={drag} />
+      <Button
+        size="icon-sm"
+        variant={menuOpen ? "default" : "ghost"}
+        onClick={() => setMenuOpen((o) => !o)}
+        title={menuOpen ? "Close menu" : "Open menu"}
+        aria-expanded={menuOpen}
+      >
+        {menuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+      </Button>
+      <div
+        className={cn(
+          "flex items-center overflow-hidden transition-all duration-300 ease-out",
+          menuOpen ? "max-w-40 gap-3 opacity-100" : "max-w-0 gap-0 opacity-0",
+        )}
+        aria-hidden={!menuOpen}
+      >
+        <div className="shrink-0"><ExportPanel /></div>
+        {/* Controller button hidden on portrait touch — the assign surface doesn't work on mobile */}
+        {!portrait && (
+          <Button
+            size="icon-sm"
+            variant={controllerOpen ? "default" : "ghost"}
+            onClick={onControllerToggle}
+            title={controllerOpen ? "Close controller" : "Open controller"}
+            tabIndex={menuOpen ? 0 : -1}
+            className="shrink-0"
+          >
+            <Gamepad className="h-4 w-4" />
+          </Button>
+        )}
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          onClick={toggleMute}
+          title={muted ? "Unmute" : "Mute"}
+          tabIndex={menuOpen ? 0 : -1}
+          className={cn("shrink-0", muted && "text-red-400/70")}
+        >
+          {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+        </Button>
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          title="Shuffle scene"
+          tabIndex={menuOpen ? 0 : -1}
+          className="shrink-0"
+          onClick={() => { if (isSuppressed("glycogen.shuffleNoWarn")) onShuffle(); else setShuffleConfirmOpen(true); }}
+        >
+          <Dices className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  if (portrait) {
+    return (
+      <div className="shrink-0 flex flex-col text-ink">
+        {/* Row 1: wheels + banks centered */}
+        <div className="flex h-14 items-center justify-center px-4">
+          {isAdmin() && lastMidi && (
+            <span className="absolute left-4 shrink-0 truncate text-[0.6875rem] text-ink-dim" title="Last MIDI action">
+              {lastMidi.control} → {lastMidi.target}
+            </span>
+          )}
+          {wheelRow}
+        </div>
+        {/* Row 2: action buttons */}
+        <div className="flex h-10 items-center justify-center border-t border-edge/30 px-4">
+          {actionCluster(true)}
+        </div>
+        <ConfirmDialog
+          open={shuffleConfirmOpen}
+          onOpenChange={setShuffleConfirmOpen}
+          title="Shuffle scene?"
+          description={
+            <>
+              This will replace your current loadout with a fresh random scene. Any unsaved work will be lost.{" "}
+              <span className="text-ink">Export a PNG first</span> to save it; you can drag it back onto the canvas later to resume editing.
+            </>
+          }
+          confirmLabel="Shuffle"
+          suppressKey="glycogen.shuffleNoWarn"
+          onConfirm={onShuffle}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex h-14 shrink-0 items-center overflow-hidden px-4 text-ink">
       {/* Center: plugin wheel · banks · shader wheel  -  pinned over the live canvas column. */}
       <div
         className="pointer-events-none absolute inset-y-0 flex items-center justify-center"
-        style={stageRect ? { left: stageRect.left, width: stageRect.width } : { left: 0, right: 0 }}
+        style={stageRect ? { left: stageRect.x, width: stageRect.w } : { left: 0, right: 0 }}
       >
         <div className="pointer-events-auto flex items-center gap-2">
-          <WheelPicker items={generators} index={selectedPluginIndex} onStep={stepPlugin} jogPx={jogPluginPx} width={148} />
-          <div className="mx-1 h-6 w-px shrink-0 self-center bg-edge/40" />
-          <BankStrip drag={drag} />
-          <div className="mx-1 h-6 w-px shrink-0 self-center bg-edge/40" />
-          <WheelPicker items={effects} index={selectedShaderIndex} onStep={stepShader} jogPx={jogShaderPx} width={120} />
+          {wheelRow}
         </div>
       </div>
 
@@ -440,36 +559,7 @@ export function HeaderBar({
         </span>
       )}
 
-      {/* Right actions: trash (drag target) · export · controller · mute · shuffle */}
-      <div className="ml-auto flex items-center gap-3">
-        <TrashTarget drag={drag} />
-        <ExportPanel />
-        <Button
-          size="icon-sm"
-          variant={controllerOpen ? "default" : "ghost"}
-          onClick={onControllerToggle}
-          title={controllerOpen ? "Close controller" : "Open controller"}
-        >
-          <Gamepad className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon-sm"
-          variant="ghost"
-          onClick={toggleMute}
-          title={muted ? "Unmute" : "Mute"}
-          className={cn(muted && "text-red-400/70")}
-        >
-          {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-        </Button>
-        <Button
-          size="icon-sm"
-          variant="ghost"
-          title="Shuffle scene"
-          onClick={() => { if (isSuppressed("glycogen.shuffleNoWarn")) onShuffle(); else setShuffleConfirmOpen(true); }}
-        >
-          <Dices className="h-4 w-4" />
-        </Button>
-      </div>
+      {actionCluster(false)}
 
       <ConfirmDialog
         open={shuffleConfirmOpen}
