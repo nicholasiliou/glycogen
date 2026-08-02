@@ -28,7 +28,7 @@ const GRID_MAX = 256;
 export class TextLayer extends Plugin {
   preset = this.cycle(TEXT_PRESETS);
   font = this.cycle(AVAILABLE_FONTS);
-  bold = this.toggle();
+  outline = this.toggle();
   fontSize = this.number({ min: 20, max: 400, default: 120 });
   tracking = this.number({ min: -20, max: 40, default: 0 });
   x = this.number({ min: -960, max: 960, default: 0 });
@@ -61,10 +61,9 @@ export class TextLayer extends Plugin {
 
     const text = this.text;
     const size = this.fontSize.value;
-    const weight = this.bold.on ? "700" : "400";
+    const outline = this.outline.on;
     const family = this.font.pick(AVAILABLE_FONTS as readonly string[]);
-    ctx.fillStyle = "rgba(255,255,255,1)";
-    ctx.font = `${weight} ${size}px ${family}`;
+    ctx.font = `400 ${size}px ${family}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     if ("letterSpacing" in ctx) (ctx as unknown as { letterSpacing: string }).letterSpacing = `${this.tracking.value}px`;
@@ -75,10 +74,17 @@ export class TextLayer extends Plugin {
     const cx = Math.max(halfH, Math.min(w - halfH, w / 2 + this.x.value));
     const cy = Math.max(halfH, Math.min(h - halfH, h / 2 + this.y.value));
     const startY = cy - ((lines.length - 1) * lh) / 2;
-    lines.forEach((line, i) => ctx.fillText(line, cx, startY + i * lh));
+    if (outline) {
+      ctx.strokeStyle = "rgba(255,255,255,1)";
+      ctx.lineWidth = 1;
+      lines.forEach((line, i) => ctx.strokeText(line, cx, startY + i * lh));
+    } else {
+      ctx.fillStyle = "rgba(255,255,255,1)";
+      lines.forEach((line, i) => ctx.fillText(line, cx, startY + i * lh));
+    }
 
     // Invalidate grid cache when text params change.
-    const key = [text, size, weight, family, this.tracking.value, this.x.value, this.y.value, w, h].join("|");
+    const key = [text, size, outline, family, this.tracking.value, this.x.value, this.y.value, w, h].join("|");
     if (this.gridCache?.key !== key) this.gridCache = null;
 
     return this.canvas;
@@ -88,13 +94,13 @@ export class TextLayer extends Plugin {
     const text = this.text;
     const w = this.canvas.width || 1920, h = this.canvas.height || 1080;
     const size = this.fontSize.value;
-    const weight = this.bold.on ? "700" : "400";
+    const outline = this.outline.on;
     const family = this.font.pick(AVAILABLE_FONTS as readonly string[]);
     const dx = this.x.value, dy = this.y.value;
-    const key = [text, size, weight, family, this.tracking.value, dx, dy, w, h].join("|");
+    const key = [text, size, outline, family, this.tracking.value, dx, dy, w, h].join("|");
 
     if (!this.gridCache || this.gridCache.key !== key) {
-      this.gridCache = rasterGrid(text, size, weight, family, this.tracking.value, dx, dy, w, h, key);
+      this.gridCache = rasterGrid(text, size, outline, family, this.tracking.value, dx, dy, w, h, key);
     }
     const { data, gw, gh } = this.gridCache;
     const fn: FieldFn = (x, y) => sampleGrid(data, gw, gh, x, y);
@@ -104,7 +110,7 @@ export class TextLayer extends Plugin {
 }
 
 function rasterGrid(
-  text: string, size: number, weight: string, family: string,
+  text: string, size: number, outline: boolean, family: string,
   tracking: number, dx: number, dy: number, w: number, h: number, key: string,
 ): { key: string; data: Float32Array; gw: number; gh: number } {
   const scale = GRID_MAX / Math.max(1, Math.max(w, h));
@@ -116,8 +122,7 @@ function rasterGrid(
   const ctx = c.getContext("2d");
   if (!ctx || !text) return { key, data, gw, gh };
   const s = size * scale;
-  ctx.fillStyle = "#fff";
-  ctx.font = `${weight} ${s}px ${family}`;
+  ctx.font = `400 ${s}px ${family}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   if ("letterSpacing" in ctx) (ctx as unknown as { letterSpacing: string }).letterSpacing = `${tracking * scale}px`;
@@ -127,7 +132,14 @@ function rasterGrid(
   const cx = Math.max(halfH, Math.min(gw - halfH, gw / 2 + dx * scale));
   const cy = Math.max(halfH, Math.min(gh - halfH, gh / 2 + dy * scale));
   const startY = cy - ((lines.length - 1) * lh) / 2;
-  lines.forEach((line, i) => ctx.fillText(line, cx, startY + i * lh));
+  if (outline) {
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = Math.max(1, s * 0.04);
+    lines.forEach((line, i) => ctx.strokeText(line, cx, startY + i * lh));
+  } else {
+    ctx.fillStyle = "#fff";
+    lines.forEach((line, i) => ctx.fillText(line, cx, startY + i * lh));
+  }
   const img = ctx.getImageData(0, 0, gw, gh).data;
   for (let i = 0; i < gw * gh; i++) data[i] = img[i * 4 + 3] / 255;
   return { key, data, gw, gh };

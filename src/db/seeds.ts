@@ -118,7 +118,7 @@ export const DEFAULT_LAYOUTS: Record<string, Record<string, SlotId>> = {
     shape: "pad:4", radius: "knob:1", lineWidth: "knob:2", tiltX: "fader:0",
     tiltY: "fader:1", tiltZ: "fader:2", spin: "encoder:0", filled: "pad:5", depthShade: "pad:6", cull: "pad:7",
   },
-  text: { preset: "pad:4", font: "pad:5", bold: "pad:6", fontSize: "knob:0", tracking: "knob:1" },
+  text: { preset: "pad:4", font: "pad:5", outline: "pad:6", fontSize: "knob:0", tracking: "knob:1" },
   volumetricCloud: {
     scale: "knob:1", octaves: "knob:2", coverage: "knob:3", density: "knob:4",
     steps: "knob:5", shadow: "knob:6", speed: "knob:7",
