@@ -6,7 +6,10 @@ export class PixelSortLayer extends Plugin {
   horizontal = this.toggle();
   reverse = this.toggle();
 
-  private ctx = this.canvas.getContext("2d")!;
+  // This layer reads the whole frame back with getImageData every frame. Without the hint the
+  // canvas stays GPU-backed and each read stalls on a GPU→CPU sync; the hint keeps it on a CPU
+  // surface, which is what a per-frame full-frame readback wants.
+  private ctx = this.canvas.getContext("2d", { willReadFrequently: true })!;
 
   render(f: Frame): HTMLCanvasElement | null {
     const bd = f.input;
@@ -16,8 +19,12 @@ export class PixelSortLayer extends Plugin {
     const horizontal = this.horizontal.on;
     const reverse = this.reverse.on;
 
-    this.canvas.width = w;
-    this.canvas.height = h;
+    // Assigning width/height reallocates and clears the canvas even when the value is unchanged,
+    // so only touch it on an actual size change - the drawImage below overwrites the frame anyway.
+    if (this.canvas.width !== w || this.canvas.height !== h) {
+      this.canvas.width = w;
+      this.canvas.height = h;
+    }
     this.ctx.drawImage(bd, 0, 0, w, h);
     const img = this.ctx.getImageData(0, 0, w, h);
     const d = img.data;

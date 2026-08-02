@@ -305,15 +305,24 @@ export class Stage {
   }
 
   /** Luminance × preset hex (the old Color shader's math): white → the color, black stays black,
-   *  and the source's own alpha clips the fill back out of transparent regions. */
+   *  and the source's own alpha clips the fill back out of transparent regions.
+   *
+   *  The desaturation is a `saturation` blend against a neutral gray rather than a
+   *  `filter = "grayscale(1)"` pass: Canvas2D `filter` routes through the CSS filter machinery,
+   *  which drops the surface off the accelerated path in Firefox, and this runs per tinted bank
+   *  per frame at full resolution. The blend keeps the backdrop's luminosity and discards its
+   *  chroma, which is the same operation - but it weights channels 0.3/0.59/0.11 where
+   *  `grayscale(1)` uses 0.2126/0.7152/0.0722. Saturated greens and blues therefore land a shade
+   *  differently; the weights now match the `lum()` the tracker and pixel-sort layers already use. */
   private recolor(src: HTMLCanvasElement, hex: string, w: number, h: number): HTMLCanvasElement {
     const c = this.tintBuf, ctx = this.tctx;
     if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
     ctx.globalCompositeOperation = "source-over";
     ctx.clearRect(0, 0, w, h);
-    ctx.filter = "grayscale(1)";
     ctx.drawImage(src, 0, 0, w, h);
-    ctx.filter = "none";
+    ctx.globalCompositeOperation = "saturation";
+    ctx.fillStyle = "#808080";
+    ctx.fillRect(0, 0, w, h);
     ctx.globalCompositeOperation = "multiply";
     ctx.fillStyle = hex;
     ctx.fillRect(0, 0, w, h);

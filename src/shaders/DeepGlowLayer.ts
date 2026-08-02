@@ -1,5 +1,13 @@
 import { Plugin, type Frame } from "@/plugins/Plugin";
-import { ShaderRunner } from "./ShaderRunner";
+import { ShaderRunner, type ShaderTarget } from "./ShaderRunner";
+
+// Straight passthrough: parks the backdrop in a texture once per frame. Kept a plain copy so the
+// target holds *straight* RGBA, which is what BLUR_FRAG and COMPOSE_FRAG's `uTex` both expect.
+const COPY_FRAG = `
+precision highp float;
+varying vec2 vUv;
+uniform sampler2D uTex;
+void main() { gl_FragColor = texture2D(uTex, vUv); }`;
 
 // Alpha discipline: textures arrive straight (texImage2D un-premultiplies canvas sources) but the
 // GL canvas is composited as PREMULTIPLIED. Blurring/summing straight RGBA over a transparent
@@ -45,7 +53,10 @@ void main() {
   vec4 b0 = texture2D(uBlur0, vUv);
   vec4 b1 = texture2D(uBlur1, vUv);
   vec4 b2 = texture2D(uBlur2, vUv);
-  vec3 glow = b0.rgb * b0.a * uStr0 + b1.rgb * b1.a * uStr1 + b2.rgb * b2.a * uStr2;
+  // The blur tiers now arrive straight from BLUR_FRAG's target, which already writes premultiplied
+  // (rgb·a) - so they are summed as-is. They used to make a round trip through a 2D canvas, and the
+  // re-upload un-premultiplied them, which is why this used to multiply by .a again.
+  vec3 glow = b0.rgb * uStr0 + b1.rgb * uStr1 + b2.rgb * uStr2;
   float glowA = b0.a * uStr0 + b1.a * uStr1 + b2.a * uStr2;
   float outA = clamp(src.a + glowA * uMix, 0.0, 1.0);
   vec3 outP = min(clamp(src.rgb * src.a + glow * uMix, 0.0, 1.0), vec3(outA));
@@ -61,30 +72,29 @@ export class DeepGlowLayer extends Plugin {
   str2 = this.number({ min: 0, max: 1, default: 0.2 });
   mix = this.number({ min: 0, max: 1, default: 0.8 });
 
+  // The backdrop is uploaded once per frame into `source`'s target, then every pass below reads
+  // that texture instead of re-uploading the same canvas four times.
+  private source = new ShaderRunner(COPY_FRAG);
   private blurH = new ShaderRunner(BLUR_FRAG);
-  private blurV = new ShaderRunner(BLUR_FRAG);
+  // A runner's target is overwritten the next time it draws, so the three tiers must finish in
+  // three *different* runners - otherwise all three glow textures alias the last pass and the
+  // multi-radius glow collapses to one. (This was the "broken" look.) The horizontal half is still
+  // one runner: each tier consumes it immediately, before the next tier runs.
+  private blurV = [new ShaderRunner(BLUR_FRAG), new ShaderRunner(BLUR_FRAG), new ShaderRunner(BLUR_FRAG)];
   private compose = new ShaderRunner(COMPOSE_FRAG, ["uBlur0", "uBlur1", "uBlur2"]);
-  // ShaderRunner returns its single reused canvas, so each blur tier must be snapshotted into its
-  // own canvas before the next tier overwrites it  -  otherwise all three glow textures alias the
-  // last pass and the multi-radius glow collapses to one. (This was the "broken" look.)
-  private tiers = [document.createElement("canvas"), document.createElement("canvas"), document.createElement("canvas")];
-  private tierCtx = this.tiers.map((c) => c.getContext("2d")!);
 
-  resize(w: number, h: number): void {
-    this.blurH.resize(w, h);
-    this.blurV.resize(w, h);
-    this.compose.resize(w, h);
-    for (const c of this.tiers) { c.width = Math.max(1, w); c.height = Math.max(1, h); }
+  private runners(): ShaderRunner[] {
+    return [this.source, this.blurH, ...this.blurV, this.compose];
   }
 
-  private blurInto(tier: number, src: HTMLCanvasElement, radius: number, w: number, h: number): HTMLCanvasElement {
-    const h1 = this.blurH.render(src, { uDir: [1, 0], uResolution: [w, h], uRadius: radius });
-    const v = this.blurV.render(h1, { uDir: [0, 1], uResolution: [w, h], uRadius: radius });
-    const dst = this.tiers[tier], ctx = this.tierCtx[tier];
-    if (dst.width !== w || dst.height !== h) { dst.width = w; dst.height = h; }
-    ctx.clearRect(0, 0, w, h);
-    ctx.drawImage(v, 0, 0);
-    return dst;
+  resize(w: number, h: number): void {
+    for (const r of this.runners()) r.resize(w, h);
+  }
+
+  private blurTier(tier: number, src: ShaderTarget, radius: number, w: number, h: number): ShaderTarget | null {
+    const h1 = this.blurH.renderToTexture(src, { uDir: [1, 0], uResolution: [w, h], uRadius: radius });
+    if (!h1) return null;
+    return this.blurV[tier].renderToTexture(h1, { uDir: [0, 1], uResolution: [w, h], uRadius: radius });
   }
 
   render(f: Frame): HTMLCanvasElement | null {
@@ -92,19 +102,21 @@ export class DeepGlowLayer extends Plugin {
     if (!bd) return null;
     if (!this.blurH.available) return bd;
     const w = f.width, h = f.height;
-    this.blurH.resize(w, h);
-    this.blurV.resize(w, h);
-    this.compose.resize(w, h);
+    this.resize(w, h);
 
-    const b0 = this.blurInto(0, bd, Math.max(1, this.radius0.value), w, h);
-    const b1 = this.blurInto(1, bd, Math.max(1, this.radius1.value), w, h);
-    const b2 = this.blurInto(2, bd, Math.max(1, this.radius2.value), w, h);
+    const src = this.source.renderToTexture(bd, {});
+    if (!src) return bd;
+
+    const b0 = this.blurTier(0, src, Math.max(1, this.radius0.value), w, h);
+    const b1 = this.blurTier(1, src, Math.max(1, this.radius1.value), w, h);
+    const b2 = this.blurTier(2, src, Math.max(1, this.radius2.value), w, h);
+    if (!b0 || !b1 || !b2) return bd;
 
     this.compose.setTexture("uBlur0", b0);
     this.compose.setTexture("uBlur1", b1);
     this.compose.setTexture("uBlur2", b2);
 
-    return this.compose.render(bd, {
+    return this.compose.render(src, {
       uStr0: this.str0.value,
       uStr1: this.str1.value,
       uStr2: this.str2.value,
@@ -113,9 +125,6 @@ export class DeepGlowLayer extends Plugin {
   }
 
   dispose(): void {
-    this.blurH.dispose();
-    this.blurV.dispose();
-    this.compose.dispose();
-    for (const c of this.tiers) { c.width = c.height = 0; }
+    for (const r of this.runners()) r.dispose();
   }
 }

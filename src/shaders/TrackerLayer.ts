@@ -8,13 +8,20 @@ interface TrackedRegion {
   score: number;
 }
 
+// Scratch surface for the downscale-and-read below, reused across frames: findRegions runs every
+// frame, and allocating a canvas per call churns a GPU surface per frame for nothing. The
+// willReadFrequently hint keeps it CPU-side, since every frame ends in a getImageData.
+const grid = document.createElement("canvas");
+const gridCtx = grid.getContext("2d", { willReadFrequently: true })!;
+
 function findRegions(bd: HTMLCanvasElement, count: number, gridCols: number, gridRows: number): TrackedRegion[] {
-  const oc = document.createElement("canvas");
-  oc.width = gridCols;
-  oc.height = gridRows;
-  const oc2d = oc.getContext("2d")!;
-  oc2d.drawImage(bd, 0, 0, gridCols, gridRows);
-  const pixels = oc2d.getImageData(0, 0, gridCols, gridRows).data;
+  if (grid.width !== gridCols || grid.height !== gridRows) {
+    grid.width = gridCols;
+    grid.height = gridRows;
+  }
+  gridCtx.clearRect(0, 0, gridCols, gridRows);
+  gridCtx.drawImage(bd, 0, 0, gridCols, gridRows);
+  const pixels = gridCtx.getImageData(0, 0, gridCols, gridRows).data;
 
   const scores: { col: number; row: number; score: number }[] = [];
   for (let row = 0; row < gridRows; row++) {
