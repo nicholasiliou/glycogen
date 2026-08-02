@@ -53,5 +53,11 @@ Append the following URL fragments to enable additional functionality:
 
 ## Attributions
 
-Fonts by [Artyom Galinov](https://www.behance.net/iamimago) on Behance.
+Maratype, NuCore, Sekgen, UESC — fonts by [Artyom Galinov](https://www.behance.net/iamimago) on Behance.
+
+Bitcount Prop Single — font by [Petr van Blokland](https://github.com/petrvanblokland/TYPETR-Bitcount), licensed under the [SIL Open Font License 1.1](https://openfontlicense.org).
+
+Hina Mincho — font by [the Hina Mincho Project Authors](https://github.com/satsuyako/Hina-Mincho), licensed under the [SIL Open Font License 1.1](https://openfontlicense.org).
+
+Space Mono — font by [the Space Mono Project Authors](https://github.com/googlefonts/spacemono), licensed under the [SIL Open Font License 1.1](https://openfontlicense.org).
 

@@ -2,7 +2,17 @@ import { Plugin, type FieldFn, type Frame } from "./Plugin";
 import { sampleGrid } from "./_shared/textField";
 import { asset } from "@/lib/asset";
 
-export const AVAILABLE_FONTS = ["Maratype", "NuCore", "Sekgen", "UESC"] as const;
+export const AVAILABLE_FONTS = ["Maratype", "NuCore", "Sekgen", "UESC", "BitcountPropSingle", "HinaMincho", "SpaceMono"] as const;
+
+const FONT_FILES: Record<string, { file: string; format: string }> = {
+  Maratype:          { file: "Maratype.otf",          format: "opentype" },
+  NuCore:            { file: "NuCore.otf",             format: "opentype" },
+  Sekgen:            { file: "Sekgen.otf",             format: "opentype" },
+  UESC:              { file: "UESC.otf",               format: "opentype" },
+  BitcountPropSingle: { file: "BitcountPropSingle.ttf", format: "truetype" },
+  HinaMincho:        { file: "HinaMincho.ttf",         format: "truetype" },
+  SpaceMono:         { file: "SpaceMono.ttf",          format: "truetype" },
+};
 
 export const TEXT_PRESETS = [
   "Glycogen", "Pathfinder", "Epsilon Krios IV", "ISC Wayfarer", "North Meridian", "Frost Repository",
@@ -17,7 +27,8 @@ const fontsReady: Promise<void> =
     ? Promise.resolve()
     : Promise.all(
         AVAILABLE_FONTS.map((name) => {
-          const face = new FontFace(name, `url('${asset(`/fonts/${name}.otf`)}') format('opentype')`, { weight: "400" });
+          const { file, format } = FONT_FILES[name];
+          const face = new FontFace(name, `url('${asset(`/fonts/${file}`)}') format('${format}')`, { weight: "400" });
           return face.load().then((loaded) => { document.fonts.add(loaded); }).catch(() => {});
         }),
       ).then(() => {});
@@ -71,7 +82,10 @@ export class TextLayer extends Plugin {
     const lines = text.split("\n");
     const lh = size * 1.2;
     const halfH = (lines.length * lh) / 2;
-    const cx = Math.max(halfH, Math.min(w - halfH, w / 2 + this.x.value));
+    // Clamp horizontally by the real text width (widest line), not halfH  -  text is far wider than
+    // tall, so clamping x by the vertical extent still lets a big offset slide it off the sides.
+    const halfW = Math.min(w / 2, maxLineWidth(ctx, lines) / 2);
+    const cx = Math.max(halfW, Math.min(w - halfW, w / 2 + this.x.value));
     const cy = Math.max(halfH, Math.min(h - halfH, h / 2 + this.y.value));
     const startY = cy - ((lines.length - 1) * lh) / 2;
     if (outline) {
@@ -129,7 +143,8 @@ function rasterGrid(
   const lines = text.split("\n");
   const lh = s * 1.2;
   const halfH = (lines.length * lh) / 2;
-  const cx = Math.max(halfH, Math.min(gw - halfH, gw / 2 + dx * scale));
+  const halfW = Math.min(gw / 2, maxLineWidth(ctx, lines) / 2);
+  const cx = Math.max(halfW, Math.min(gw - halfW, gw / 2 + dx * scale));
   const cy = Math.max(halfH, Math.min(gh - halfH, gh / 2 + dy * scale));
   const startY = cy - ((lines.length - 1) * lh) / 2;
   if (outline) {
@@ -143,4 +158,11 @@ function rasterGrid(
   const img = ctx.getImageData(0, 0, gw, gh).data;
   for (let i = 0; i < gw * gh; i++) data[i] = img[i * 4 + 3] / 255;
   return { key, data, gw, gh };
+}
+
+/** Widest measured line in the ctx's current font, so callers can clamp the text on-screen. */
+function maxLineWidth(ctx: CanvasRenderingContext2D, lines: readonly string[]): number {
+  let max = 0;
+  for (const line of lines) max = Math.max(max, ctx.measureText(line).width);
+  return max;
 }
